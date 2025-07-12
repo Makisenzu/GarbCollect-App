@@ -2,9 +2,11 @@ import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
+import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
-import { useForm } from '@inertiajs/react';
+import Dashboard from '@/Pages/Dashboard';
+import { Link, useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
 export default function DeleteUserForm({ className = '' }) {
@@ -63,6 +65,12 @@ export default function DeleteUserForm({ className = '' }) {
             <DangerButton onClick={confirmUserDeletion}>
                 Delete Account
             </DangerButton>
+            
+            <Link href={route('dashboard')}>
+                <PrimaryButton className='ms-3'>
+                    Back to Dashboard
+                </PrimaryButton>
+            </Link>
 
             <Modal show={confirmingUserDeletion} onClose={closeModal}>
                 <form onSubmit={deleteUser} className="p-6">
