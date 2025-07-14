@@ -80,20 +80,34 @@ export default function Login({ status, canResetPassword }) {
                     </label>
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                        >
-                            Forgot your password?
-                        </Link>
-                    )}
+        <div className="mt-6 flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
+             <div className="flex items-center gap-3">
+            {canResetPassword && (
+                <Link
+                    href={route('password.request')}
+                    className="text-xs font-medium text-gray-600 hover:text-gray-900 hover:underline focus:rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    Forgot password?
+                </Link>
+            )}
+        
+                <span className="hidden text-sm text-gray-400 sm:inline">|</span>
+        
+                <Link
+                    href={route('register')}
+                    className="text-xs font-small text-gray-600 hover:text-gray-900 hover:underline focus:rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    Don't have an account?
+                </Link>
+            </div>
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
-                    </PrimaryButton>
-                </div>
+    <PrimaryButton 
+        className="w-full sm:w-auto justify-center px-6 py-2.5" 
+        disabled={processing}
+    >
+        Log in
+    </PrimaryButton>
+</div>
             </form>
         </GuestLayout>
     );
