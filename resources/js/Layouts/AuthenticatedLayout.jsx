@@ -34,12 +34,6 @@ export default function AuthenticatedLayout({ header, children }) {
                             </div>
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink
-                                    href={getDashboardRoute()}
-                                    active={route().current(getDashboardRoute().split('?')[0])}
-                                >
-                                    Dashboard
-                                </NavLink>
 
                                 {user.roles === 'admin' && (
                                     <NavLink
@@ -47,6 +41,16 @@ export default function AuthenticatedLayout({ header, children }) {
                                         active={route().current('admin.dashboard')}
                                     >
                                         Admin Panel
+                                    </NavLink>
+                                )}
+
+                                
+                                {user.roles === 'user' && (
+                                    <NavLink
+                                        href={route('dashboard')}
+                                        active={route().current('dashboard')}
+                                    >
+                                        Dashboard
                                     </NavLink>
                                 )}
 
@@ -134,7 +138,6 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </div>
 
-                {/* Mobile menu */}
                 <div className={`${showingNavigationDropdown ? 'block' : 'hidden'} sm:hidden`}>
                     <div className="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink

@@ -23,13 +23,17 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <GuestLayout>
-            <Head title="Log in" />
+            <Head title="GarbCollect" />
 
             {status && (
                 <div className="mb-4 text-sm font-medium text-green-600">
                     {status}
                 </div>
             )}
+
+            <div className="text-center mb-8">
+                <h2 className="mt-2 text-xl font-semibold text-gray-600">LOGIN</h2>
+            </div>
 
             <form onSubmit={submit}>
                 <div>
@@ -102,7 +106,7 @@ export default function Login({ status, canResetPassword }) {
             </div>
 
     <PrimaryButton 
-        className="w-full sm:w-auto justify-center px-6 py-2.5" 
+        className="w-full sm:w-auto justify-center px-6 py-2.5 text-lg" 
         disabled={processing}
     >
         Log in
