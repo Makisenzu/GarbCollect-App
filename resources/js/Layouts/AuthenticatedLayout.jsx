@@ -36,12 +36,35 @@ export default function AuthenticatedLayout({ header, children }) {
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
 
                                 {user.roles === 'admin' && (
-                                    <NavLink
-                                        href={route('admin.dashboard')}
-                                        active={route().current('admin.dashboard')}
-                                    >
-                                        Admin Panel
-                                    </NavLink>
+                                    <>
+                                        <NavLink
+                                            href={route('admin.dashboard')}
+                                            active={route().current('admin.dashboard')}
+                                        >
+                                            Dashboard
+                                        </NavLink>
+
+                                        <NavLink
+                                            href={route('admin.drivers')}
+                                            active={route().current('admin.drivers')}
+                                        >
+                                            Truck Drivers
+                                        </NavLink>
+
+                                        <NavLink
+                                            href={route('admin.residents')}
+                                            active={route().current('admin.residents')}
+                                        >
+                                            Residents
+                                        </NavLink>
+
+                                        <NavLink
+                                            href={route('admin.truckRoutes')}
+                                            active={route().current('admin.truckRoutes')}
+                                        >
+                                            Routing
+                                        </NavLink>
+                                    </>
                                 )}
 
                                 
@@ -148,12 +171,35 @@ export default function AuthenticatedLayout({ header, children }) {
                         </ResponsiveNavLink>
 
                         {user.roles === 'admin' && (
-                            <ResponsiveNavLink
-                                href={route('admin.dashboard')}
-                                active={route().current('admin.dashboard')}
-                            >
-                                Admin Panel
-                            </ResponsiveNavLink>
+                            <>
+                                <ResponsiveNavLink
+                                    href={route('admin.dashboard')}
+                                    active={route().current('admin.dashboard')}
+                                >
+                                    Admin Panel
+                                </ResponsiveNavLink>
+
+                                <ResponsiveNavLink
+                                    href={route('admin.drivers')}
+                                    active={route().current('admin.drivers')}
+                                >
+                                    Truck Drivers
+                                </ResponsiveNavLink>
+
+                                <ResponsiveNavLink
+                                    href={route('admin.residents')}
+                                    active={route().current('admin.residents')}
+                                >
+                                    Residents
+                                </ResponsiveNavLink>
+
+                                <ResponsiveNavLink
+                                    href={route('admin.truckRoutes')}
+                                    active={route().current('admin.truckRoutes')}
+                                >
+                                    Routing
+                                </ResponsiveNavLink>
+                            </>
                         )}
 
                         {user.roles === 'driver' && (

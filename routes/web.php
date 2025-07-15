@@ -24,6 +24,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('Admin/adminDashboard', function () {
             return Inertia::render('Admin/adminDashboard');
         })->name('admin.dashboard');
+
+        Route::get('Admin/drivers', function () {
+            return Inertia::render('Admin/drivers');
+        })->name('admin.drivers');
+
+        Route::get('Admin/residents', function () {
+            return Inertia::render('Admin/residents');
+        })->name('admin.residents');
+        Route::get('Admin/truckRoutes', function () {
+            return Inertia::render('Admin/truckRoutes');
+        })->name('admin.truckRoutes');
     });
     
     // // Driver-only routes
