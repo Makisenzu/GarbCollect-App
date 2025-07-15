@@ -11,7 +11,6 @@ export default function truckRoutes () {
             }
         >
             <Head title='Routes'/>
-
         </AuthenticatedLayout>
     );
 }
