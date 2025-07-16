@@ -8,7 +8,6 @@ export default forwardRef(function RadioButton(
 
     return (
         <label className="relative flex items-center space-x-3 cursor-pointer group">
-            {/* Hidden native radio input */}
             <input
                 {...props}
                 type="radio"
@@ -27,7 +26,6 @@ export default forwardRef(function RadioButton(
                 className="sr-only"
             />
             
-            {/* Custom radio design */}
             <div className={`
                 relative w-5 h-5 rounded-full border-2 transition-all duration-200 ease-in-out
                 ${checked 
@@ -37,7 +35,6 @@ export default forwardRef(function RadioButton(
                 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2
                 ${className}
             `}>
-                {/* Inner dot */}
                 <div className={`
                     absolute inset-0 rounded-full transition-all duration-200 ease-in-out
                     ${checked 
@@ -46,7 +43,6 @@ export default forwardRef(function RadioButton(
                     }
                 `} />
                 
-                {/* Ripple effect on hover */}
                 <div className={`
                     absolute inset-0 rounded-full transition-all duration-300 ease-out
                     ${checked 
@@ -55,8 +51,7 @@ export default forwardRef(function RadioButton(
                     }
                 `} />
             </div>
-
-            {/* Label text */}
+            
             {children && (
                 <span className={`
                     text-sm font-medium transition-colors duration-200
