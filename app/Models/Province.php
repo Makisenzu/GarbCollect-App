@@ -16,10 +16,6 @@ class Province extends Model
         'province_name',
         'capital'
     ];
-
-    public function region() {
-        return $this->belongsTo(Region::class);
-    }
     
     public function municipalities() {
         return $this->hasMany(Municipality::class);

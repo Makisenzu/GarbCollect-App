@@ -16,8 +16,14 @@ return new class extends Migration
             $table->string('roles')->default('user');
             $table->foreignId('purok_id')->nullable()->constrained('puroks');
             $table->string('name');
+            $table->string('middlename')->nullable();
             $table->string('lastname');
-            $table->string('email')->unique();
+            $table->string('suffix')->nullable();
+            $table->enum('gender', ['male', 'female', 'other']);
+            $table->string('phone_num')->nullable();
+            $table->string('email')->nullable()->unique();
+            $table->string('address')->nullable();
+            $table->string('is_active')->default('yes');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->decimal('latitude', 10, 8)->nullable();
