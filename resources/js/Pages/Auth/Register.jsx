@@ -37,7 +37,7 @@ export default function Register() {
 
                 <div className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 shadow-lg">
                     <form onSubmit={submit} className="space-y-6">
-                        {/* Name Fields */}
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                             <div className="space-y-2">
                                 <InputLabel htmlFor="name" value="First Name" className="text-sm font-semibold text-gray-700" />
@@ -69,7 +69,7 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Middle Name & Suffix */}
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                             <div className="space-y-2">
                                 <InputLabel htmlFor="middlename" value="Middle Name" className="text-sm font-semibold text-gray-700" />
@@ -98,7 +98,7 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Gender Selection */}
+
                         <div className="space-y-4">
                             <InputLabel value="Gender" className="text-sm font-semibold text-gray-700" />
                             <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
@@ -135,7 +135,7 @@ export default function Register() {
                             <InputError message={errors.gender} className="mt-2" />
                         </div>
 
-                        {/* Email */}
+
                         <div className="space-y-2">
                             <InputLabel htmlFor="email" value="Email Address" className="text-sm font-semibold text-gray-700" />
                             <TextInput
@@ -151,7 +151,7 @@ export default function Register() {
                             <InputError message={errors.email} className="mt-2" />
                         </div>
 
-                        {/* Password Fields */}
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                             <div className="space-y-2">
                                 <InputLabel htmlFor="password" value="Password" className="text-sm font-semibold text-gray-700" />
@@ -193,10 +193,9 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Footer Section */}
+
                         <div className="pt-6 border-t border-gray-200">
                             <div className="flex flex-col space-y-4">
-                                {/* Sign in link */}
                                 <div className="text-center">
                                     <Link
                                         href={route('login')}
@@ -206,7 +205,6 @@ export default function Register() {
                                     </Link>
                                 </div>
 
-                                {/* Submit button */}
                                 <div className="w-full">
                                     <PrimaryButton 
                                         className="w-full min-h-[48px] px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center" 
