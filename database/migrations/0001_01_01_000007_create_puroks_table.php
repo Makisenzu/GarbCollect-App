@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('purok_name');
             $table->timestamps();
         });
-    }
+    } 
 
     /**
      * Reverse the migrations.
