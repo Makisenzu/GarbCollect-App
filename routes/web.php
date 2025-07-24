@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RouteController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -41,9 +42,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('Admin/residents', function () {
             return Inertia::render('Admin/residents');
         })->name('admin.residents');
-        Route::get('Admin/truckRoutes', function () {
-            return Inertia::render('Admin/truckRoutes');
-        })->name('admin.truckRoutes');
+
+
+        Route::get('Admin/truckRoutes', [RouteController::class, 'index'
+        ])->name('admin.truckRoutes');
+        // Route::get('Admin/truckRoutes', function () {
+        //     return Inertia::render('Admin/truckRoutes');
+        // })->name('admin.truckRoutes');
+        // Route::get('admin.map', function(){
+        //     return Inertia::render('Admin/map');
+        // })->name('admin.maps');
     });
     
     // // Driver-only routes

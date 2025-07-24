@@ -48,7 +48,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                             href={route('admin.drivers')}
                                             active={route().current('admin.drivers')}
                                         >
-                                            Truck Drivers
+                                            Drivers
                                         </NavLink>
 
                                         <NavLink
@@ -183,7 +183,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     href={route('admin.drivers')}
                                     active={route().current('admin.drivers')}
                                 >
-                                    Truck Drivers
+                                    Drivers
                                 </ResponsiveNavLink>
 
                                 <ResponsiveNavLink
@@ -199,6 +199,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Routing
                                 </ResponsiveNavLink>
+
                             </>
                         )}
 

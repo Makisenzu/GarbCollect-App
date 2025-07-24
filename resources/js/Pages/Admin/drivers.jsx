@@ -10,7 +10,7 @@ export default function drivers () {
                 </h2>
             }
         >
-            <Head title='Truck Drivers'/>
+            <Head title='Drivers'/>
 
         </AuthenticatedLayout>
     );
