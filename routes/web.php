@@ -46,6 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('Admin/truckRoutes', [RouteController::class, 'index'
         ])->name('admin.truckRoutes');
+        
         // Route::get('Admin/truckRoutes', function () {
         //     return Inertia::render('Admin/truckRoutes');
         // })->name('admin.truckRoutes');
