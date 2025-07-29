@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
-import Map from './components/map';
+import Map from './components/Map';
 import InsertNewSite from './components/InsertNewSite';
 
 export default function TruckRoutes({ auth, mapboxKey }) {

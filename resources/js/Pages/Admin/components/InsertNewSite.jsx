@@ -57,7 +57,7 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-lg font-semibold mb-4">Add New Collection Site</h2>
+            <h2 className="text-lg font-semibold mb-4">Add New Garbage Collection Site</h2>
             
             <form onSubmit={handleSubmit} ref={formRef}>
                 <div className="space-y-4">
@@ -87,21 +87,20 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                         </div>
                         <div>
                             <InputLabel htmlFor="purok" value="Purok/Sitio" />
-                            <select
-                                id="purok"
-                                name="purok"
-                                value={data.purok}
-                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                onChange={(e) => setData('purok', e.target.value)}
-                                required
-                            >
-                                <option value="">Select Purok/Sitio</option>
-                                    {['Purok 1', 'Purok 2', 'Purok 3', 'Purok 4', 'Purok 5', 
-                                    'Purok 6', 'Purok 7', 'Purok 8', 'Purok 9', 'Purok 10'].map((purok) => (
-                                <option key={purok} value={purok}>{purok}</option>
-                                    ))}
+                                <select
+                                    id="purok"
+                                    name="purok"
+                                    value={data.purok}
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    onChange={(e) => setData('purok', e.target.value)}
+                                    required
+                                >
+                                    <option value="">Select Purok/Sitio</option>
+                                        {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                                    <option key={num} value={num}>Purok {num}</option>
+                                        ))}
                                 </select>
-                            <InputError message={errors.purok} className="mt-2" />
+                                    <InputError message={errors.purok} className="mt-2" />
                         </div>
                     </div>
 
@@ -126,7 +125,7 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4 hidden">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <InputLabel value="Latitude" />
                             <TextInput

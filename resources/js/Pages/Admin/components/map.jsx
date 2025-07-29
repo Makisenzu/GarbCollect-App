@@ -1,14 +1,27 @@
 import { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
 
 export default function Map({ mapboxKey, onLocationSelect }) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const markerRef = useRef(null);
+    const [cssLoaded, setCssLoaded] = useState(false);
 
     useEffect(() => {
-        if (!mapboxKey || map.current || !mapContainer.current) return;
+
+        const link = document.createElement('link');
+        link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+        setCssLoaded(true);
+
+        return () => {
+            document.head.removeChild(link);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!cssLoaded || !mapboxKey || map.current || !mapContainer.current) return;
 
         mapboxgl.accessToken = mapboxKey;
 
@@ -57,7 +70,7 @@ export default function Map({ mapboxKey, onLocationSelect }) {
             if (markerRef.current) markerRef.current.remove();
             if (map.current) map.current.remove();
         };
-    }, [3]);
+    }, [mapboxKey, cssLoaded]);
 
     const extractPhilippineAddress = (geocodeData) => {
         const features = geocodeData.features;
@@ -73,25 +86,6 @@ export default function Map({ mapboxKey, onLocationSelect }) {
             barangay = barangayFeature.text || 
                       barangayFeature.context?.find(ctx => ctx.id.includes('locality'))?.text ||
                       '';
-        }
-        
-        let purok = '';
-        const addressFeature = features[0];
-        if (addressFeature) {
-            const purokMatch = addressFeature.place_name.match(/(Purok|Sitio|Zone) [\w\d]+/i);
-            purok = purokMatch ? purokMatch[0] : '';
-            
-            if (!purok) {
-                const neighborhood = features.find(f => f.place_type.includes('neighborhood'));
-                purok = neighborhood?.text || '';
-            }
-            
-            if (!purok && addressFeature.context) {
-                const purokContext = addressFeature.context.find(ctx => 
-                    ctx.text.match(/Purok|Sitio|Zone/i)
-                );
-                purok = purokContext?.text || '';
-            }
         }
 
         return { 
