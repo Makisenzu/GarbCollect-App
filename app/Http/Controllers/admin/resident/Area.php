@@ -1,20 +1,22 @@
 <?php
 
-namespace App\Http\Controllers\admin;
+namespace App\Http\Controllers\admin\resident;
 
-use Inertia\Inertia;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Municipality;
+use Illuminate\Http\Request;
 
-class RouteController extends Controller
+class Area extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return Inertia::render('Admin/truckRoutes', [
-            'mapboxKey' => env('MAPBOX_ACCESS_TOKEN')
+        $municipalities = Municipality::withCount('baranggays')->get();
+        return response()->json([
+            'municipalities' => $municipalities,
+            'total_barangay' => $municipalities->sum('baranggays_count')
         ]);
     }
 

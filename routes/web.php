@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RouteController;
+use App\Http\Controllers\admin\RouteController;
+use App\Http\Controllers\admin\resident\Area;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -15,14 +16,6 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
-// Route::get('/', function () {
-//     return Inertia::render('Welcome', [
-//         'canLogin' => Route::has('login'),
-//         'canRegister' => Route::has('register'),
-//         'laravelVersion' => Application::VERSION,
-//         'phpVersion' => PHP_VERSION,
-//     ]);
-// });
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -43,9 +36,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return Inertia::render('Admin/residents');
         })->name('admin.residents');
 
-
         Route::get('Admin/truckRoutes', [RouteController::class, 'index'
         ])->name('admin.truckRoutes');
+
+
+        Route::get('/municipality', [Area::class, 'index'
+        ]);
         
         // Route::get('Admin/truckRoutes', function () {
         //     return Inertia::render('Admin/truckRoutes');

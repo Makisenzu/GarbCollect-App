@@ -1,10 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function LocationNavigation() {
     const [activeTab, setActiveTab] = useState('municipality');
     const [selectedProvince, setSelectedProvince] = useState('Agusan del Sur');
     const [selectedMunicipality, setSelectedMunicipality] = useState('San Francisco');
     const [selectedBarangay, setSelectedBarangay] = useState(null);
+
+    const [municipalityData, setMunicipalityData] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (activeTab === 'municipality') {
+            fetchMunicipalities();
+        }
+    }, [activeTab]);
+
+    const fetchMunicipalities = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get('/municipality');
+            setMunicipalityData(response.data.municipalities);
+        } catch (error) {
+            console.error('Error fetching municipalities:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     const provinces = ['Agusan del Sur'];
     const municipalities = {
@@ -26,9 +48,9 @@ export default function LocationNavigation() {
         { id: 1, name: 'Agusan del Sur', municipalities: 1, barangays: 5, puroks: 23 }
     ];
 
-    const municipalityData = [
-        { id: 1, name: 'San Francisco', barangays: 5, puroks: 23, population: 85000 }
-    ];
+    // const municipalityData = [
+    //     { id: 1, name: 'San Francisco', barangays: 5, puroks: 23, population: 85000 }
+    // ];
 
     const barangayData = [
         { id: 1, name: 'Barangay 1', puroks: 3, households: 250, population: 1200 },
@@ -50,48 +72,48 @@ export default function LocationNavigation() {
             case 'municipality':
                 return (
                     <div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Municipality</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barangays</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Puroks</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Population</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {municipalityData.map((item) => (
-                                        <tr key={item.id} className="hover:bg-gray-50 cursor-pointer">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500">{item.barangays}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500">{item.puroks}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500">{item.population}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <button 
-                                                    onClick={() => {
-                                                        setSelectedMunicipality(item.name);
-                                                        setActiveTab('barangay');
-                                                    }}
-                                                    className="text-blue-600 hover:text-blue-900"
-                                                >
-                                                    View Barangays
-                                                </button>
-                                            </td>
+                        {loading ? (
+                            <div className="p-4 text-center">Loading municipalities...</div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Municipality</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barangays</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {municipalityData.map((municipality) => (
+                                            <tr key={municipality.id} className="hover:bg-gray-50 cursor-pointer">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {municipality.municipality_name}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-500">
+                                                        {municipality.baranggays_count}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSelectedMunicipality(municipality.municipality_name);
+                                                            setActiveTab('barangay');
+                                                        }}
+                                                        className="text-blue-600 hover:text-blue-900"
+                                                    >
+                                                        View Barangays
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 );
             case 'barangay':
@@ -202,40 +224,10 @@ export default function LocationNavigation() {
     return (
         <div className="py-6">
             <div className="mx-auto w-full max-w-full px-4 sm:px-6 lg:px-8">
-                <div className="flex border-b mb-6">
-                    <button
-                        className={`px-4 py-2 font-medium ${activeTab === 'province' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                        onClick={() => setActiveTab('province')}
-                    >
-                        Areas
-                    </button>
-                    <button
-                        className={`px-4 py-2 font-medium ${activeTab === 'municipality' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'} ${!selectedProvince ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => selectedProvince && setActiveTab('municipality')}
-                        disabled={!selectedProvince}
-                    >
-                        Complaints
-                    </button>
-                    <button
-                        className={`px-4 py-2 font-medium ${activeTab === 'barangay' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'} ${!selectedMunicipality ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => selectedMunicipality && setActiveTab('barangay')}
-                        disabled={!selectedMunicipality}
-                    >
-                        Violation
-                    </button>
-                    <button
-                        className={`px-4 py-2 font-medium ${activeTab === 'purok' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'} ${!selectedBarangay ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => selectedBarangay && setActiveTab('purok')}
-                        disabled={!selectedBarangay}
-                    >
-                        Reviews
-                    </button>
-                </div>
-
                 <div className="bg-white shadow-sm rounded-lg overflow-hidden">
                     <div className="p-6">
                         <h3 className="text-lg font-medium mb-4">
-                            {activeTab === 'province' && 'Provinces'}
+                            {activeTab === 'province'}
                             {activeTab === 'municipality' && `Municipality`}
                             {activeTab === 'barangay' && `Barangays in ${selectedMunicipality}`}
                             {activeTab === 'purok' && `Puroks in ${selectedBarangay}`}
