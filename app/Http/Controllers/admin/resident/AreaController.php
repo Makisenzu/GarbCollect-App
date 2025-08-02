@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\admin\resident;
 
-use App\Http\Controllers\Controller;
+use App\Models\Purok;
+use App\Models\Baranggay;
 use App\Models\Municipality;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
-class Area extends Controller
+class AreaController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -17,6 +19,27 @@ class Area extends Controller
         return response()->json([
             'municipalities' => $municipalities,
             'total_barangay' => $municipalities->sum('baranggays_count')
+        ]);
+    }
+
+    public function showBaranggay($municipality_id)
+    {
+        $baranggays = Baranggay::where('municipality_id', $municipality_id)
+            ->withCount('puroks')
+            ->get();
+        return response()->json([
+            'baranggays' => $baranggays,
+            'total_puroks' => $baranggays->sum('puroks_count')
+        ]);
+    }
+
+    public function showPurok($baranggayId)
+    {
+        $puroks = Purok::where('baranggay_id', $baranggayId)
+            ->get();
+        return response()->json([
+            'puroks' => $puroks,
+            'count' => $puroks->count()
         ]);
     }
 

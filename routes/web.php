@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\admin\RouteController;
-use App\Http\Controllers\admin\resident\Area;
+use App\Http\Controllers\admin\resident\AreaController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -40,9 +40,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ])->name('admin.truckRoutes');
 
 
-        Route::get('/municipality', [Area::class, 'index'
+        Route::get('/municipalities', [AreaController::class, 'index'
         ]);
         
+        Route::get('/municipalities/{municipality_id}/barangay', [AreaController::class, 'showBaranggay'
+        ]);
+
+        Route::get('/baranggay/{baranggayId}/purok', [AreaController::class, 'showPurok'
+        ]);
         // Route::get('Admin/truckRoutes', function () {
         //     return Inertia::render('Admin/truckRoutes');
         // })->name('admin.truckRoutes');
