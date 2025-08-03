@@ -43,6 +43,31 @@ class AreaController extends Controller
         ]);
     }
 
+    public function addBarangay(Request $request){
+        $validatedData = $request->validate([
+            'psgc_code' => ['required', 'string', 'max:255', 'unique:baranggays,psgc_code'],
+            'baranggay_name' => ['required', 'string', 'max:255'],
+            'type' => ['required', 'string', 'in:Urban,Rural'],
+            'municipality_id' => ['required', 'exists:municipalities, id'],
+        ]);
+        try {
+            $barangay = Baranggay::create($validatedData);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Added new Barangay',
+                'data' => $barangay
+            ], 201);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add barangay',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Show the form for creating a new resource.
      */

@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LocationNavigation from './components/residents/LocationNavigation';
 import { Head } from '@inertiajs/react';
-import LocationNavigation from './components/LocationNavigation';
 import { useState } from 'react';
 
 export default function Residents() {

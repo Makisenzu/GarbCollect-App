@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
-import Map from './components/Map';
-import InsertNewSite from './components/InsertNewSite';
+import Map from './components/truckRoutes/Map';
+import InsertNewSite from './components/truckRoutes/InsertNewSite';
 
 export default function TruckRoutes({ auth, mapboxKey }) {
     const [selectedLocation, setSelectedLocation] = useState(null);
