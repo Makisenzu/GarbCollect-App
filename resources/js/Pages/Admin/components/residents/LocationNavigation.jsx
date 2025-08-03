@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useState, useEffect } from 'react';
-import FormModal from '@/Components/Modal';
+import FormModal from '@/Components/FormModal';
 import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function LocationNavigation() {
