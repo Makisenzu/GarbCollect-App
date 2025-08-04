@@ -82,7 +82,6 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                                 name="barangay"
                                 value={data.barangay}
                                 className="mt-1 block w-full bg-gray-100"
-                                readOnly
                             />
                         </div>
                         <div>

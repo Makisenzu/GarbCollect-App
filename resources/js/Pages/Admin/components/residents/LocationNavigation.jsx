@@ -116,6 +116,7 @@ export default function LocationNavigation() {
 
             await axios.post('/municipality/baranggay/purok/addPurok', payload);
             fetchPurok(selectedBarangayId);
+            await fetchBaranggay(selectedBarangayId);
             setShowAddPurokModal(false);
         } catch (error) {
             console.error('Error adding purok: ', error);
@@ -198,7 +199,7 @@ export default function LocationNavigation() {
                                     
                                     <PrimaryButton 
                                         onClick={() => {
-                                            console.log('Opening modal');
+                                            console.log('Opening Barangay modal');
                                             setShowAddBarangayModal(true);
                                         }}
                                     >
@@ -280,7 +281,7 @@ export default function LocationNavigation() {
                                         
                                         <PrimaryButton 
                                             onClick={() => {
-                                                console.log('Opening modal');
+                                                console.log('Opening Purok modal');
                                                 setShowAddPurokModal(true);
                                             }}
                                         >
