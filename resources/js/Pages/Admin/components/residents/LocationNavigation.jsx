@@ -21,6 +21,9 @@ export default function LocationNavigation() {
     const [showAddBarangayModal, setShowAddBarangayModal] = useState(false);
     const [processing, setProcessing] = useState(false);
 
+    const [showPurokModal, setShowAddPurokModal] = useState(false);
+    const [purokProcessing, setPurokProcessing] = useState(false);
+
     const barangayFields = [
         { name: 'psgc_code', label: 'PSGC Code', type: 'text', required: true },
         { name: 'baranggay_name', label: 'Barangay Name', type: 'text', required: true },
@@ -35,6 +38,12 @@ export default function LocationNavigation() {
             required: true 
         }
     ];
+    
+    const purokFields = [
+        {
+            name: 'purok_name', label: 'Purok Name', type: 'text', required: true
+        }
+    ]
 
     useEffect(() => {
         if (activeTab === 'municipality') {
@@ -86,7 +95,7 @@ export default function LocationNavigation() {
                 municipality_id: selectedMunicipalityId
             };
             
-            await axios.post('/municipalities/barangay', payload);
+            await axios.post('/municipality/baranggay/addBarangay', payload);
             fetchBaranggay(selectedMunicipalityId);
             setShowAddBarangayModal(false);
         } catch (error) {
@@ -96,6 +105,27 @@ export default function LocationNavigation() {
             setProcessing(false);
         }
     }
+
+    const handleAddPurokSubmit = async (formData) => {
+        setPurokProcessing(true);
+        try {
+            const payload = {
+                ...formData,
+                baranggay_id: selectedBarangayId
+            };
+
+            await axios.post('/municipality/baranggay/purok/addPurok', payload);
+            fetchPurok(selectedBarangayId);
+            setShowAddPurokModal(false);
+        } catch (error) {
+            console.error('Error adding purok: ', error);
+            throw error;
+        } finally {
+            setPurokProcessing(false);
+        }
+    }
+
+    
 
     const renderTable = () => {
         switch (activeTab) {
@@ -220,73 +250,84 @@ export default function LocationNavigation() {
                         )}
                     </div>
                 );
-            case 'purok':
-                return (
-                    <div className="space-y-4">
-                        {loadingPurok ? (
-                            <div className="p-4 text-center">Loading puroks...</div>
-                        ) : (
-                            <>
-                                <button 
-                                    className="flex items-center mb-4 text-blue-500 hover:text-blue-700 transition-colors"
-                                    onClick={() => setActiveTab('barangay')}
-                                >
-                                    <svg 
-                                        className="w-5 h-5 mr-1" 
-                                        fill="none" 
-                                        stroke="currentColor" 
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path 
-                                            strokeLinecap="round" 
-                                            strokeLinejoin="round" 
-                                            strokeWidth={2} 
-                                            d="M15 19l-7-7 7-7" 
-                                        />
-                                    </svg>
-                                    Back to Barangays
-                                </button>
-                
-                                <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Purok
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Collection Site
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                {purokData.map((purok) => (
-                                                    <tr key={purok.id} className="hover:bg-gray-50 transition-colors">
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm font-medium text-gray-900">
-                                                                {purok.purok_name}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <button 
-                                                                onClick={() => {
-                                                                }}
-                                                                className="text-blue-600 hover:text-blue-900"
-                                                            >
-                                                                View Site
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                case 'purok':
+                    return (
+                        <div className="space-y-4">
+                            {loadingPurok ? (
+                                <div className="p-4 text-center">Loading puroks...</div>
+                            ) : (
+                                <>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <button 
+                                            className="flex items-center text-blue-500 hover:text-blue-700 transition-colors"
+                                            onClick={() => setActiveTab('barangay')}
+                                        >
+                                            <svg 
+                                                className="w-5 h-5 mr-1" 
+                                                fill="none" 
+                                                stroke="currentColor" 
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path 
+                                                    strokeLinecap="round" 
+                                                    strokeLinejoin="round" 
+                                                    strokeWidth={2} 
+                                                    d="M15 19l-7-7 7-7" 
+                                                />
+                                            </svg>
+                                            Back to Barangays
+                                        </button>
+                                        
+                                        <PrimaryButton 
+                                            onClick={() => {
+                                                console.log('Opening modal');
+                                                setShowAddPurokModal(true);
+                                            }}
+                                        >
+                                            Add New Purok
+                                        </PrimaryButton>
                                     </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                );
+                
+                                    <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full divide-y divide-gray-200">
+                                                <thead className="bg-gray-50">
+                                                    <tr>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            Purok
+                                                        </th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            Collection Site
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="bg-white divide-y divide-gray-200">
+                                                    {purokData.map((purok) => (
+                                                        <tr key={purok.id} className="hover:bg-gray-50 transition-colors">
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="text-sm font-medium text-gray-900">
+                                                                    {purok.purok_name}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <button 
+                                                                    onClick={() => {
+                                                                    }}
+                                                                    className="text-blue-600 hover:text-blue-900"
+                                                                >
+                                                                    View Site
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    );
             default:
                 return null;
         }
@@ -315,6 +356,16 @@ export default function LocationNavigation() {
                 onSubmit={handleAddBarangaySubmit}
                 submitText={processing ? 'Saving...' : 'Save Barangay'}
                 processing={processing}
+            />
+
+            <FormModal
+                show={showPurokModal}
+                onClose={() => setShowAddPurokModal(false)}
+                title="Add New Purok"
+                fields={purokFields}
+                onSubmit={handleAddPurokSubmit}
+                submitText={purokProcessing ? 'Saving...' : 'Save Purok'}
+                processing={purokProcessing}
             />
         </div>
     );

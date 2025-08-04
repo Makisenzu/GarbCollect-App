@@ -37,16 +37,15 @@ const FormModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto">
-      {/* Background overlay */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
         onClick={onClose}
-      ></div>
+      >
+        
+      </div>
 
-      {/* Modal container */}
       <div className="relative z-50 w-full max-w-md p-4 mx-auto">
         <div className="relative bg-white rounded-lg shadow">
-          {/* Modal content */}
           <div className="p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               {title}
@@ -107,7 +106,6 @@ const FormModal = ({
                 ))}
               </div>
 
-              {/* Modal footer */}
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   type="button"

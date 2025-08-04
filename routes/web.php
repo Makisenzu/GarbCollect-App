@@ -51,6 +51,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/municipality/baranggay/addBarangay', [AreaController::class, 'addBarangay'
         ]);
+
+        Route::post('/municipality/baranggay/purok/addPurok', [AreaController::class, 'addPurok'
+        ]);
         // Route::get('Admin/truckRoutes', function () {
         //     return Inertia::render('Admin/truckRoutes');
         // })->name('admin.truckRoutes');
