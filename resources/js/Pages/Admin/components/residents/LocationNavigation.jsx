@@ -2,6 +2,8 @@ import axios from 'axios';
 import { useState, useEffect } from 'react';
 import FormModal from '@/Components/FormModal';
 import PrimaryButton from '@/Components/PrimaryButton';
+import { MdDeleteForever } from "react-icons/md";
+import { IoMdAddCircleOutline } from "react-icons/io";
 
 export default function LocationNavigation() {
     const [activeTab, setActiveTab] = useState('municipality');
@@ -202,8 +204,9 @@ export default function LocationNavigation() {
                                             console.log('Opening Barangay modal');
                                             setShowAddBarangayModal(true);
                                         }}
-                                        className="bg-emerald-600 hover:bg-emerald-700 focus:bg-emerald-700 active:bg-emerald-800"
+                                        className="bg-green-600 hover:bg-green-700 focus:bg-green-700 active:bg-green-800"
                                     >
+                                        <IoMdAddCircleOutline size={20} className="mr-2"/>
                                         Add New Barangay
                                     </PrimaryButton>
                                 </div>
@@ -284,14 +287,15 @@ export default function LocationNavigation() {
                                             Back to Barangays
                                         </button>
                                         
-                                        <PrimaryButton 
+                                        <PrimaryButton
                                             onClick={() => {
                                                 console.log('Opening Purok modal');
                                                 setShowAddPurokModal(true);
                                             }}
-                                            className="bg-emerald-600 hover:bg-emerald-700 focus:bg-emerald-700 active:bg-emerald-800"
+                                            className="bg-green-600 hover:bg-green-700 focus:bg-green-700 active:bg-green-800"
                                         >
-                                            Add New Purok
+                                            <IoMdAddCircleOutline size={20} className="mr-2"/>
+                                              Add new Purok
                                         </PrimaryButton>
                                     </div>
                 
@@ -361,7 +365,7 @@ export default function LocationNavigation() {
                 title="Add New Barangay"
                 fields={barangayFields}
                 onSubmit={handleAddBarangaySubmit}
-                submitText={processing ? 'Saving...' : 'Save Barangay'}
+                submitText={processing ? 'Adding...' : 'Add Barangay'}
                 processing={processing}
             />
 
@@ -371,7 +375,7 @@ export default function LocationNavigation() {
                 title="Add New Purok"
                 fields={purokFields}
                 onSubmit={handleAddPurokSubmit}
-                submitText={purokProcessing ? 'Saving...' : 'Save Purok'}
+                submitText={purokProcessing ? 'Adding...' : 'Add Purok'}
                 processing={purokProcessing}
             />
         </div>

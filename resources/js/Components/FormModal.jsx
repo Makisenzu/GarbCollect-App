@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import TextInput from './TextInput';
 import PrimaryButton from './PrimaryButton';
+import { FaCheck } from "react-icons/fa";
 
 const FormModal = ({
   show = false,
@@ -119,6 +120,7 @@ const FormModal = ({
                   type="submit"
                   disabled={processing}
                 >
+                  <FaCheck size={20} className="mr-2"/>
                   {processing ? 'Processing...' : submitText}
                 </PrimaryButton>
               </div>

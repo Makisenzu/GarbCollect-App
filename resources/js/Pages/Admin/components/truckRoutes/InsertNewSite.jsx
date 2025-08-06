@@ -6,6 +6,7 @@ import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ToggleSwitch from '@/Components/ToggleSwitch';
+import { FiCheckCircle } from "react-icons/fi";
 import axios from 'axios';
 
 export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = [] }) {
@@ -261,7 +262,8 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                             disabled={processing || !data.coordinates}
                             className="ml-auto"
                         >
-                            {processing ? 'Saving...' : 'Save Collection Site'}
+                            <FiCheckCircle size={15} className="mr-2"/>
+                            {processing ? 'Saving...' : 'Save Site'}
                         </PrimaryButton>
                     </div>
                 </div>
