@@ -116,7 +116,7 @@ export default function LocationNavigation() {
 
             await axios.post('/municipality/baranggay/purok/addPurok', payload);
             fetchPurok(selectedBarangayId);
-            await fetchBaranggay(selectedBarangayId);
+            fetchBaranggay(selectedBarangayId);
             setShowAddPurokModal(false);
         } catch (error) {
             console.error('Error adding purok: ', error);
@@ -168,7 +168,7 @@ export default function LocationNavigation() {
                                                         }}
                                                         className="text-blue-600 hover:text-blue-900"
                                                     >
-                                                        View Barangays
+                                                        View Barangay
                                                     </button>
                                                 </td>
                                             </tr>
@@ -202,15 +202,17 @@ export default function LocationNavigation() {
                                             console.log('Opening Barangay modal');
                                             setShowAddBarangayModal(true);
                                         }}
+                                        className="bg-emerald-600 hover:bg-emerald-700 focus:bg-emerald-700 active:bg-emerald-800"
                                     >
                                         Add New Barangay
                                     </PrimaryButton>
                                 </div>
 
-                                <div className="overflow-x-auto">
+                                <div className="overflow-y-scroll max-h-96">
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
+                                                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Psgc</th> */}
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barangay</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Puroks</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
@@ -220,6 +222,9 @@ export default function LocationNavigation() {
                                         <tbody className="bg-white divide-y divide-gray-200">
                                             {baranggayData.map((barangay) => (
                                                 <tr key={barangay.id} className="hover:bg-gray-50 cursor-pointer">
+                                                    {/* <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">{barangay.psgc_code}</div>
+                                                    </td> */}
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">{barangay.baranggay_name}</div>
                                                     </td>
@@ -284,6 +289,7 @@ export default function LocationNavigation() {
                                                 console.log('Opening Purok modal');
                                                 setShowAddPurokModal(true);
                                             }}
+                                            className="bg-emerald-600 hover:bg-emerald-700 focus:bg-emerald-700 active:bg-emerald-800"
                                         >
                                             Add New Purok
                                         </PrimaryButton>

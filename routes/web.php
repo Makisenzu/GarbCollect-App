@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\admin\RouteController;
+use App\Http\Controllers\admin\LocationRoute\RouteController;
 use App\Http\Controllers\admin\resident\AreaController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -53,6 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
 
         Route::post('/municipality/baranggay/purok/addPurok', [AreaController::class, 'addPurok'
+        ]);
+
+        Route::post('/municipality/barangay/addNewGarbageSite', [AreaController::class, 'addCollectionRoute'
         ]);
         // Route::get('Admin/truckRoutes', function () {
         //     return Inertia::render('Admin/truckRoutes');

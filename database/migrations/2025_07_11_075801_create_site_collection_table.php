@@ -17,7 +17,9 @@ return new class extends Migration
             $table->string('site_name');
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
-            $table->string('status')->default('Available');
+            $table->time('collection_time');
+            $table->string('status')->default('active');
+            $table->text('additional_notes')->nullable();
             $table->timestamps();
         });
     }
@@ -27,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('site_collection');
+        Schema::dropIfExists('sites');
     }
 };

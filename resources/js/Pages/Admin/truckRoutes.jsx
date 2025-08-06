@@ -14,7 +14,8 @@ export default function TruckRoutes({ auth, mapboxKey }) {
 
     const handleSiteAdded = (newSite) => {
         setCollectionSites([...collectionSites, {
-            ...newSite.coordinates,
+            lng: newSite.coordinates.lng,
+            lat: newSite.coordinates.lat,
             name: newSite.site_name,
             barangay: newSite.barangay,
             purok: newSite.purok

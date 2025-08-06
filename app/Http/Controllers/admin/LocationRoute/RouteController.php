@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\admin;
+namespace App\Http\Controllers\admin\LocationRoute;
 
+use App\Models\Site;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -24,6 +25,34 @@ class RouteController extends Controller
     public function create()
     {
         //
+    }
+
+    public function addCollectionRoute(Request $request)
+    {
+        $validatedData = $request->validate([
+            'site_name' => ['required', 'string', 'max:255'],
+            'latitude' => ['required', 'decimal'],
+            'longitude' => ['required', 'decimal'],
+            'collection_time' => ['required'],
+            'status' => ['required', 'max:255'],
+            'additional_notes' => ['required', 'max:255']
+        ]);
+
+        try {
+            $siteData = Site::create($validatedData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Added new Site',
+                'data' => $siteData
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add new site',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

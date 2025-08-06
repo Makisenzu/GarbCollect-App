@@ -76,6 +76,8 @@ export default function Map({ mapboxKey, onLocationSelect }) {
         const features = geocodeData.features;
         
         let barangay = '';
+        let purok = '';
+        
         const barangayFeature = features.find(f => 
             f.place_type.includes('locality') || 
             f.place_type.includes('place') ||
@@ -87,7 +89,14 @@ export default function Map({ mapboxKey, onLocationSelect }) {
                       barangayFeature.context?.find(ctx => ctx.id.includes('locality'))?.text ||
                       '';
         }
-
+    
+        const neighborhoodFeature = features.find(f => 
+            f.place_type.includes('neighborhood')
+        );
+        if (neighborhoodFeature) {
+            purok = neighborhoodFeature.text;
+        }
+    
         return { 
             barangay: barangay || 'Not specified',
             purok: purok || 'Not specified'
