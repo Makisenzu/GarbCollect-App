@@ -17,6 +17,8 @@ Route::get('/', function () {
     ]);
 });
 
+Route::post('/municipality/barangay/addNewGarbageSite', [RouteController::class, 'addCollectionRoute'
+]);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
@@ -55,8 +57,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/municipality/baranggay/purok/addPurok', [AreaController::class, 'addPurok'
         ]);
 
-        Route::post('/municipality/barangay/addNewGarbageSite', [AreaController::class, 'addCollectionRoute'
-        ]);
+        // Route::post('/municipality/barangay/addNewGarbageSite', [AreaController::class, 'addCollectionRoute'
+        // ]);
         // Route::get('Admin/truckRoutes', function () {
         //     return Inertia::render('Admin/truckRoutes');
         // })->name('admin.truckRoutes');

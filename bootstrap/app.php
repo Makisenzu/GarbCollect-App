@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'roles' => \App\Http\Middleware\CheckUserRole::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'municipality/barangay/addNewGarbageSite',
+        ]);
+    
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,

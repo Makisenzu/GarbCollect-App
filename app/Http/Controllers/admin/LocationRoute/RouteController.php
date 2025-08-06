@@ -30,11 +30,12 @@ class RouteController extends Controller
     public function addCollectionRoute(Request $request)
     {
         $validatedData = $request->validate([
+            'purok_id' => ['required', 'exists:puroks,id'],
             'site_name' => ['required', 'string', 'max:255'],
-            'latitude' => ['required', 'decimal'],
-            'longitude' => ['required', 'decimal'],
-            'collection_time' => ['required'],
-            'status' => ['required', 'max:255'],
+            'latitude' => ['required', 'numeric'],
+            'longitude' => ['required', 'numeric'],
+            'collection_time' => ['required', 'date_format:H:i:s'],
+            'status' => ['required', 'max:255', 'string'],
             'additional_notes' => ['required', 'max:255']
         ]);
 
