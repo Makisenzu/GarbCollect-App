@@ -19,7 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'municipality/barangay/addNewGarbageSite',
         ]);
     
-
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,

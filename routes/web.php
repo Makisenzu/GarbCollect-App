@@ -17,46 +17,43 @@ Route::get('/', function () {
     ]);
 });
 
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
     
     Route::middleware('roles:admin')->group(function () {
+
+        //Admin Routes
+        // DashBoard
         Route::get('Admin/adminDashboard', function () {
             return Inertia::render('Admin/adminDashboard');
         })->name('admin.dashboard');
 
+
+        //Driver Routes
         Route::get('Admin/drivers', function () {
             return Inertia::render('Admin/drivers');
         })->name('admin.drivers');
 
+        //Resident Routes
         Route::get('Admin/residents', function () {
             return Inertia::render('Admin/residents');
         })->name('admin.residents');
 
+        Route::get('/municipalities', [AreaController::class, 'index']);
+        Route::get('/municipalities/{municipality_id}/barangay', [AreaController::class, 'showBaranggay']);
+        Route::get('/baranggay/{baranggayId}/purok', [AreaController::class, 'showPurok']);
+        Route::post('/municipality/baranggay/addBarangay', [AreaController::class, 'addBarangay']);
+        Route::post('/municipality/baranggay/purok/addPurok', [AreaController::class, 'addPurok']);
+
+        //Truck Routes
         Route::get('Admin/truckRoutes', [RouteController::class, 'index'
         ])->name('admin.truckRoutes');
 
+        Route::get('/municipality/barangay/purok/sites', [RouteController::class, 'getSiteLocation']);
+        Route::post('/municipality/barangay/addNewGarbageSite', [RouteController::class, 'addCollectionRoute']);
 
-        Route::get('/municipalities', [AreaController::class, 'index'
-        ]);
-        
-        Route::get('/municipalities/{municipality_id}/barangay', [AreaController::class, 'showBaranggay'
-        ]);
-
-        Route::get('/baranggay/{baranggayId}/purok', [AreaController::class, 'showPurok'
-        ]);
-
-        Route::post('/municipality/baranggay/addBarangay', [AreaController::class, 'addBarangay'
-        ]);
-
-        Route::post('/municipality/baranggay/purok/addPurok', [AreaController::class, 'addPurok'
-        ]);
-
-        Route::post('/municipality/barangay/addNewGarbageSite', [RouteController::class, 'addCollectionRoute'
-        ]);
         // Route::get('Admin/truckRoutes', function () {
         //     return Inertia::render('Admin/truckRoutes');
         // })->name('admin.truckRoutes');

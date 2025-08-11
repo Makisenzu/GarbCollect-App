@@ -23,7 +23,9 @@
         "vite": "^6.2.4"
     },
     "dependencies": {
+        "@sweetalert2/theme-bootstrap-4": "^5.0.27",
         "mapbox-gl": "^3.13.0",
-        "react-icons": "^5.5.0"
+        "react-icons": "^5.5.0",
+        "sweetalert2": "^11.22.3"
     }
 }

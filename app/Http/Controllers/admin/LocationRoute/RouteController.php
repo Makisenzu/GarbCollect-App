@@ -27,6 +27,24 @@ class RouteController extends Controller
         //
     }
 
+    public function getSiteLocation()
+    {
+        try {
+            $siteData = Site::all();
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully fetch the site data',
+                'data' => $siteData
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch all data',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
     public function addCollectionRoute(Request $request)
     {
         $validatedData = $request->validate([
@@ -34,9 +52,9 @@ class RouteController extends Controller
             'site_name' => ['required', 'string', 'max:255'],
             'latitude' => ['required', 'numeric'],
             'longitude' => ['required', 'numeric'],
-            'collection_time' => ['required', 'date_format:H:i:s'],
-            'status' => ['required', 'max:255', 'string'],
-            'additional_notes' => ['required', 'max:255']
+            'collection_time' => ['required', 'date_format:H:i'],
+            'status' => ['required', 'string', 'in:active,inactive'],
+            'additional_notes' => ['nullable', 'string','max:255']
         ]);
 
         try {

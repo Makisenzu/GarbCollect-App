@@ -7,6 +7,8 @@ import { useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ToggleSwitch from '@/Components/ToggleSwitch';
 import { FiCheckCircle } from "react-icons/fi";
+import Swal from 'sweetalert2/dist/sweetalert2.js';
+import { showAlert,  confirmDialog } from '@/SweetAlert'
 import axios from 'axios';
 
 export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = [] }) {
@@ -27,8 +29,10 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
     const [loadingPuroks, setLoadingPuroks] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
+    const [status, setStatus] = useState('active');
+
     const handleToggleChange = (value) => {
-        console.log('Toggle value:', value);
+        setStatus(value ? 'active' : 'inactive');
       };
 
     useEffect(() => {
@@ -83,28 +87,44 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
         e.preventDefault();
         
         if (!data.coordinates) {
-            alert('Please select a location on the map first');
+            showAlert('warning', 'Location Required', 'Please select a location on the map first');
             return;
         }
+
+        (async () => {
+            
+        })
     
         const formData = {
-            ...data,
+            site_name: data.site_name,
+            purok_id: data.purok_id,
             latitude: data.coordinates.lat,
-            longitude: data.coordinates.lng
+            longitude: data.coordinates.lng,
+            collection_time: data.collection_time,
+            status: status,
+            additional_notes: data.notes || null
         };
-    
-        post(route('collection-sites.store'), {
-            data: formData,
-            onSuccess: () => {
-                reset();
-                setShowSuccess(true);
-                setTimeout(() => setShowSuccess(false), 2000);
-                if (onSiteAdded) onSiteAdded({
-                    ...data,
-                    coordinates: data.coordinates
-                });
-            },
-            preserveScroll: true
+
+        axios.post('/municipality/barangay/addNewGarbageSite', formData)
+        .then(response => {
+            Swal.fire({
+                title: "Success!",
+                text: "Site added successfully",
+                icon: "success",
+                draggable: true,
+                confirmButtonText: 'OK'
+            });
+            reset();
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 2000);
+            if(onSiteAdded) onSiteAdded({
+                ...data,
+                coordinates: data.coordinates
+            });
+        })
+        .catch(error => {
+            console.error('Submission error:', error.response);
+            alert(`Error: ${error.response?.data?.message || 'Failed to save site'}`);
         });
     };
 
@@ -242,6 +262,18 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                                 noLabel="Inactive"
                             />
                         </div>
+                    </div>
+                    <div>
+                        <InputLabel htmlFor="notes" value="Additional Notes" />
+                        <textarea
+                            id="notes"
+                            name="notes"
+                            value={data.notes}
+                            rows={3}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            onChange={(e) => setData('notes', e.target.value)}
+                        />
+                        <InputError message={errors.notes} className="mt-2" />
                     </div>
 
                     <div className="flex items-center justify-between mt-6">
