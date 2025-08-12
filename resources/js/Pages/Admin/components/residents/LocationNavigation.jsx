@@ -6,7 +6,6 @@ import { MdDeleteForever } from "react-icons/md";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { showAlert,  confirmDialog } from '@/SweetAlert'
-import axios from 'axios';
 
 export default function LocationNavigation() {
     const [activeTab, setActiveTab] = useState('municipality');
