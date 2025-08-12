@@ -4,6 +4,9 @@ import FormModal from '@/Components/FormModal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { MdDeleteForever } from "react-icons/md";
 import { IoMdAddCircleOutline } from "react-icons/io";
+import Swal from 'sweetalert2/dist/sweetalert2.js';
+import { showAlert,  confirmDialog } from '@/SweetAlert'
+import axios from 'axios';
 
 export default function LocationNavigation() {
     const [activeTab, setActiveTab] = useState('municipality');
@@ -25,6 +28,8 @@ export default function LocationNavigation() {
 
     const [showPurokModal, setShowAddPurokModal] = useState(false);
     const [purokProcessing, setPurokProcessing] = useState(false);
+
+    
 
     const barangayFields = [
         { name: 'psgc_code', label: 'PSGC Code', type: 'text', required: true },

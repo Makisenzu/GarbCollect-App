@@ -29,6 +29,9 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
     const [loadingPuroks, setLoadingPuroks] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
+    const [locationSites, setLocationSites] = useState([]);
+    const [siteAvailable, setSiteAvailable] = useState(true);
+
     const [status, setStatus] = useState('active');
 
     const handleToggleChange = (value) => {
