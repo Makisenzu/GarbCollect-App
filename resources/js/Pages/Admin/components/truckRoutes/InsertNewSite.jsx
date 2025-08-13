@@ -10,6 +10,7 @@ import { FiCheckCircle } from "react-icons/fi";
 import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { showAlert,  confirmDialog } from '@/SweetAlert'
 import axios from 'axios';
+import { CiCirclePlus } from "react-icons/ci";
 
 export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = [] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -133,7 +134,9 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-lg font-semibold mb-4">Add New Garbage Collection Site</h2>
+            <h2 className="text-lg font-semibold mb-4 flex items-center">
+                <CiCirclePlus className="mr-3 align-middle" size={25}/>
+                Add New Garbage Collection Site</h2>
             
             <form onSubmit={handleSubmit}>
                 <div className="space-y-4">

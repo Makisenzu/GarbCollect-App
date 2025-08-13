@@ -6,12 +6,16 @@ import { MdDeleteForever } from "react-icons/md";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { showAlert,  confirmDialog } from '@/SweetAlert'
+import { FaRegEye } from "react-icons/fa";
+import { FaRegTrashCan } from "react-icons/fa6";
+import { CiEdit } from "react-icons/ci";
 
 export default function LocationNavigation() {
     const [activeTab, setActiveTab] = useState('municipality');
     const [selectedMunicipality, setSelectedMunicipality] = useState('');
     const [selectedBarangayId, setSelectedBarangayId] = useState(null);
     const [selectedBarangayName, setSelectedBarangayName] = useState('');
+    const [selectedPurokId, setSelectedPurokId] = useState(null);
 
     const [municipalityData, setMunicipalityData] = useState([]);
     const [baranggayData, setBaranggayData] = useState([]);
@@ -28,6 +32,9 @@ export default function LocationNavigation() {
     const [showPurokModal, setShowAddPurokModal] = useState(false);
     const [purokProcessing, setPurokProcessing] = useState(false);
 
+    const [deleteBarangayId, setDeleteBarangayID] = useState(null);
+    const [deletePurokId, setDeletePurokId] = useState(null);
+    
     
 
     const barangayFields = [
@@ -131,6 +138,43 @@ export default function LocationNavigation() {
             setPurokProcessing(false);
         }
     }
+
+    const handleDeleteBarangay = async (barangayId) => {
+        try {
+          const isConfirmed = await confirmDialog(
+            'Are you sure?',
+            'You are about to delete this barangay. This action cannot be undone.',
+            'Yes, delete it'
+          );
+      
+          if (!isConfirmed) return;
+      
+          await axios.delete(`/municipality/barangay/${barangayId}/delete`);
+          fetchBaranggay(selectedMunicipalityId);
+          showAlert('success', 'Barangay deleted successfully!');
+        } catch (error) {
+          console.error('Error deleting barangay:', error);
+          showAlert('error', error.response?.data?.message || 'Failed to delete barangay');
+        }
+      };
+
+    const handleDeletePurok = async (purokId) => {
+        try {
+            const isDeleteConfirmed = await confirmDialog(
+                'Are you sure?',
+                'You are about to delete this purok. This action cannot be undone.',
+                'Yes, delete it' 
+            );
+            if(!isDeleteConfirmed) return;
+
+            await axios.delete(`/municipality/barangay/purok/${purokId}/delete`);
+            fetchPurok(selectedBarangayId);
+            showAlert('success', 'Purok deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting purok', error);
+            showAlert('error', error.response?.data?.message || 'Failed to delete purok');
+        }
+    }
     
 
     const renderTable = () => {
@@ -147,7 +191,7 @@ export default function LocationNavigation() {
                                         <tr>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Municipality</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barangays</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
@@ -173,7 +217,7 @@ export default function LocationNavigation() {
                                                         }}
                                                         className="text-blue-600 hover:text-blue-900"
                                                     >
-                                                        View Barangay
+                                                        <FaRegEye size={25}/>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -241,6 +285,7 @@ export default function LocationNavigation() {
                                                         <div className="text-sm text-gray-500">{barangay.type || '-'}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                        <div className="flex items-center gap-3">
                                                         <button 
                                                             onClick={() => {
                                                                 setSelectedBarangayId(barangay.id);
@@ -248,10 +293,29 @@ export default function LocationNavigation() {
                                                                 setSelectedBarangayName(barangay.baranggay_name);
                                                                 fetchPurok(barangay.id);
                                                             }}
-                                                            className="text-blue-600 hover:text-blue-900"
+                                                            className="text-gray-600 hover:text-blue-600"
                                                         >
-                                                            View Puroks
+                                                            <FaRegEye size={20}/>
                                                         </button>
+
+                                                        <button
+                                                            onClick={() => {
+
+                                                            }}
+                                                            className="text-gray-600 hover:text-green-600"
+                                                        >
+                                                            <CiEdit size={25}/>
+                                                        </button>
+
+                                                        <button 
+                                                            onClick={() => {
+                                                                handleDeleteBarangay(barangay.id);
+                                                            }}
+                                                            className="text-gray-600 hover:text-red-600"
+                                                        >
+                                                            <FaRegTrashCan size={20}/>
+                                                        </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -324,13 +388,35 @@ export default function LocationNavigation() {
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap">
+
+                                                                <div className="flex items-center gap-2">
                                                                 <button 
-                                                                    onClick={() => {
-                                                                    }}
-                                                                    className="text-blue-600 hover:text-blue-900"
-                                                                >
-                                                                    View Site
-                                                                </button>
+                                                            onClick={() => {
+                                                                setSelectedPurokId(purok.id);
+                                                            }}
+                                                            className="text-gray-600 hover:text-blue-600"
+                                                        >
+                                                            <FaRegEye size={20}/>
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => {
+
+                                                            }}
+                                                            className="text-gray-600 hover:text-green-600"
+                                                        >
+                                                            <CiEdit size={25}/>
+                                                        </button>
+
+                                                        <button 
+                                                            onClick={() => {
+                                                                handleDeletePurok(purok.id);
+                                                            }}
+                                                            className="text-gray-600 hover:text-red-600"
+                                                        >
+                                                            <FaRegTrashCan size={20}/>
+                                                        </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))}

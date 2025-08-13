@@ -38,7 +38,7 @@ export const confirmDialog = (title, text, confirmText = 'Yes') => {
     confirmButtonColor: '#3085d6',
     cancelButtonColor: '#d33',
     confirmButtonText: confirmText
-  })
-}
+  }).then((result) => result.isConfirmed);
+};
 
 export default Swal

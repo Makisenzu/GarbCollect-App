@@ -91,6 +91,42 @@ class AreaController extends Controller
         }
     }
 
+    public function deleteBarangay(string $id)
+    {
+        try {
+            $barangayId = Baranggay::findOrFail($id);
+            $barangayId->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Barangay deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove barangay'
+            ], 500);
+        }
+    }
+
+    public function deletePurok(String $id)
+    {
+        try {
+            $purokId = Purok::findOrFail($id);
+            $purokId->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Purok deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete purok'
+            ]);
+        }
+    }
+
     /**
      * Show the form for creating a new resource.
      */

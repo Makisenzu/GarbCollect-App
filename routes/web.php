@@ -46,6 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/baranggay/{baranggayId}/purok', [AreaController::class, 'showPurok']);
         Route::post('/municipality/baranggay/addBarangay', [AreaController::class, 'addBarangay']);
         Route::post('/municipality/baranggay/purok/addPurok', [AreaController::class, 'addPurok']);
+        Route::delete('/municipality/barangay/{id}/delete', [AreaController::class, 'deleteBarangay']);
+        Route::delete('/municipality/barangay/purok/{id}/delete', [AreaController::class, 'deletePurok']);
 
         //Truck Routes
         Route::get('Admin/truckRoutes', [RouteController::class, 'index'
