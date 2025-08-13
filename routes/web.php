@@ -48,6 +48,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/municipality/baranggay/purok/addPurok', [AreaController::class, 'addPurok']);
         Route::delete('/municipality/barangay/{id}/delete', [AreaController::class, 'deleteBarangay']);
         Route::delete('/municipality/barangay/purok/{id}/delete', [AreaController::class, 'deletePurok']);
+        Route::put('/municipality/barangay/editBarangay/{id}', [AreaController::class, 'editBarangay']);
+        Route::put('/municipality/barangay/editPurok/{id}', [AreaController::class, 'editPurok']);
 
         //Truck Routes
         Route::get('Admin/truckRoutes', [RouteController::class, 'index'

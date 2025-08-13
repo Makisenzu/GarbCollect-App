@@ -56,7 +56,9 @@ class AreaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Added new Barangay',
-                'data' => $barangay
+                'data' => [
+                    'barangay_name' => $barangay->baranggay_name,
+                ]
             ], 201);
             
         } catch (\Exception $e) {
@@ -80,7 +82,10 @@ class AreaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Added New Purok',
-                'data' => $purok
+                'data' => [
+                    'purok_name' => $purok->purok_name,
+                    'id' => $purok->id
+                ]
             ], 200);
         } catch (\Exception $e){
             return response()->json([
@@ -104,7 +109,8 @@ class AreaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to remove barangay'
+                'message' => 'Failed to remove barangay',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -122,7 +128,55 @@ class AreaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete purok'
+                'message' => 'Failed to delete purok',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function editBarangay(Request $request, String $id)
+    {
+        try {
+            $data = $request->validate([
+                'psgc_code' => ['required', 'string', 'max:255'],
+                'baranggay_name' => ['required', 'string', 'max:255'],
+                'type' => ['required', 'in:Urban,Rural']
+            ]);
+            $barangay = Baranggay::findOrFail($id);
+            $barangay->update($data);
+            return response()->json([
+                'success' => true,
+                'message' => 'Barangay edited successfully',
+                'data' => $barangay
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to edit barangay',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function editPurok(Request $request, String $id)
+    {
+        try {
+            $data = $request->validate([
+                'purok_name' => ['required', 'string', 'max:255']
+            ]);
+
+            $purok = Purok::findOrFail($id);
+            $purok->update($data);
+            return response()->json([
+                'success' => true,
+                'message' => 'Purok edited successfully',
+                'data' => $purok
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to edit purok',
+                'error' => $e->getMessage()
             ]);
         }
     }

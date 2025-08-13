@@ -32,6 +32,14 @@ export default function LocationNavigation() {
     const [showPurokModal, setShowAddPurokModal] = useState(false);
     const [purokProcessing, setPurokProcessing] = useState(false);
 
+    const [showEditPurokModal, setShowEditPurokModal] = useState(false);
+    const [editPurokProcessing, setEditPurokProcessing] = useState(false);
+    const [editingPurok, setEditingPurok] = useState(null);
+
+    const [showEditBarangayModal, setShowEditBarangayModal] = useState(false);
+    const [editBarangayProcessing, setEditBarangayProcessing] = useState(false);
+    const [editingBarangay, setEditingBarangay] = useState(null);
+
     const [deleteBarangayId, setDeleteBarangayID] = useState(null);
     const [deletePurokId, setDeletePurokId] = useState(null);
     
@@ -56,6 +64,25 @@ export default function LocationNavigation() {
         {
             name: 'purok_name', label: 'Purok Name', type: 'text', required: true
         }
+    ]
+
+    const editBarangayFields = [
+        { name: 'psgc_code', label: 'PSGC Code', type: 'text', required: true },
+        { name:'baranggay_name', label: 'Barangay Name', type: 'text', required: true },
+        {
+            name: 'type',
+            label: 'Type',
+            type: 'select',
+            options: [
+                { value: 'Urban', label: 'Urban' },
+                { value: 'Rural', label: 'Rural'}
+            ],
+            required: true
+        }
+    ];
+
+    const editPurokFields = [
+        { name: 'purok_name', label: 'Purok Name', type: 'text', required: true }
     ]
 
     useEffect(() => {
@@ -108,9 +135,14 @@ export default function LocationNavigation() {
                 municipality_id: selectedMunicipalityId
             };
             
-            await axios.post('/municipality/baranggay/addBarangay', payload);
-            fetchBaranggay(selectedMunicipalityId);
-            setShowAddBarangayModal(false);
+            const response = await axios.post('/municipality/baranggay/addBarangay', payload);
+            if(response.data.success) {
+                showAlert('success', `${response.data.data.barangay_name} added successfully`);
+                fetchBaranggay(selectedMunicipalityId);
+                setShowAddBarangayModal(false);
+            } else {
+                throw new Error(response.data.message || 'Add failed');
+            }
         } catch (error) {
             console.error('Error adding barangay:', error);
             throw error;
@@ -118,7 +150,7 @@ export default function LocationNavigation() {
             setProcessing(false);
         }
     }
-
+    
     const handleAddPurokSubmit = async (formData) => {
         setPurokProcessing(true);
         try {
@@ -126,16 +158,70 @@ export default function LocationNavigation() {
                 ...formData,
                 baranggay_id: selectedBarangayId
             };
-
-            await axios.post('/municipality/baranggay/purok/addPurok', payload);
+    
+            const response = await axios.post('/municipality/baranggay/purok/addPurok', payload);
+            
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Failed to add purok');
+            }
+    
+            showAlert('success', `${response.data.data.purok_name} added successfully`);
             fetchPurok(selectedBarangayId);
             fetchBaranggay(selectedBarangayId);
             setShowAddPurokModal(false);
+            
         } catch (error) {
-            console.error('Error adding purok: ', error);
-            throw error;
+            console.error('Error adding purok:', error);
+            showAlert(
+                'error', 
+                error.response?.data?.message || 
+                error.message || 
+                'Failed to add purok. Please try again.'
+            );
         } finally {
             setPurokProcessing(false);
+        }
+    }
+
+    const handleEditBarangaySubmit = async (formData) => {
+        setEditBarangayProcessing(true);
+        try {
+            const response = await axios.put(
+                `/municipality/barangay/editBarangay/${selectedBarangayId}`,
+                formData
+            );
+
+            if (response.data.success) {
+                showAlert('success', 'Barangay updated successfully!');
+                fetchBaranggay(selectedMunicipalityId);
+                setShowEditBarangayModal(false);
+            } else {
+                throw new Error(response.data.message || 'Update failed');
+            }
+        } catch (error) {
+            console.error('Failed to update barangay:', error);
+            showAlert('error', error.response?.data?.message || 'Failed to update barangay');
+        } finally {
+            setEditBarangayProcessing(false);
+        }
+    }
+
+    const handleEditPurokSubmit = async (formData) => {
+        setEditPurokProcessing(true);
+        try {
+            const response = await axios.put(`/municipality/barangay/editPurok/${selectedPurokId}`, formData);
+            if (response.data.success) {
+                showAlert('success', 'Purok updated successfully!');
+                fetchPurok(selectedBarangayId);
+                setShowEditPurokModal(false);
+            } else {
+                throw new Error(response.data.message || 'Update failed');
+            }
+        } catch (error) {
+            console.error('Failed to update purok: ', error);
+            showAlert('error', error.response?.data?.message || 'Failed to update purok');
+        } finally {
+            setEditPurokProcessing(false);
         }
     }
 
@@ -215,7 +301,7 @@ export default function LocationNavigation() {
                                                             setSelectedMunicipalityId(municipality.id);
                                                             fetchBaranggay(municipality.id);
                                                         }}
-                                                        className="text-blue-600 hover:text-blue-900"
+                                                        className="text-gray-600 hover:text-blue-600"
                                                     >
                                                         <FaRegEye size={25}/>
                                                     </button>
@@ -286,7 +372,7 @@ export default function LocationNavigation() {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex items-center gap-3">
-                                                        <button 
+                                                        <button title='View Barangay'
                                                             onClick={() => {
                                                                 setSelectedBarangayId(barangay.id);
                                                                 setActiveTab('purok');
@@ -300,7 +386,9 @@ export default function LocationNavigation() {
 
                                                         <button
                                                             onClick={() => {
-
+                                                                setSelectedBarangayId(barangay.id);
+                                                                setEditingBarangay(barangay);
+                                                                setShowEditBarangayModal(true);
                                                             }}
                                                             className="text-gray-600 hover:text-green-600"
                                                         >
@@ -401,7 +489,9 @@ export default function LocationNavigation() {
 
                                                         <button
                                                             onClick={() => {
-
+                                                                setSelectedPurokId(purok.id);
+                                                                setEditingPurok(purok);
+                                                                setShowEditPurokModal(true);
                                                             }}
                                                             className="text-gray-600 hover:text-green-600"
                                                         >
@@ -456,6 +546,7 @@ export default function LocationNavigation() {
                 onSubmit={handleAddBarangaySubmit}
                 submitText={processing ? 'Adding...' : 'Add Barangay'}
                 processing={processing}
+                initialData={{}}
             />
 
             <FormModal
@@ -466,6 +557,28 @@ export default function LocationNavigation() {
                 onSubmit={handleAddPurokSubmit}
                 submitText={purokProcessing ? 'Adding...' : 'Add Purok'}
                 processing={purokProcessing}
+            />
+
+            <FormModal
+                show={showEditBarangayModal}
+                onClose={() => setShowEditBarangayModal(false)}
+                title="Edit Barangay"
+                initialData={editingBarangay}
+                fields={editBarangayFields}
+                onSubmit={handleEditBarangaySubmit}
+                submitText={editBarangayProcessing ? 'Editing....' : 'Edit Barangay'}
+                processing={editBarangayProcessing}
+            />
+
+            <FormModal
+                show={showEditPurokModal}
+                onClose={() => setShowEditPurokModal(false)}
+                title="Edit Purok"
+                initialData={editingPurok}
+                fields={editPurokFields}
+                onSubmit={handleEditPurokSubmit}
+                submitText={editPurokProcessing ? 'Editing....' : 'Edit Purok'}
+                processing={editPurokProcessing}
             />
         </div>
     );

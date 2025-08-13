@@ -11,6 +11,7 @@ import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { showAlert,  confirmDialog } from '@/SweetAlert'
 import axios from 'axios';
 import { CiCirclePlus } from "react-icons/ci";
+import { CiLocationOn } from "react-icons/ci";
 
 export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = [] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -135,7 +136,7 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
     return (
         <div className="bg-white p-6 rounded-lg shadow-sm">
             <h2 className="text-lg font-semibold mb-4 flex items-center">
-                <CiCirclePlus className="mr-3 align-middle" size={25}/>
+                <CiLocationOn className="mr-3 align-middle" size={25}/>
                 Add New Garbage Collection Site</h2>
             
             <form onSubmit={handleSubmit}>
@@ -224,8 +225,8 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4" hidden>
-                        <div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div hidden>
                             <InputLabel value="Latitude" />
                             <TextInput
                                 value={data.coordinates?.lat?.toFixed(6) || 'Not selected'}
@@ -233,7 +234,7 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                                 readOnly
                             />
                         </div>
-                        <div>
+                        <div hidden>
                             <InputLabel value="Longitude" />
                             <TextInput
                                 value={data.coordinates?.lng?.toFixed(6) || 'Not selected'}
@@ -269,6 +270,11 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                             />
                         </div>
                     </div>
+
+                    {/* <div>
+                        <InputLabel htmlFor="collection_date" value="Collection Date"></InputLabel>
+                        <InputError message={error.collection_date} className="mt-2"/>
+                    </div> */}
                     <div>
                         <InputLabel htmlFor="notes" value="Additional Notes" />
                         <textarea
