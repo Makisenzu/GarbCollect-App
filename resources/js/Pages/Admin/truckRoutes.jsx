@@ -57,7 +57,7 @@ export default function TruckRoutes({ auth, mapboxKey }) {
             default:
                 return null;
         }
-    };
+    }; 
 
     return (
         <AuthenticatedLayout
