@@ -1,5 +1,8 @@
 import { useRef, useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import mapboxgl from 'mapbox-gl';
+import ReactDOM from 'react-dom';
+import { BiCurrentLocation } from "react-icons/bi";
 
 export default function Map({ mapboxKey, onLocationSelect }) {
     const mapContainer = useRef(null);
@@ -40,12 +43,20 @@ export default function Map({ mapboxKey, onLocationSelect }) {
                 markerRef.current.remove();
                 markerRef.current = null;
             }
+            const el = document.createElement('div');
+            el.className = 'custom-marker';
+            
+            const root = createRoot(el);
+            root.render(<BiCurrentLocation size={32} color="#ff0000" />);
 
             markerRef.current = new mapboxgl.Marker({
+                element: el,
                 draggable: false
             })
                 .setLngLat([lng, lat])
                 .addTo(map.current);
+
+                markerRef.current._root = root;
             
             try {
                 const response = await fetch(
