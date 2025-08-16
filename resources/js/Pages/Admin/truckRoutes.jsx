@@ -9,12 +9,15 @@ export default function TruckRoutes({ auth, mapboxKey }) {
     const [activeTab, setActiveTab] = useState('map');
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [collectionSites, setCollectionSites] = useState([]);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
 
     const handleLocationSelect = (location) => {
         setSelectedLocation(location);
     };
 
     const handleSiteAdded = (newSite) => {
+        setRefreshTrigger(prev => prev + 1);
         setCollectionSites([...collectionSites, {
             lng: newSite.coordinates.lng,
             lat: newSite.coordinates.lat,
@@ -37,6 +40,7 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                                             mapboxKey={mapboxKey || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
                                             onLocationSelect={handleLocationSelect}
                                             collectionSites={collectionSites}
+                                            refreshTrigger={refreshTrigger}
                                         />
                                     </div>
                                 </div>
@@ -57,7 +61,7 @@ export default function TruckRoutes({ auth, mapboxKey }) {
             default:
                 return null;
         }
-    };
+    }; 
 
     return (
         <AuthenticatedLayout
