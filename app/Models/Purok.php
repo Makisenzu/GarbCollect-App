@@ -18,4 +18,8 @@ class Purok extends Model
     public function baranggay () {
         return $this->belongsTo(Baranggay::class);
     }
+
+    public function sites () {
+        return $this->hasMany(Site::class);
+    }
 }

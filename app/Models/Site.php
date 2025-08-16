@@ -11,8 +11,12 @@ class Site extends Model
         'site_name',
         'latitude',
         'longitude',
-        'collection_time',
+        'type',
         'status',
         'additional_notes',
     ];
+
+    public function purok () {
+        return $this->belongsTo(Purok::class);
+    }
 }

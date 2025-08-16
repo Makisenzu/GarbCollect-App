@@ -17,7 +17,7 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
     const { data, setData, post, processing, errors, reset } = useForm({
         site_name: '',
         collection_day: 'Monday',
-        collection_time: '08:00',
+        type: 'site',
         barangay_id: '',
         purok_id: '',
         coordinates: null,
@@ -105,7 +105,7 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
             purok_id: data.purok_id,
             latitude: data.coordinates.lat,
             longitude: data.coordinates.lng,
-            collection_time: data.collection_time,
+            type: data.type,
             status: status,
             additional_notes: data.notes || null
         };
@@ -246,17 +246,19 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
 
                     <div className='grid grid-cols-2 gap-4'>
                         <div>
-                            <InputLabel htmlFor="collection_time" value="Collection Time *" />
-                            <TextInput
-                                type="time"
-                                id="collection_time"
-                                name="collection_time"
-                                value={data.collection_time}
-                                className="mt-1 block w-full"
-                                onChange={(e) => setData('collection_time', e.target.value)}
+                            <InputLabel htmlFor="type" value="Collection Type *" />
+                            <select
+                                id="type"
+                                name="type"
+                                value={data.type}
+                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                onChange={(e) => setData('type', e.target.value)}
                                 required
-                            />
-                            <InputError message={errors.collection_time} className="mt-2" />
+                            >
+                                <option value="site">Site</option>
+                                <option value="station">Station</option>
+                            </select>
+                            <InputError message={errors.type} className="mt-2" />
                             </div>
 
 

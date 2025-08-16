@@ -30,7 +30,7 @@ class RouteController extends Controller
     public function getSiteLocation()
     {
         try {
-            $siteData = Site::all();
+            $siteData = Site::with(['purok.baranggay'])->get();
             return response()->json([
                 'success' => true,
                 'message' => 'Successfully fetch the site data',
@@ -52,7 +52,7 @@ class RouteController extends Controller
             'site_name' => ['required', 'string', 'max:255'],
             'latitude' => ['required', 'numeric'],
             'longitude' => ['required', 'numeric'],
-            'collection_time' => ['required', 'date_format:H:i'],
+            'type' => ['required', 'string', 'max:255'],
             'status' => ['required', 'string', 'in:active,inactive'],
             'additional_notes' => ['nullable', 'string','max:255']
         ]);

@@ -3,9 +3,10 @@ import { createRoot } from 'react-dom/client';
 import mapboxgl from 'mapbox-gl';
 import { GrLocationPin } from "react-icons/gr";
 import { ImLocation } from "react-icons/im";
+import { GiControlTower } from "react-icons/gi";
 import axios from 'axios';
 
-export default function Map({ mapboxKey, onLocationSelect }) {
+export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const markerRef = useRef(null);
@@ -13,6 +14,8 @@ export default function Map({ mapboxKey, onLocationSelect }) {
     const [cssLoaded, setCssLoaded] = useState(false);
     const [siteLocations, setSiteLocations] = useState([]);
     const [mapInitialized, setMapInitialized] = useState(false);
+
+    const [color, setColor] = useState(null);
 
     useEffect(() => {
         const link = document.createElement('link');
@@ -38,7 +41,7 @@ export default function Map({ mapboxKey, onLocationSelect }) {
             }
         };
         fetchLocations();
-    }, []);
+    }, [refreshTrigger]);
 
     useEffect(() => {
         if (!cssLoaded || !mapboxKey || map.current || !mapContainer.current) return;
@@ -107,7 +110,7 @@ export default function Map({ mapboxKey, onLocationSelect }) {
             }
             setMapInitialized(false);
         };
-    }, [mapboxKey, cssLoaded]);
+    }, [mapboxKey, cssLoaded, refreshTrigger]);
 
     useEffect(() => {
         if (mapInitialized && siteLocations.length > 0) {
@@ -143,12 +146,35 @@ export default function Map({ mapboxKey, onLocationSelect }) {
     const addMarker = (coordinates, type = 'manual', title = '', siteData = null) => {
         const el = document.createElement('div');
         el.className = 'custom-marker';
-        
-        const color = type === 'site' ? '#34A853' : '#FC2622';
-        const size = type === 'site' ? 30 : 40;
+        const barangay_colors =  {
+            'Alegria' : '#FC2622',
+            'Barangay 1' : '#34A853',
+            'Barangay 2' : '#4285F4',
+            '_default' : '#4F262A'
+        }
+
+        let markerColor = '';
+
+        const barangay_name = siteData.purok?.baranggay?.baranggay_name;
+        const markerType = siteData?.type || 'site';
+
+        markerColor = barangay_colors[barangay_name] || barangay_colors['_default'];
+    
+        const size = type === 'site' ? 30 : 15;
         
         const root = createRoot(el);
-        root.render(<ImLocation size={size} color={color} />);
+        
+        if(type === 'manual') {
+            root.render(<GrLocationPin size={15} color="#FC2622" />);
+        } else {
+            if (markerType === 'station') {
+                root.render(<GiControlTower size={size} color={'#4F262A'} />);
+            } else {
+                root.render(<ImLocation size={size} color={markerColor} />);
+            }
+        }
+
+        // root.render(<ImLocation size={size} color={markerColor} />);
 
         const marker = new mapboxgl.Marker({
             element: el,
@@ -156,14 +182,15 @@ export default function Map({ mapboxKey, onLocationSelect }) {
         })
         .setLngLat(coordinates)
         .addTo(map.current);
-
+    
         if (type === 'site' && title) {
             const popupContent = `
                 <div class="p-2">
                     <h3 class="font-bold">${title}</h3>
                     ${siteData ? `
-                        <p><strong>Purok:</strong> ${siteData.purok?.name || 'N/A'}</p>
-                        <p><strong>Collection Time:</strong> ${siteData.collection_time}</p>
+                        <p><strong>Barangay:</strong> ${siteData.purok?.baranggay?.baranggay_name || 'N/A'}</p>
+                        <p><strong>Purok:</strong> ${siteData.purok?.purok_name || 'N/A'}</p>
+                        <p><strong>Type:</strong> ${siteData.type}</p>
                         <p><strong>Status:</strong> ${siteData.status}</p>
                         ${siteData.additional_notes ? `<p><strong>Notes:</strong> ${siteData.additional_notes}</p>` : ''}
                     ` : ''}
@@ -173,11 +200,11 @@ export default function Map({ mapboxKey, onLocationSelect }) {
                 .setHTML(popupContent);
             marker.setPopup(popup);
         }
-
+    
         if (type === 'manual') {
             markerRef.current = marker;
         }
-
+    
         marker._root = root;
         return marker;
     };
