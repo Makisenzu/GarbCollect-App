@@ -12,6 +12,7 @@ import { showAlert,  confirmDialog } from '@/SweetAlert'
 import axios from 'axios';
 import { CiCirclePlus } from "react-icons/ci";
 import { CiLocationOn } from "react-icons/ci";
+import Select from 'react-select';
 
 export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = [] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -31,10 +32,20 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
     const [loadingPuroks, setLoadingPuroks] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    const [locationSites, setLocationSites] = useState([]);
-    const [siteAvailable, setSiteAvailable] = useState(true);
+    // const [locationSites, setLocationSites] = useState([]);
+    // const [siteAvailable, setSiteAvailable] = useState(true);
 
     const [status, setStatus] = useState('active');
+
+    const purokOptions = puroks.map(purok => ({
+        value: purok.id,
+        label: purok.purok_name
+      }));
+
+    const options = barangays.map(barangay => ({
+        value: barangay.id,
+        label: barangay.baranggay_name
+      }));
 
     const handleToggleChange = (value) => {
         setStatus(value ? 'active' : 'inactive');
@@ -154,55 +165,78 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                         <InputError message={errors.site_name} className="mt-2" />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <InputLabel htmlFor="barangay_id" value="Barangay *" />
-                            <select
-                                id="barangay_id"
-                                name="barangay_id"
-                                value={data.barangay_id}
-                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                onChange={(e) => setData('barangay_id', e.target.value)}
-                                disabled={loadingBarangays}
-                                required
-                            >
-                                <option value="">Select Barangay</option>
-                                {barangays.map((barangay) => (
-                                    <option key={barangay.id} value={barangay.id}>
-                                        {barangay.baranggay_name}
-                                    </option>
-                                ))}
-                            </select>
-                            {loadingBarangays && (
-                                <p className="mt-1 text-sm text-gray-500">Loading barangays...</p>
-                            )}
-                            <InputError message={errors.barangay_id} className="mt-2" />
-                        </div>
-                        
-                        <div>
-                            <InputLabel htmlFor="purok_id" value="Purok/Sitio *" />
-                            <select
-                                id="purok_id"
-                                name="purok_id"
-                                value={data.purok_id}
-                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                onChange={(e) => setData('purok_id', e.target.value)}
-                                disabled={!data.barangay_id || loadingPuroks}
-                                required
-                            >
-                                <option value="">Select Purok</option>
-                                {puroks.map((purok) => (
-                                    <option key={purok.id} value={purok.id}>
-                                        {purok.purok_name}
-                                    </option>
-                                ))}
-                            </select>
-                            {loadingPuroks && (
-                                <p className="mt-1 text-sm text-gray-500">Loading puroks...</p>
-                            )}
-                            <InputError message={errors.purok_id} className="mt-2" />
-                        </div>
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                    <InputLabel htmlFor="barangay_id" value="Barangay *" />
+                    <div className="relative mt-1">
+                    <Select
+                        id="barangay_id"
+                        name="barangay_id"
+                        value={options.find(option => option.value === data.barangay_id) || null}
+                        onChange={(selectedOption) => setData('barangay_id', selectedOption?.value || '')}
+                        options={options}
+                        placeholder="Select Barangay"
+                        isDisabled={loadingBarangays}
+                        required
+                        maxMenuHeight={200}
+                        className="text-sm"
+                        styles={{
+                            control: (base) => ({
+                            ...base,
+                            borderColor: '#d1d5db',
+                            '&:hover': { borderColor: '#d1d5db' },
+                            '&:focus': { borderColor: '#6366f1', boxShadow: '0 0 0 1px #6366f1' }
+                            })
+                        }}
+                    />
+                      {loadingBarangays && (
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          </div>
+                      )}
+                      </div>
+                      <InputError message={errors.barangay_id} className="mt-2" />
+                  </div>
+
+                  <div>
+                      <InputLabel htmlFor="purok_id" value="Purok/Sitio *" />
+                      <div className="relative mt-1">
+                            <Select
+                            id="purok_id"
+                            name="purok_id"
+                            value={purokOptions.find(option => option.value === data.purok_id) || null}
+                            onChange={(selectedOption) => setData('purok_id', selectedOption?.value || '')}
+                            options={purokOptions}
+                            placeholder="Select Purok"
+                            isDisabled={!data.barangay_id || loadingPuroks}
+                            required
+                            maxMenuHeight={200}
+                            className="text-sm"
+                            styles={{
+                                control: (base) => ({
+                                ...base,
+                                borderColor: '#d1d5db',
+                                '&:hover': { borderColor: '#d1d5db' },
+                                '&:focus': { borderColor: '#6366f1', boxShadow: '0 0 0 1px #6366f1' }
+                                })
+                            }}
+                            />
+                      {loadingPuroks && (
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          </div>
+                      )}
+                      </div>
+                      <InputError message={errors.purok_id} className="mt-2" />
+                  </div>
+                  </div>
 
                     {trucks.length > 0 && (
                         <div>
