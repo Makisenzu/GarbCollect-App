@@ -147,10 +147,34 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
         const el = document.createElement('div');
         el.className = 'custom-marker';
         const barangay_colors =  {
-            'Alegria' : '#FC2622',
-            'Barangay 1' : '#34A853',
-            'Barangay 2' : '#4285F4',
-            '_default' : '#4F262A'
+        'Alegria': '#FF5733',
+        'Barangay 1': '#33FF57',
+        'Barangay 2': '#3357FF',
+        'Barangay 3': '#F033FF',
+        'Barangay 4': '#FF33F0',
+        'Barangay 5': '#33FFF0',
+        'Bayugan 2': '#8A2BE2',
+        'Bitan-agan': '#A52A2A',
+        'Borbon': '#DEB887',
+        'Buenasuerte': '#5F9EA0',
+        'Caimpugan': '#7FFF00',
+        'Das-agan': '#D2691E',
+        'Ebro': '#FF7F50',
+        'Hubang': '#6495ED',
+        'Karaus': '#DC143C',
+        'Ladgadan': '#00FFFF',
+        'Lapinigan': '#00008B',
+        'Lucac': '#008B8B',
+        'Mate': '#B8860B',
+        'New Visayas': '#006400',
+        'Ormaca': '#8B008B',
+        'Pasta': '#556B2F',
+        'Pisa-an': '#FF8C00',
+        'Rizal': '#9932CC',
+        'San Isidro': '#8FBC8F',
+        'Santa Ana': '#483D8B',
+        'Tagapua': '#2F4F4F',
+        '_default': '#4F262A'
         }
 
         let markerColor = '';
