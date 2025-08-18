@@ -205,26 +205,26 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                   <div>
                       <InputLabel htmlFor="purok_id" value="Purok/Sitio *" />
                       <div className="relative mt-1">
-<Select
-  id="purok_id"
-  name="purok_id"
-  value={purokOptions.find(option => option.value === data.purok_id) || null}
-  onChange={(selectedOption) => setData('purok_id', selectedOption?.value || '')}
-  options={purokOptions}
-  placeholder="Select Purok"
-  isDisabled={!data.barangay_id || loadingPuroks}
-  required
-  maxMenuHeight={200}
-  className="text-sm"
-  styles={{
-    control: (base) => ({
-      ...base,
-      borderColor: '#d1d5db',
-      '&:hover': { borderColor: '#d1d5db' },
-      '&:focus': { borderColor: '#6366f1', boxShadow: '0 0 0 1px #6366f1' }
-    })
-  }}
-/>
+                            <Select
+                            id="purok_id"
+                            name="purok_id"
+                            value={purokOptions.find(option => option.value === data.purok_id) || null}
+                            onChange={(selectedOption) => setData('purok_id', selectedOption?.value || '')}
+                            options={purokOptions}
+                            placeholder="Select Purok"
+                            isDisabled={!data.barangay_id || loadingPuroks}
+                            required
+                            maxMenuHeight={200}
+                            className="text-sm"
+                            styles={{
+                                control: (base) => ({
+                                ...base,
+                                borderColor: '#d1d5db',
+                                '&:hover': { borderColor: '#d1d5db' },
+                                '&:focus': { borderColor: '#6366f1', boxShadow: '0 0 0 1px #6366f1' }
+                                })
+                            }}
+                            />
                       {loadingPuroks && (
                           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                           <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
