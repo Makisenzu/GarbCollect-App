@@ -36,6 +36,12 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
     // const [siteAvailable, setSiteAvailable] = useState(true);
 
     const [status, setStatus] = useState('active');
+
+    const purokOptions = puroks.map(purok => ({
+        value: purok.id,
+        label: purok.purok_name
+      }));
+
     const options = barangays.map(barangay => ({
         value: barangay.id,
         label: barangay.baranggay_name
@@ -199,22 +205,26 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                   <div>
                       <InputLabel htmlFor="purok_id" value="Purok/Sitio *" />
                       <div className="relative mt-1">
-                      <select
-                          id="purok_id"
-                          name="purok_id"
-                          value={data.purok_id}
-                          className="block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-3 pr-10 text-base sm:text-sm"
-                          onChange={(e) => setData('purok_id', e.target.value)}
-                          disabled={!data.barangay_id || loadingPuroks}
-                          required
-                      >
-                          <option value="">Select Purok</option>
-                          {puroks.map((purok) => (
-                          <option key={purok.id} value={purok.id}>
-                              {purok.purok_name}
-                          </option>
-                          ))}
-                      </select>
+<Select
+  id="purok_id"
+  name="purok_id"
+  value={purokOptions.find(option => option.value === data.purok_id) || null}
+  onChange={(selectedOption) => setData('purok_id', selectedOption?.value || '')}
+  options={purokOptions}
+  placeholder="Select Purok"
+  isDisabled={!data.barangay_id || loadingPuroks}
+  required
+  maxMenuHeight={200}
+  className="text-sm"
+  styles={{
+    control: (base) => ({
+      ...base,
+      borderColor: '#d1d5db',
+      '&:hover': { borderColor: '#d1d5db' },
+      '&:focus': { borderColor: '#6366f1', boxShadow: '0 0 0 1px #6366f1' }
+    })
+  }}
+/>
                       {loadingPuroks && (
                           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                           <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
