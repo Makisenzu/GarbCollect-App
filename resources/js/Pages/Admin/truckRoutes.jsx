@@ -55,7 +55,22 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                     </div>
                 );
             case 'routes':
-                return <div className="bg-white p-4 rounded-lg shadow-sm">Routes content will be displayed here</div>;
+                return (
+                    <div className="lg:col-span-2">
+                            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+                                <div className="p-0">
+                                    <div className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] min-h-[300px] w-full">
+                                        <Map 
+                                            mapboxKey={mapboxKey || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                                            onLocationSelect={handleLocationSelect}
+                                            collectionSites={collectionSites}
+                                            refreshTrigger={refreshTrigger}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                    </div>
+                );
             case 'schedule':
                 return <div className="bg-white p-4 rounded-lg shadow-sm">Schedule content will be displayed here</div>;
             default:
