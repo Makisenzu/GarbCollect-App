@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import Map from './components/truckRoutes/Map';
+import RouteMap from './components/truckRoutes/RouteMap';
 import InsertNewSite from './components/truckRoutes/InsertNewSite';
 import { FaMap, FaRoute, FaCalendarAlt } from 'react-icons/fa';
 
@@ -60,11 +61,10 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                             <div className="overflow-hidden rounded-lg bg-white shadow-sm">
                                 <div className="p-0">
                                     <div className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] min-h-[300px] w-full">
-                                        <Map 
+                                        <RouteMap 
                                             mapboxKey={mapboxKey || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
                                             onLocationSelect={handleLocationSelect}
                                             collectionSites={collectionSites}
-                                            refreshTrigger={refreshTrigger}
                                         />
                                     </div>
                                 </div>
