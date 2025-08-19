@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('provinces', function (Blueprint $table) {
             $table->id();
-            $table->string('psgc_code')->unique();
             $table->string('province_name');
             $table->string('capital')->nullable();
             $table->timestamps();

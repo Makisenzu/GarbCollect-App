@@ -46,7 +46,6 @@ export default function LocationNavigation() {
     
 
     const barangayFields = [
-        { name: 'psgc_code', label: 'PSGC Code', type: 'text', required: true },
         { name: 'baranggay_name', label: 'Barangay Name', type: 'text', required: true },
         { 
             name: 'type', 
@@ -67,7 +66,6 @@ export default function LocationNavigation() {
     ]
 
     const editBarangayFields = [
-        { name: 'psgc_code', label: 'PSGC Code', type: 'text', required: true },
         { name:'baranggay_name', label: 'Barangay Name', type: 'text', required: true },
         {
             name: 'type',

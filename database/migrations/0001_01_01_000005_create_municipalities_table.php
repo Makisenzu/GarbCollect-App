@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('municipalities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('province_id')->constrained('provinces')->cascadeOnDelete();
-            $table->string('psgc_code')->unique();
             $table->string('municipality_name');
             $table->enum('type', ['city', 'municipality'])->nullable();
             $table->string('is_capital')->default('false');

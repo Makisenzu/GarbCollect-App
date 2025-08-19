@@ -45,7 +45,6 @@ class AreaController extends Controller
 
     public function addBarangay(Request $request){
         $validatedData = $request->validate([
-            'psgc_code' => ['required', 'string', 'max:255', 'unique:baranggays,psgc_code'],
             'baranggay_name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', 'in:Urban,Rural'],
             'municipality_id' => ['required', 'exists:municipalities,id'],
@@ -138,7 +137,6 @@ class AreaController extends Controller
     {
         try {
             $data = $request->validate([
-                'psgc_code' => ['required', 'string', 'max:255'],
                 'baranggay_name' => ['required', 'string', 'max:255'],
                 'type' => ['required', 'in:Urban,Rural']
             ]);

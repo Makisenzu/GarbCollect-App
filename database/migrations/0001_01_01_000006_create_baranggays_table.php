@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('baranggays', function (Blueprint $table) {
             $table->id();
             $table->foreignId('municipality_id')->constrained('municipalities')->cascadeOnDelete();
-            $table->string('psgc_code')->unique();
             $table->string('baranggay_name');
             $table->enum('type', ['Urban', 'Rural'])->nullable();
             $table->timestamps();
