@@ -197,10 +197,9 @@ export default function RouteMap({ mapboxKey, onLocationSelect}) {
                 <div class="p-2">
                     <h3 class="font-bold">${title}</h3>
                     ${siteData ? `
+                        <p><strong>Site #: </strong>${siteData.id}</p>
                         <p><strong>Barangay:</strong> ${siteData.purok?.baranggay?.baranggay_name || 'N/A'}</p>
                         <p><strong>Purok:</strong> ${siteData.purok?.purok_name || 'N/A'}</p>
-                        <p><strong>Type:</strong> ${siteData.type}</p>
-                        <p><strong>Status:</strong> ${siteData.status}</p>
                         ${siteData.additional_notes ? `<p><strong>Notes:</strong> ${siteData.additional_notes}</p>` : '<p><strong>Notes:</strong> None</storn></p>'}
                     ` : ''}
                 </div>
