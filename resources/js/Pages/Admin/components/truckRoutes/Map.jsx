@@ -50,10 +50,10 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
 
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
-            style: 'mapbox://styles/mapbox/streets-v12',
+            style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
             center: [125.97666490, 8.50410607],
             attributionControl: false,
-            zoom: 13
+            zoom: 13,
         });
 
         map.current.on('load', () => {
