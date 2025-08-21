@@ -2,7 +2,7 @@ import React from 'react';
 import Hero from './components/Hero';
 import Features from './components/Features';
 import Header from './components/Header';
-import TrackTrucks from './components/TrackTrucks';
+import TrackSites from './components/TrackSites';
 
 const Home = () => {
   return (
@@ -10,7 +10,7 @@ const Home = () => {
     >
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
         <Hero />
-        <TrackTrucks/>
+        <TrackSites/>
         <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-2 gap-8">
         </div>
         <footer className="bg-green-800 text-white py-8 mt-12 -mb-8">
