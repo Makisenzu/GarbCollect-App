@@ -1,4 +1,3 @@
-// components/TrackTrucks.jsx
 import React from 'react';
 
 const TrackTrucks = () => {
