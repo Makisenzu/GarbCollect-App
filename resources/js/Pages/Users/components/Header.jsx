@@ -16,7 +16,7 @@ export default function Header({ header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="bg-gray-100">
             <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 bg-white shadow-sm">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
@@ -197,12 +197,6 @@ export default function Header({ header, children }) {
                 <main className="pb-8">
                     {children}
                 </main>
-                <footer className="bg-green-800 text-white py-8 mt-12">
-          <div className="max-w-6xl mx-auto px-4 text-center">
-            <p>© 2025 GarbCollect. All rights reserved.</p>
-            <p className="mt-2 text-green-200">San Francisco Garbage Collection Routing</p>
-          </div>
-        </footer>
             </div>
         </div>
     );
