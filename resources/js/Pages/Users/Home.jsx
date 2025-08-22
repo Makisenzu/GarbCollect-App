@@ -2,8 +2,8 @@ import React from 'react';
 import Hero from './components/HomeComponents/Hero';
 import Features from './components/HomeComponents/Features';
 import Header from './components/HomeComponents/Header';
-import TrackSites from './components/HomeComponents/TrackSites';
-import photo from "@/images/map.png";
+import DisplayComponents from './components/HomeComponents/DisplayComponent';
+import photo from "@/images/throw.png";
 
 const Home = () => {
   return (
@@ -11,7 +11,7 @@ const Home = () => {
     >
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
         <Hero />
-        <TrackSites
+        <DisplayComponents
             title="Everything You Need for Waste Management"
             description="Comprehensive tools and information to make garbage collection efficient and hassle-free"
             subtitle="Routes"

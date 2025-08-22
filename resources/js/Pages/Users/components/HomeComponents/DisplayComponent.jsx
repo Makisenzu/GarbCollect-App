@@ -41,14 +41,15 @@ const TrackSites = ({
           </div>
 
           <div className="flex justify-center order-1 md:order-2">
-            <div className="w-full max-w-xs sm:max-w-sm md:max-w-md">
+            <div className="w-full sm:max-w-sm md:max-w-md">
               <img
                 src={imageSrc}
                 alt={imageAlt}
-                className="w-full h-64 sm:h-72 md:h-80 object-cover rounded-lg shadow-md"
+                className="w-full h-auto object-cover rounded-lg"
               />
             </div>
           </div>
+
         </div>
       </div>
     </section>

@@ -73,7 +73,7 @@ export default function Header({ header, children }) {
                                                 className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
                                             >
                                                 <div className="flex items-center">
-                                                    <TiThMenu className="mr-2" size={25} />
+                                                    <TiThMenu className="mr-2" size={17} />
                                                     {/* <svg
                                                         className="ml-2 h-4 w-4"
                                                         xmlns="http://www.w3.org/2000/svg"
