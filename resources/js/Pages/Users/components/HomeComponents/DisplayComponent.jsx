@@ -1,6 +1,6 @@
 import React from "react";
 
-const TrackSites = ({
+const DisplayComponents = ({
   title,
   description,
   subtitle,
@@ -9,11 +9,12 @@ const TrackSites = ({
   buttonAction,
   imageSrc,
   imageAlt,
+  reverse = false,
 }) => {
   return (
-    <section className="py-12 md:py-16 bg-white">
+    <section className="py-4 md:py-10 bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 md:mb-16">
+        <div className="text-center mb-8 md:mb-10">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-3 md:mb-4">
             {title}
           </h2>
@@ -23,7 +24,25 @@ const TrackSites = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center">
-          <div className="text-center md:text-left order-2 md:order-1">
+          <div
+            className={`flex justify-center ${
+              reverse ? "order-1 md:order-2" : "order-1 md:order-1"
+            }`}
+          >
+            <div className="w-full sm:max-w-sm md:max-w-md">
+              <img
+                src={imageSrc}
+                alt={imageAlt}
+                className="w-full h-auto object-cover rounded-lg"
+              />
+            </div>
+          </div>
+
+          <div
+            className={`text-center md:text-left ${
+              reverse ? "order-2 md:order-1" : "order-2 md:order-2"
+            }`}
+          >
             <h3 className="text-xl sm:text-2xl md:text-3xl font-light text-gray-800 mb-3 md:mb-4">
               {subtitle}
             </h3>
@@ -39,21 +58,10 @@ const TrackSites = ({
               </button>
             )}
           </div>
-
-          <div className="flex justify-center order-1 md:order-2">
-            <div className="w-full sm:max-w-sm md:max-w-md">
-              <img
-                src={imageSrc}
-                alt={imageAlt}
-                className="w-full h-auto object-cover rounded-lg"
-              />
-            </div>
-          </div>
-
         </div>
       </div>
     </section>
   );
 };
 
-export default TrackSites;
+export default DisplayComponents;
