@@ -25,7 +25,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
                 type: "Feature",
                 properties: {
                     id: 1,
-                    barangay: "Barangay Alegria",
+                    barangay: "San Francisco Agusan del Sur",
                 },
                 geometry: {
                     type: "Polygon",
@@ -34,7 +34,15 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
                         [126.04450490232114, 8.466818846605392], [126.1103129490703, 8.46664901562528], [126.06009804976281 ,8.415887696221361],
                         [126.07054556119789, 8.402939305491458], [126.02793797928399, 8.40460170458961], [126.02527178904438, 8.408548502194648],
                         [126.02427353120135 ,8.409252626098564], [126.02385934340657 ,8.40926067897989] , [126.0212174711134, 8.407984558278983],
-                        [126.02055643141244, 8.408178587487853], [126.01856794991, 8.409294302964668], [126.01662892223891, 8.4046902116812]
+                        [126.02055643141244, 8.408178587487853], [126.01856794991, 8.409294302964668], [126.01662892223891, 8.4046902116812],
+                        [126.01474001557193, 8.406036008364552], [126.01358506617925, 8.404625448531675], [126.00952801076892, 8.405454403475574],
+                        [126.00777831277611, 8.404925515942836], [126.00658549599319, 8.403966025428687], [126.00485033177199, 8.403227717091895],
+                        [126.00509998136846, 8.401577514556351], [126.00574801766186, 8.400888351042127], [125.97641093552602, 8.391757550629634],
+                        [125.97390880231916, 8.39080800207968],  [125.97081543981409, 8.39161874461628], [125.96745822964954, 8.39014796167777],
+                        [125.96303628490449,  8.389036768089781], [125.95862571497344, 8.38720153395198], [125.96318041276902, 8.371729751905093],
+                        [125.95503341347933, 8.369405592514127], [125.95860757814717, 8.355388169154793], [125.92791631975041, 8.347929528410077],
+                        [125.89113139787435, 8.393374892862454], [125.88334005008488, 8.417552308867386], [125.79651821810683, 8.548921445742934],
+                        [125.93730538303595, 8.548744057251142], [125.9349976967647, 8.577733038602531], [125.99912782475212 ,8.575510286263182]
                     ]]
                 }
             },
@@ -517,8 +525,8 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
 
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
-            style: 'mapbox://styles/mapbox/streets-v11',
-            // style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
+            // style: 'mapbox://styles/mapbox/streets-v11',
+            style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
             center: [125.97666490, 8.50410607],
             attributionControl: false,
             zoom: 13,
@@ -647,7 +655,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
                     'Tagapua', '#2F4F4F',
                     '#4F262A' // default color
                 ],
-                'fill-opacity': 0.5
+                'fill-opacity': 0.2
             }
         });
 
@@ -662,27 +670,24 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
             }
         });
 
-        // Add click interaction
-        map.current.on('click', 'polygons-fill', (e) => {
-            if (e.features.length > 0) {
-                const properties = e.features[0].properties;
-                const coordinates = e.lngLat;
+        // map.current.on('click', 'polygons-fill', (e) => {
+        //     if (e.features.length > 0) {
+        //         const properties = e.features[0].properties;
+        //         const coordinates = e.lngLat;
                 
-                // Create popup
-                new mapboxgl.Popup()
-                    .setLngLat(coordinates)
-                    .setHTML(`
-                        <div class="p-2">
-                            <h3 class="font-bold">${properties.barangay || 'Area'}</h3>
-                            ${properties.area ? `<p><strong>Area:</strong> ${properties.area}</p>` : ''}
-                            ${properties.description ? `<p><strong>Description:</strong> ${properties.description}</p>` : ''}
-                        </div>
-                    `)
-                    .addTo(map.current);
-            }
-        });
+        //         new mapboxgl.Popup()
+        //             .setLngLat(coordinates)
+        //             .setHTML(`
+        //                 <div class="p-2">
+        //                     <h3 class="font-bold">${properties.barangay || 'Area'}</h3>
+        //                     ${properties.area ? `<p><strong>Area:</strong> ${properties.area}</p>` : ''}
+        //                     ${properties.description ? `<p><strong>Description:</strong> ${properties.description}</p>` : ''}
+        //                 </div>
+        //             `)
+        //             .addTo(map.current);
+        //     }
+        // });
 
-        // Change cursor on hover
         map.current.on('mouseenter', 'polygons-fill', () => {
             map.current.getCanvas().style.cursor = 'pointer';
         });
