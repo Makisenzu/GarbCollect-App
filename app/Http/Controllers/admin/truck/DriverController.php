@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\admin\truck;
 
 use App\Models\User;
+use Inertia\Inertia;
 use App\Models\Driver;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
 
 class DriverController extends Controller
 {
@@ -15,7 +17,37 @@ class DriverController extends Controller
      */
     public function index()
     {
-        //
+        $drivers = Driver::with('user')->get();
+        
+        $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email', 'phone_num')
+                    ->whereNotIn('roles', ['admin', 'employee'])
+                    ->orderBy('id', 'asc')
+                    ->get();
+        
+        return Inertia::render('Admin/drivers', [
+            'drivers' => $drivers,
+            'users' => $users,
+            'stats' => [
+                [
+                    'title' => 'Total Drivers',
+                    'value' => $drivers->count(),
+                    'description' => 'All registered drivers',
+                    'change' => '+0%'
+                ],
+                [
+                    'title' => 'Active Drivers', 
+                    'value' => $drivers->where('status', 'active')->count(),
+                    'description' => 'Currently active drivers',
+                    'change' => '+0%'
+                ],
+                [
+                    'title' => 'On Duty Drivers',
+                    'value' => $drivers->where('status', 'onduty')->count(),
+                    'description' => 'Drivers currently on duty',
+                    'change' => '+0%'
+                ]
+            ]
+        ]);
     }
 
     /**
@@ -31,49 +63,17 @@ class DriverController extends Controller
      */
     public function store(Request $request)
     {
-        //
-    }
-    public function getDriverInfo()
-    {
-        try {
-            $drivers = Driver::with('user')->get();
-            return response()->json([
-                'success' => true,
-                'message' => 'Fetch drivers successfully',
-                'data' => $drivers
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch drivers',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        // Remove this or keep for API if needed
     }
 
-    public function getUserInfo()
-    {
-        try {
-            $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email', 'phone_num')->whereNotIn('roles',['admin', 'employee'])->orderBy('id', 'asc')->get();
-            return response()->json([
-                'success' => true,
-                'message' => 'Fetch users successfully',
-                'data' => $users
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch users',
-            'error' => $e->getMessage()
-        ], 500);
-        }
-    }
-
+    /**
+     * Add driver using Inertia form submission
+     */
     public function addDriver(Request $request)
     {
         $validatedData = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
-            'license_number' => ['string', 'unique:drivers,license_number', 'max:255'],
+            'license_number' => ['required', 'string', 'unique:drivers,license_number', 'max:255'],
             'status' => ['required', 'in:active,inactive,pending,onduty,resigned'],
             'current_latitude' => ['numeric', 'nullable'],
             'current_longitude' => ['numeric', 'nullable']
@@ -90,18 +90,16 @@ class DriverController extends Controller
     
             DB::commit();
     
-            return response()->json([
-                'success' => true,
-                'message' => 'Added driver successfully and updated user role',
-                'data' => $driverData
+            return back()->with([
+                'success' => 'Driver added successfully and user role updated',
+                'driverData' => $driverData
             ]);
+            
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add driver',
-                'error' => $e->getMessage()
+
+            return back()->withErrors([
+                'message' => 'Failed to add driver: ' . $e->getMessage()
             ]);
         }
     }
@@ -136,5 +134,47 @@ class DriverController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    /**
+     * Keep these for API if needed, but remove if using pure Inertia
+     */
+    public function getDriverInfo()
+    {
+        try {
+            $drivers = Driver::with('user')->get();
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetch drivers successfully',
+                'data' => $drivers
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch drivers',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getUserInfo()
+    {
+        try {
+            $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email', 'phone_num')
+                        ->whereNotIn('role', ['admin', 'employee'])
+                        ->orderBy('id', 'asc')
+                        ->get();
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetch users successfully',
+                'data' => $users
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch users',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

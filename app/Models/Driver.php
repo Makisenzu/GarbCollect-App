@@ -9,7 +9,7 @@ class Driver extends Model
     protected $fillable = [
         'user_id',
         'license_number',
-        'is_active', 
+        'status', 
         'current_latitude',
         'current_longitude'
     ];

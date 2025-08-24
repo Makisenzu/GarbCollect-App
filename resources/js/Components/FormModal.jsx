@@ -11,27 +11,38 @@ const FormModal = ({
   onSubmit = () => {},
   fields = [],
   submitText = 'Submit',
-  processing = false
+  processing = false,
+  formData = {}, // Receive form data from parent
+  onFormChange = () => {} // Receive form change handler from parent
 }) => {
-  const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (show) {
+    if (show && !isInitialized) {
       const initializedData = {};
       fields.forEach(field => {
         initializedData[field.name] = initialData?.[field.name] ?? 
                                     field.defaultValue ?? 
                                     (field.type === 'select' && field.required ? field.options?.[0]?.value : '');
       });
-      setFormData(initializedData);
+      onFormChange(initializedData);
       setErrors({});
+      setIsInitialized(true);
     }
-  }, [show, initialData, fields]);
+    
+    // Reset initialization when modal closes
+    if (!show) {
+      setIsInitialized(false);
+    }
+  }, [show, isInitialized, initialData, fields, onFormChange]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    onFormChange({
+      ...formData,
+      [name]: value
+    });
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
   };
 

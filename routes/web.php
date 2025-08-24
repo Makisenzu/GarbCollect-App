@@ -43,12 +43,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
         //Driver Routes
-        Route::get('Admin/drivers', function () {
-            return Inertia::render('Admin/drivers');
-        })->name('admin.drivers');
-
-        Route::get('/getUsers', [DriverController::class, 'getUserInfo']);
-        Route::get('/getDrivers', [DriverController::class, 'getDriverInfo']);
+        Route::get('admin/drivers', [DriverController::class, 'index'])->name('admin.drivers');
+        Route::post('admin/drivers/add', [DriverController::class, 'addDriver'])->name('admin.drivers.add');
+        // Route::get('/getUsers', [DriverController::class, 'getUserInfo']);
+        // Route::get('/getDrivers', [DriverController::class, 'getDriverInfo']);
         Route::post('/admin/Driver/add', [DriverController::class, 'addDriver']);
 
         //Resident Routes

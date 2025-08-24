@@ -9,24 +9,34 @@ const DriverCard = ({ driver, isActive }) => {
     (driver.status === 'on duty' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800') : 
     'bg-gray-100 text-gray-800';
 
-  const getInitials = (name) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
+    const getInitialsFromName = (firstName, lastName) => {
+      const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
+      const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
+      return `${firstInitial}${lastInitial}`;
+    };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-4">
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-            {getInitials(driver.user.name)}
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">{driver.user.name} {driver.user.lastname}</h3>
-            <span className={`text-xs px-2 py-1 rounded-full ${statusColor}`}>
-              {statusText}
-            </span>
-          </div>
-        </div>
+      <div className="flex items-center gap-3">
+  {driver.user.picture ? (
+    <img 
+      src={`/storage/profile-pictures/${driver.user.picture}`}
+      alt={driver.user.name}
+      className="w-10 h-10 rounded-full object-cover"
+    />
+  ) : (
+    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+      {getInitialsFromName(driver.user.name, driver.user.lastname)}
+    </div>
+  )}
+  <div>
+    <h3 className="font-semibold text-gray-900">{driver.user.name} {driver.user.lastname}</h3>
+    <span className={`text-xs px-2 py-1 rounded-full ${statusColor}`}>
+      {statusText}
+    </span>
+  </div>
+</div>
         
         <button className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
