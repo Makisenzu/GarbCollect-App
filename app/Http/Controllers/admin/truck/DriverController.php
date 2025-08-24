@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\admin\truck;
 
-use App\Http\Controllers\Controller;
+use App\Models\Driver;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class DriverController extends Controller
 {
@@ -29,6 +30,32 @@ class DriverController extends Controller
     public function store(Request $request)
     {
         //
+    }
+    public function addDriver(Request $request)
+    {
+        $validatedData = $request->validate([
+            'user_id' => ['required', 'exists:users,id'],
+            'license_number' => ['string', 'unique:drivers,license_number', 'max:255'],
+            'status' => ['required', 'in:active,inactive,pending,onduty,resigned'],
+            'current_latitude' => ['numeric', 'nullable'],
+            'current_longitude' => ['numeric', 'nullable']
+        ]);
+        
+
+        try {
+            $driverData = Driver::create($validatedData);
+            return response()->json([
+                'success' => true,
+                'message' => 'Added driver successfully',
+                'data' => $driverData
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add driver',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**

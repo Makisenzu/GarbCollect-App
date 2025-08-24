@@ -1,4 +1,5 @@
 import React from 'react';
+import { MdOutlinePeopleOutline } from "react-icons/md";
 
 const Header = () => {
   return (
@@ -29,6 +30,10 @@ const Header = () => {
             </svg>
             Export
           </button>
+          {/* <button className="flex items-center text-gray-700 bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm hover:bg-gray-50">
+            <MdOutlinePeopleOutline className="mr-2 " size={15}/>
+            Applicants
+          </button> */}
           
           <button className="flex items-center text-white bg-blue-600 hover:bg-blue-700 rounded-lg px-3 py-2 text-sm">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

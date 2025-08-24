@@ -15,12 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('license_number')->nullable()->comment('Official driver license ID');
-            $table->boolean('is_active')->default(true);
+            $table->string('status')->default('active');
             $table->decimal('current_latitude', 10, 8)->nullable();
             $table->decimal('current_longitude', 11, 8)->nullable();
             $table->timestamps();
 
-            $table->index('is_active');
             $table->index('user_id');
         });
     }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\admin\LocationRoute\RouteController;
 use App\Http\Controllers\admin\resident\AreaController;
+use App\Http\Controllers\admin\truck\DriverController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -18,7 +19,7 @@ Route::get('/', function () {
     // ]);
 });
 
-Route::get('/admin', function () {
+Route::get('/employee/login', function () {
     return Inertia::render('Auth/Login', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
@@ -45,6 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('Admin/drivers', function () {
             return Inertia::render('Admin/drivers');
         })->name('admin.drivers');
+
+        Route::post('/admin/Driver/add', [DriverController::class, 'addDriver']);
 
         //Resident Routes
         Route::get('Admin/residents', function () {

@@ -22,6 +22,16 @@ export const drivers = [
     {
       id: 3,
       name: "Roberto Dela Cruz",
+      status: "active",
+      email: "roberto.delacruz@westewise.gov",
+      phone: "+63 945 123 7890",
+      barangay: "Barangay San Antonio",
+      schedule: "Tue-thu-sat-afternoon",
+      initials: "RDC"
+    },
+    {
+      id: 4,
+      name: "Roberto Dela Cruz",
       status: "off duty",
       email: "roberto.delacruz@westewise.gov",
       phone: "+63 945 123 7890",
