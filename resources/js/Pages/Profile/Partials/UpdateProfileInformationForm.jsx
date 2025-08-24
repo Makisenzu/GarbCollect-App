@@ -52,13 +52,11 @@ export default function UpdateProfileInformation({
 
             <div className="flex items-center mt-6 mb-6">
                 <div className="relative">
-                    {/* Profile Picture */}
                     <img
                         src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
                         alt="Profile"
                         className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                     />
-                    {/* Edit Picture Overlay */}
                     <label htmlFor="picture" className="absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full cursor-pointer hover:bg-blue-700">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -91,7 +89,6 @@ export default function UpdateProfileInformation({
 
             <form onSubmit={submit} className="mt-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Name */}
                     <div>
                         <InputLabel htmlFor="name" value="First Name *" />
                         <TextInput
@@ -107,7 +104,6 @@ export default function UpdateProfileInformation({
                         <InputError className="mt-2" message={errors.name} />
                     </div>
 
-                    {/* Middle Name */}
                     <div>
                         <InputLabel htmlFor="middlename" value="Middle Name" />
                         <TextInput
@@ -121,7 +117,6 @@ export default function UpdateProfileInformation({
                         <InputError className="mt-2" message={errors.middlename} />
                     </div>
 
-                    {/* Last Name */}
                     <div>
                         <InputLabel htmlFor="lastname" value="Last Name *" />
                         <TextInput
@@ -136,7 +131,6 @@ export default function UpdateProfileInformation({
                         <InputError className="mt-2" message={errors.lastname} />
                     </div>
 
-                    {/* Suffix */}
                     <div>
                         <InputLabel htmlFor="suffix" value="Suffix" />
                         <TextInput
@@ -151,7 +145,6 @@ export default function UpdateProfileInformation({
                         <InputError className="mt-2" message={errors.suffix} />
                     </div>
 
-                    {/* Gender */}
                     <div>
                         <InputLabel htmlFor="gender" value="Gender" />
                         <select
@@ -170,7 +163,6 @@ export default function UpdateProfileInformation({
                         <InputError className="mt-2" message={errors.gender} />
                     </div>
 
-                    {/* Phone Number */}
                     <div>
                         <InputLabel htmlFor="phone_num" value="Phone Number *" />
                         <TextInput
@@ -188,7 +180,6 @@ export default function UpdateProfileInformation({
                     </div>
                 </div>
 
-                {/* Email */}
                 <div>
                     <InputLabel htmlFor="email" value="Email Address *" />
                     <TextInput
