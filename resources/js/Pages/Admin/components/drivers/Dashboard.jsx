@@ -4,22 +4,26 @@ import DriverFilter from '@/Pages/Admin/components/drivers/DriverFilter';
 import DriverList from '@/Pages/Admin/components/drivers/DriverList';
 import StatCard from '@/Pages/Admin/components/drivers/StatCard';
 import FormModal from '@/Components/FormModal';
-import { drivers, stats } from '@/Pages/Admin/components/drivers/driverdata';
+import { stats } from '@/Pages/Admin/components/drivers/driverdata';
 import { showAlert, confirmDialog } from '@/SweetAlert';
 import axios from 'axios';
 
 const Dashboard = () => {
   const [activeFilter, setActiveFilter] = useState('all');
+
   const [showAddDriverModal, setShowAddDriverModal] = useState(false);
   const [addDriverProcessing, setAddDriverProcessing] = useState(false);
+
   const [users, setUsers] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+
+  const [loadingDrivers, setLoadingDrivers] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
-    if (showAddDriverModal) {
       fetchUsers();
-    }
-  }, [showAddDriverModal]);
+      fetchDrivers();
+  }, []);
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -33,6 +37,19 @@ const Dashboard = () => {
       setLoadingUsers(false);
     }
   };
+
+  const fetchDrivers = async () => {
+    setLoadingDrivers(true);
+    try {
+       const response = await axios.get('/getDrivers');
+       setDrivers(response.data.data);
+    } catch (error) {
+      console.error('Failed to fetch drivers');
+      showAlert('error', 'Faied to load drivers');
+    } finally {
+      setLoadingDrivers(false);
+    }
+  }
 
   const driverFields = [
     {
@@ -116,6 +133,18 @@ const Dashboard = () => {
             </div>
             
             <div className="flex items-center mt-3 sm:mt-0 space-x-2">
+            <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search drivers..."
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full sm:w-56 text-sm"
+            />
+          </div>
               <button 
                 onClick={() => setShowAddDriverModal(true)} 
                 className="flex items-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-md transition-colors"

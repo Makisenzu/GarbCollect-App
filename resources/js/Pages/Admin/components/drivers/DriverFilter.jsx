@@ -19,10 +19,12 @@ const DriverFilter = ({ activeFilter, setActiveFilter }) => {
   }, []);
 
   const filterOptions = [
-    { value: 'all', label: 'All Drivers', color: 'gray' },
-    { value: 'on duty', label: 'On Duty', color: 'green' },
-    { value: 'pending', label: 'Pending', color: 'yellow' },
+    { value: 'all', label: 'All Drivers', color: 'violet' },
     { value: 'active', label: 'Active', color: 'blue' },
+    { value: 'inactive', label: 'In-active', color: 'gray' },
+    { value: 'pending', label: 'Pending', color: 'yellow' },
+    { value: 'onduty', label: 'On Duty', color: 'green' },
+    { value: 'resigned', label: 'Resigned', color: 'red' },
   ];
 
   const selectedOption = filterOptions.find(option => option.value === activeFilter);

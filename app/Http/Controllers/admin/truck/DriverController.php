@@ -33,14 +33,31 @@ class DriverController extends Controller
     {
         //
     }
+    public function getDriverInfo()
+    {
+        try {
+            $drivers = Driver::with('user')->get();
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetch drivers successfully',
+                'data' => $drivers
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch drivers',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function getUserInfo()
     {
         try {
-            $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email')->where('roles', '!=', 'admin')->orderBy('id', 'asc')->get();
+            $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email', 'phone_num')->whereNotIn('roles',['admin', 'employee'])->orderBy('id', 'asc')->get();
             return response()->json([
                 'success' => true,
-                'message' => 'Fetch successfully',
+                'message' => 'Fetch users successfully',
                 'data' => $users
             ]);
         } catch (\Exception $e) {
