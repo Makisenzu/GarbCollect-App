@@ -19,6 +19,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'purok_id',
+        'picture',
         'name',
         'middlename',
         'lastname',
@@ -29,8 +30,6 @@ class User extends Authenticatable
         'address',
         'is_active',
         'password',
-        'latitude',
-        'longitude',
     ];
 
     /**
