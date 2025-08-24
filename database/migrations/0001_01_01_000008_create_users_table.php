@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('roles')->default('applicant');
             $table->foreignId('purok_id')->nullable()->constrained('puroks');
+            $table->string('picture')->nullable();
             $table->string('name');
             $table->string('middlename')->nullable();
             $table->string('lastname');
@@ -26,8 +27,6 @@ return new class extends Migration
             $table->string('is_active')->default('yes');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->decimal('latitude', 10, 8)->nullable();
-            $table->decimal('longitude', 11, 8)->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

@@ -47,6 +47,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return Inertia::render('Admin/drivers');
         })->name('admin.drivers');
 
+        Route::get('/getUsers', [DriverController::class, 'getUserInfo']);
         Route::post('/admin/Driver/add', [DriverController::class, 'addDriver']);
 
         //Resident Routes

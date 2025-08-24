@@ -9,7 +9,6 @@ const DriverCard = ({ driver, isActive }) => {
     (driver.status === 'on duty' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800') : 
     'bg-gray-100 text-gray-800';
 
-  // Get initials for avatar
   const getInitials = (name) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
