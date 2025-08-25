@@ -45,8 +45,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         //Driver Routes
         Route::get('admin/drivers', [DriverController::class, 'index'])->name('admin.drivers');
         Route::post('admin/drivers/add', [DriverController::class, 'addDriver'])->name('admin.drivers.add');
-        // Route::get('/getUsers', [DriverController::class, 'getUserInfo']);
-        // Route::get('/getDrivers', [DriverController::class, 'getDriverInfo']);
         Route::post('/admin/Driver/add', [DriverController::class, 'addDriver']);
 
         //Resident Routes
@@ -70,34 +68,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/municipality/barangay/purok/sites', [RouteController::class, 'getSiteLocation']);
         Route::post('/municipality/barangay/addNewGarbageSite', [RouteController::class, 'addCollectionRoute']);
 
-        // Route::get('Admin/truckRoutes', function () {
-        //     return Inertia::render('Admin/truckRoutes');
-        // })->name('admin.truckRoutes');
-        // Route::get('admin.map', function(){
-        //     return Inertia::render('Admin/map');
-        // })->name('admin.maps');
     });
-    
-    // // Driver-only routes
-    // Route::middleware('role:driver')->group(function () {
-    //     Route::get('/driver/dashboard', function () {
-    //         return Inertia::render('Driver/Dashboard');
-    //     })->name('driver.dashboard');
-    // });
-    
+     
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
-// Route::get('/dashboard', function () {
-//     return Inertia::render('Dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
-
-// Route::middleware('auth')->group(function () {
-//     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-//     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-//     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-// });
 
 require __DIR__.'/auth.php';
