@@ -12,71 +12,26 @@ export default function TruckRoutes({ auth, mapboxKey }) {
     const [collectionSites, setCollectionSites] = useState([]);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-
     const handleLocationSelect = (location) => {
         setSelectedLocation(location);
     };
 
     const handleSiteAdded = (newSite) => {
-        setRefreshTrigger(prev => prev + 1);
-        setCollectionSites([...collectionSites, {
-            lng: newSite.coordinates.lng,
-            lat: newSite.coordinates.lat,
-            name: newSite.site_name,
-            barangay: newSite.barangay,
-            purok: newSite.purok
-        }]);
+        // defer the state update slightly to avoid sync unmount warnings
+        setTimeout(() => {
+            setRefreshTrigger(prev => prev + 1);
+            setCollectionSites(prev => [
+                ...prev,
+                {
+                    lng: newSite.coordinates.lng,
+                    lat: newSite.coordinates.lat,
+                    name: newSite.site_name,
+                    barangay: newSite.barangay,
+                    purok: newSite.purok
+                }
+            ]);
+        }, 0);
     };
-
-    const renderTabContent = () => {
-        switch (activeTab) {
-            case 'map':
-                return (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                        <div className="lg:col-span-2">
-                            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-                                <div className="p-0">
-                                    <div className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] min-h-[300px] w-full">
-                                        <Map 
-                                            mapboxKey={mapboxKey || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-                                            onLocationSelect={handleLocationSelect}
-                                            collectionSites={collectionSites}
-                                            refreshTrigger={refreshTrigger}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="lg:col-span-1">
-                            <InsertNewSite 
-                                onSiteAdded={handleSiteAdded}
-                                selectedLocation={selectedLocation}
-                            />
-                        </div>
-                    </div>
-                );
-            case 'routes':
-                return (
-                    <div className="lg:col-span-2">
-                            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-                                <div className="p-0">
-                                    <div className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] min-h-[300px] w-full">
-                                        <RouteMap 
-                                            mapboxKey={mapboxKey || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-                                            onLocationSelect={handleLocationSelect}
-                                            collectionSites={collectionSites}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                    </div>
-                );
-            case 'schedule':
-                return <div className="bg-white p-4 rounded-lg shadow-sm">Schedule content will be displayed here</div>;
-            default:
-                return null;
-        }
-    }; 
 
     return (
         <AuthenticatedLayout
@@ -86,11 +41,13 @@ export default function TruckRoutes({ auth, mapboxKey }) {
 
             <div className="py-4 sm:py-6">
                 <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8">
+                    {/* Tab Buttons */}
                     <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 mb-4 sm:mb-6">
-                        <button title="Map"
+                        <button
+                            title="Map"
                             className={`flex items-center px-3 py-2 text-sm font-medium whitespace-nowrap ${
-                                activeTab === 'map' 
-                                    ? 'text-blue-600 border-b-2 border-blue-600' 
+                                activeTab === 'map'
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
                                     : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             }`}
                             onClick={() => setActiveTab('map')}
@@ -98,10 +55,11 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                             <FaMap className="mr-2 w-4 h-4" />
                             <span className="hidden xs:inline">Map</span>
                         </button>
-                        <button title="Routes"
+                        <button
+                            title="Routes"
                             className={`flex items-center px-3 py-2 text-sm font-medium whitespace-nowrap ${
-                                activeTab === 'routes' 
-                                    ? 'text-blue-600 border-b-2 border-blue-600' 
+                                activeTab === 'routes'
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
                                     : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             }`}
                             onClick={() => setActiveTab('routes')}
@@ -109,10 +67,11 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                             <FaRoute className="mr-2 w-4 h-4" />
                             <span className="hidden xs:inline">Routes</span>
                         </button>
-                        <button title="Schedule"
+                        <button
+                            title="Schedule"
                             className={`flex items-center px-3 py-2 text-sm font-medium whitespace-nowrap ${
-                                activeTab === 'schedule' 
-                                    ? 'text-blue-600 border-b-2 border-blue-600' 
+                                activeTab === 'schedule'
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
                                     : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             }`}
                             onClick={() => setActiveTab('schedule')}
@@ -122,6 +81,7 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                         </button>
                     </div>
 
+                    {/* Tab Content */}
                     <div className="bg-white shadow-sm rounded-lg overflow-hidden">
                         <div className="p-4 sm:p-6">
                             <h3 className="text-lg font-medium mb-3 sm:mb-4">
@@ -129,7 +89,54 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                                 {activeTab === 'routes' && 'Truck Routes'}
                                 {activeTab === 'schedule' && 'Collection Schedule'}
                             </h3>
-                            {renderTabContent()}
+
+                            {/* Keep all maps mounted, just hide/show */}
+                            <div className={activeTab === 'map' ? 'block' : 'hidden'}>
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                                    <div className="lg:col-span-2">
+                                        <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+                                            <div className="p-0">
+                                                <div className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] min-h-[300px] w-full">
+                                                    <Map
+                                                        mapboxKey={mapboxKey || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                                                        onLocationSelect={handleLocationSelect}
+                                                        collectionSites={collectionSites}
+                                                        refreshTrigger={refreshTrigger}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="lg:col-span-1">
+                                        <InsertNewSite
+                                            onSiteAdded={handleSiteAdded}
+                                            selectedLocation={selectedLocation}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={activeTab === 'routes' ? 'block' : 'hidden'}>
+                                <div className="lg:col-span-2">
+                                    <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+                                        <div className="p-0">
+                                            <div className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] min-h-[300px] w-full">
+                                                <RouteMap
+                                                    mapboxKey={mapboxKey || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                                                    onLocationSelect={handleLocationSelect}
+                                                    collectionSites={collectionSites}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={activeTab === 'schedule' ? 'block' : 'hidden'}>
+                                <div className="bg-white p-4 rounded-lg shadow-sm">
+                                    Schedule content will be displayed here
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

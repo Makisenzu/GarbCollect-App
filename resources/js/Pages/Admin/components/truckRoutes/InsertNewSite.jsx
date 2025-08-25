@@ -136,10 +136,14 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
             reset();
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 2000);
-            if(onSiteAdded) onSiteAdded({
-                ...data,
-                coordinates: data.coordinates
-            });
+            if (onSiteAdded) {
+                setTimeout(() => {
+                    onSiteAdded({
+                        ...data,
+                        coordinates: data.coordinates
+                    });
+                }, 0);
+            }
         })
         .catch(error => {
             console.error('Submission error:', error.response);
