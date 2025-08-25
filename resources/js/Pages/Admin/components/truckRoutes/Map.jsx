@@ -17,7 +17,6 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
 
     const [color, setColor] = useState(null);
 
-    // Static polygon data for each barangay
     const staticPolygonData = {
         type: "FeatureCollection",
         features: [
@@ -534,7 +533,6 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
 
         map.current.on('load', () => {
             setMapInitialized(true);
-            // Add static polygon data
             addPolygonLayer(staticPolygonData);
         });
 
@@ -596,11 +594,9 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
         }
     }, [mapInitialized, siteLocations]);
 
-    // Function to add polygon layer
     const addPolygonLayer = (geoJsonData) => {
         if (!map.current) return;
         
-        // Remove existing layers and sources if they exist
         if (map.current.getLayer('polygons-fill')) {
             map.current.removeLayer('polygons-fill');
         }
@@ -611,13 +607,11 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
             map.current.removeSource('polygons');
         }
 
-        // Add source
         map.current.addSource('polygons', {
             type: 'geojson',
             data: geoJsonData
         });
 
-        // Add fill layer
         map.current.addLayer({
             id: 'polygons-fill',
             type: 'fill',
@@ -653,13 +647,12 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
                     'San Isidro', '#8FBC8F',
                     'Santa Ana', '#483D8B',
                     'Tagapua', '#2F4F4F',
-                    '#4F262A' // default color
+                    '#4F262A'
                 ],
                 'fill-opacity': 0.2
             }
         });
 
-        // Add outline layer
         map.current.addLayer({
             id: 'polygons-outline',
             type: 'line',

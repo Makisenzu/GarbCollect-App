@@ -50,10 +50,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admin/Driver/add', [DriverController::class, 'addDriver']);
 
         //Resident Routes
-        // Route::get('Admin/residents', function () {
-        //     return Inertia::render('Admin/residents');
-        // })->name('admin.residents');
-
         Route::get('/municipalities', [AreaController::class, 'index'])->name('admin.residents');
         Route::get('/municipalities/{municipality_id}/barangay', [AreaController::class, 'showBaranggay']);
         Route::get('/baranggay/{baranggayId}/purok', [AreaController::class, 'showPurok']);
@@ -67,6 +63,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         //Truck Routes
         Route::get('Admin/truckRoutes', [RouteController::class, 'index'
         ])->name('admin.truckRoutes');
+
+        Route::get('/{id}/barangay',[RouteController::class, 'getBarangay']);
+        Route::get('/{id}/barangay/purok', [RouteController::class, 'getPurok']);
 
         Route::get('/municipality/barangay/purok/sites', [RouteController::class, 'getSiteLocation']);
         Route::post('/municipality/barangay/addNewGarbageSite', [RouteController::class, 'addCollectionRoute']);

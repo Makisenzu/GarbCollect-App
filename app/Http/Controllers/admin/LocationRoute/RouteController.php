@@ -4,6 +4,9 @@ namespace App\Http\Controllers\admin\LocationRoute;
 
 use App\Models\Site;
 use Inertia\Inertia;
+use App\Models\Purok;
+use App\Models\Baranggay;
+use App\Models\Municipality;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
@@ -19,6 +22,25 @@ class RouteController extends Controller
         ]);
     }
 
+    public function getBarangay($municipalityID)
+    {
+        $barangays = Baranggay::where('municipality_id', $municipalityID)->get();
+    
+        return response()->json([
+            'barangays' => $barangays
+        ]);
+    }
+    
+    public function getPurok($barangayID)
+    {
+        $puroks = Purok::where('baranggay_id', $barangayID)->get();
+    
+        return response()->json([
+            'puroks' => $puroks
+        ]);
+    }
+    
+
     /**
      * Show the form for creating a new resource.
      */
@@ -26,6 +48,7 @@ class RouteController extends Controller
     {
         //
     }
+
 
     public function getSiteLocation()
     {

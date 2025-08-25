@@ -42,10 +42,11 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
         label: purok.purok_name
       }));
 
-    const options = barangays.map(barangay => ({
+      const options = barangays.map(barangay => ({
         value: barangay.id,
         label: barangay.baranggay_name
-      }));
+    }));
+    
 
     const handleToggleChange = (value) => {
         setStatus(value ? 'active' : 'inactive');
@@ -55,14 +56,15 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
         const fetchBarangays = async (municipalityId) => {
             setLoadingBarangays(true);
             try {
-                const response = await axios.get(`/municipalities/${municipalityId}/barangay`);
-                setBarangays(response.data.baranggays || []);
+                const response = await axios.get(`/${municipalityId}/barangay`);
+                setBarangays(response.data.barangays || []);
             } catch (error) {
                 console.error('Error fetching barangays:', error);
             } finally {
                 setLoadingBarangays(false);
             }
         };
+        
 
         fetchBarangays(1);
     }, []);
@@ -72,9 +74,10 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
             setData({
                 ...data,
                 coordinates: selectedLocation.coordinates,
-                barangay: selectedLocation.barangay,
-                purok: selectedLocation.purok
+                barangay_id: selectedLocation.barangay_id || '',
+                purok_id: selectedLocation.purok_id || ''
             });
+            
         }
     }, [selectedLocation]);
 
@@ -87,7 +90,7 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
 
             setLoadingPuroks(true);
             try {
-                const response = await axios.get(`/baranggay/${data.barangay_id}/purok`);
+                const response = await axios.get(`/${data.barangay_id}/barangay/purok`);
                 setPuroks(response.data.puroks || []);
             } catch (error) {
                 console.error('Error fetching puroks:', error);
