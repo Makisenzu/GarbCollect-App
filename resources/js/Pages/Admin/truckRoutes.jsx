@@ -17,7 +17,6 @@ export default function TruckRoutes({ auth, mapboxKey }) {
     };
 
     const handleSiteAdded = (newSite) => {
-        // defer the state update slightly to avoid sync unmount warnings
         setTimeout(() => {
             setRefreshTrigger(prev => prev + 1);
             setCollectionSites(prev => [
@@ -41,7 +40,6 @@ export default function TruckRoutes({ auth, mapboxKey }) {
 
             <div className="py-4 sm:py-6">
                 <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8">
-                    {/* Tab Buttons */}
                     <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 mb-4 sm:mb-6">
                         <button
                             title="Map"
@@ -81,7 +79,6 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                         </button>
                     </div>
 
-                    {/* Tab Content */}
                     <div className="bg-white shadow-sm rounded-lg overflow-hidden">
                         <div className="p-4 sm:p-6">
                             <h3 className="text-lg font-medium mb-3 sm:mb-4">
@@ -90,7 +87,6 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                                 {activeTab === 'schedule' && 'Collection Schedule'}
                             </h3>
 
-                            {/* Keep all maps mounted, just hide/show */}
                             <div className={activeTab === 'map' ? 'block' : 'hidden'}>
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                                     <div className="lg:col-span-2">
