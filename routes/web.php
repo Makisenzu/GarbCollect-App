@@ -50,11 +50,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admin/Driver/add', [DriverController::class, 'addDriver']);
 
         //Resident Routes
-        Route::get('Admin/residents', function () {
-            return Inertia::render('Admin/residents');
-        })->name('admin.residents');
+        // Route::get('Admin/residents', function () {
+        //     return Inertia::render('Admin/residents');
+        // })->name('admin.residents');
 
-        Route::get('/municipalities', [AreaController::class, 'index']);
+        Route::get('/municipalities', [AreaController::class, 'index'])->name('admin.residents');
         Route::get('/municipalities/{municipality_id}/barangay', [AreaController::class, 'showBaranggay']);
         Route::get('/baranggay/{baranggayId}/purok', [AreaController::class, 'showPurok']);
         Route::post('/municipality/baranggay/addBarangay', [AreaController::class, 'addBarangay']);

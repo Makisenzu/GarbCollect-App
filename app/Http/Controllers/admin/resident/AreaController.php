@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\admin\resident;
 
+use Inertia\Inertia;
 use App\Models\Purok;
 use App\Models\Baranggay;
 use App\Models\Municipality;
@@ -16,167 +17,107 @@ class AreaController extends Controller
     public function index()
     {
         $municipalities = Municipality::withCount('baranggays')->get();
-        return response()->json([
+    
+        return Inertia::render('Admin/residents', [
             'municipalities' => $municipalities,
-            'total_barangay' => $municipalities->sum('baranggays_count')
+            'baranggays' => [],
+            'puroks' => [],
+            'total_barangay' => $municipalities->sum('baranggays_count'),
         ]);
     }
-
+    
     public function showBaranggay($municipality_id)
     {
+        $municipalities = Municipality::withCount('baranggays')->get();
         $baranggays = Baranggay::where('municipality_id', $municipality_id)
             ->withCount('puroks')
             ->get();
-        return response()->json([
+    
+        return Inertia::render('Admin/residents', [
+            'municipalities' => $municipalities,
             'baranggays' => $baranggays,
-            'total_puroks' => $baranggays->sum('puroks_count')
+            'puroks' => [],
+            'total_puroks' => $baranggays->sum('puroks_count'),
         ]);
     }
-
+    
     public function showPurok($baranggayId)
     {
-        $puroks = Purok::where('baranggay_id', $baranggayId)
-            ->get();
-        return response()->json([
+        $municipalities = Municipality::withCount('baranggays')->get();
+        $baranggays = Baranggay::withCount('puroks')->get();
+        $puroks = Purok::where('baranggay_id', $baranggayId)->get();
+    
+        return Inertia::render('Admin/residents', [
+            'municipalities' => $municipalities,
+            'baranggays' => $baranggays,
             'puroks' => $puroks,
-            'count' => $puroks->count()
+            'count' => $puroks->count(),
         ]);
     }
+    
 
-    public function addBarangay(Request $request){
+    public function addBarangay(Request $request)
+    {
         $validatedData = $request->validate([
             'baranggay_name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', 'in:Urban,Rural'],
             'municipality_id' => ['required', 'exists:municipalities,id'],
         ]);
-        try {
-            $barangay = Baranggay::create($validatedData);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Added new Barangay',
-                'data' => [
-                    'barangay_name' => $barangay->baranggay_name,
-                ]
-            ], 201);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add barangay',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+
+        Baranggay::create($validatedData);
+
+        return redirect()->back()->with('success', 'Barangay added successfully!');
     }
 
     public function addPurok(Request $request)
     {
         $validatedData = $request->validate([
             'purok_name' => ['required', 'string', 'max:255'],
-            'baranggay_id' => ['required', 'exists:baranggays,id']
+            'baranggay_id' => ['required', 'exists:baranggays,id'],
         ]);
-        try {
-            $purok = Purok::create($validatedData);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Added New Purok',
-                'data' => [
-                    'purok_name' => $purok->purok_name,
-                    'id' => $purok->id
-                ]
-            ], 200);
-        } catch (\Exception $e){
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add new purok',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        Purok::create($validatedData);
+
+        return redirect()->back()->with('success', 'Purok added successfully!');
     }
 
     public function deleteBarangay(string $id)
     {
-        try {
-            $barangayId = Baranggay::findOrFail($id);
-            $barangayId->delete();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Barangay deleted successfully',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to remove barangay',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        Baranggay::findOrFail($id)->delete();
+
+        return redirect()->back()->with('success', 'Barangay deleted successfully!');
     }
 
-    public function deletePurok(String $id)
+    public function deletePurok(string $id)
     {
-        try {
-            $purokId = Purok::findOrFail($id);
-            $purokId->delete();
+        Purok::findOrFail($id)->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Purok deleted successfully'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete purok',
-                'error' => $e->getMessage()
-            ]);
-        }
+        return redirect()->back()->with('success', 'Purok deleted successfully!');
     }
 
-    public function editBarangay(Request $request, String $id)
+    public function editBarangay(Request $request, string $id)
     {
-        try {
-            $data = $request->validate([
-                'baranggay_name' => ['required', 'string', 'max:255'],
-                'type' => ['required', 'in:Urban,Rural']
-            ]);
-            $barangay = Baranggay::findOrFail($id);
-            $barangay->update($data);
-            return response()->json([
-                'success' => true,
-                'message' => 'Barangay edited successfully',
-                'data' => $barangay
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to edit barangay',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        $data = $request->validate([
+            'baranggay_name' => ['required', 'string', 'max:255'],
+            'type' => ['required', 'in:Urban,Rural'],
+        ]);
+
+        $barangay = Baranggay::findOrFail($id);
+        $barangay->update($data);
+
+        return redirect()->back()->with('success', 'Barangay updated successfully!');
     }
 
-    public function editPurok(Request $request, String $id)
+    public function editPurok(Request $request, string $id)
     {
-        try {
-            $data = $request->validate([
-                'purok_name' => ['required', 'string', 'max:255']
-            ]);
+        $data = $request->validate([
+            'purok_name' => ['required', 'string', 'max:255'],
+        ]);
 
-            $purok = Purok::findOrFail($id);
-            $purok->update($data);
-            return response()->json([
-                'success' => true,
-                'message' => 'Purok edited successfully',
-                'data' => $purok
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to edit purok',
-                'error' => $e->getMessage()
-            ]);
-        }
+        $purok = Purok::findOrFail($id);
+        $purok->update($data);
+
+        return redirect()->back()->with('success', 'Purok updated successfully!');
     }
 
     /**
