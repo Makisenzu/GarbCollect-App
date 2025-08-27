@@ -17,7 +17,6 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
 
     const [color, setColor] = useState(null);
 
-    // Static polygon data for each barangay
     const staticPolygonData = {
         type: "FeatureCollection",
         features: [
@@ -654,7 +653,6 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
             }
         });
 
-        // Add outline layer
         map.current.addLayer({
             id: 'polygons-outline',
             type: 'line',
