@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '@/Pages/Admin/components/drivers/Header';
 import DriverFilter from '@/Pages/Admin/components/drivers/DriverFilter';
 import DriverList from '@/Pages/Admin/components/drivers/DriverList';
@@ -8,7 +8,7 @@ import { showAlert,  confirmDialog } from '@/SweetAlert'
 import { usePage, useForm, router } from '@inertiajs/react';
 
 const Dashboard = () => {
-  const { drivers, users, stats } = usePage().props;
+  const { drivers, schedules, users, stats, } = usePage().props;
   
   const [activeFilter, setActiveFilter] = React.useState('all');
   const [showAddDriverModal, setShowAddDriverModal] = React.useState(false);
@@ -110,7 +110,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <DriverList drivers={drivers} activeFilter={activeFilter} />
+          <DriverList drivers={drivers} schedules={schedules} activeFilter={activeFilter} />
         </div>
 
         <FormModal

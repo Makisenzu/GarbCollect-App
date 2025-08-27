@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Models;
+use App\Models\Driver;
+use App\Models\User;
 
-use Illuminate\Contracts\Concurrency\Driver;
 use Illuminate\Database\Eloquent\Model;
 
 class Schedule extends Model
@@ -17,16 +18,10 @@ class Schedule extends Model
     ];
 
     public function driver() {
-        return $this->belongsTo(Driver::class);
+        return $this->belongsTo(Driver::class, 'driver_id');
     }
 
     public function barangay() {
         return $this->belongsTo(Baranggay::class);
     }
-
-    public function user()
-    {
-        return $this->through('driver')->has('user');
-    }
-    
 }

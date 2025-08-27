@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Baranggay;
+use App\Models\Schedule;
 
 class DriverController extends Controller
 {
@@ -19,18 +20,17 @@ class DriverController extends Controller
     public function index()
     {
         $drivers = Driver::with('user')->get();
+        $schedules = Schedule::with(['barangay', 'driver.user'])->get();
         
         $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email', 'phone_num')
                     ->whereNotIn('roles', ['admin', 'employee'])
                     ->orderBy('id', 'asc')
                     ->get();
-
-        $barangays = Baranggay::with('puroks')->get();
         
         return Inertia::render('Admin/drivers', [
             'drivers' => $drivers,
+            'schedules' => $schedules,
             'users' => $users,
-            'barangays' => $barangays,
             'stats' => [
                 [
                     'title' => 'Total Drivers',
@@ -52,6 +52,63 @@ class DriverController extends Controller
                 ]
             ]
         ]);
+    }
+
+    public function assignDriver(Request $request) 
+    {
+        try {
+            $assignData = $request->validate([
+                'barangay_id' => ['required', 'exists:baranggays,id'],
+                'driver_id' => ['required', 'exists:drivers,id'],
+                'collection_date' => ['required', 'date', 'after_or_equal:today'],
+                'collection_time' => ['required', 'date_format:H:i'],
+                'status' => ['required', 'in:active,inactive'],
+                'notes' => ['max:255']
+            ]);
+    
+            $alreadyAssigned = Schedule::where('driver_id', $assignData['driver_id'])
+                ->where('barangay_id', $assignData['barangay_id'])
+                ->whereDate('collection_date', $assignData['collection_date'])
+                ->exists();
+    
+            if ($alreadyAssigned) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This driver is already assigned to this barangay on the selected date.'
+                ], 422);
+            }
+    
+            $data = Schedule::create($assignData);
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Driver assigned!',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign driver',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+
+    public function getBarangayData($municipalityID) {
+        try {
+            $barangayData = Baranggay::where('municipality_id', $municipalityID)->get();
+            return response()->json([
+                'success' => true,
+                'barangay_data' => $barangayData
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch barangays',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**

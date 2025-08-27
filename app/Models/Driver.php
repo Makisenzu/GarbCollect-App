@@ -16,7 +16,11 @@ class Driver extends Model
     
 
     public function user(){
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function schedules() {
+        return $this->hasMany(Schedule::class, 'driver_id');
     }
     
 }

@@ -24,4 +24,8 @@ class Baranggay extends Model
     public function municipality() {
         return $this->belongsTo(Municipality::class);
     }
+
+    public function schedules() {
+        return $this->hasMany(Schedule::class);
+    }
 }
