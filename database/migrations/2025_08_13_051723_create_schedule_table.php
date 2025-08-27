@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('schedules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('site_id')->constrained('sites')->cascadeOnDelete();
+            $table->foreignId('barangay_id')->constrained('baranggays')->cascadeOnDelete();
             $table->foreignId('driver_id')->constrained('drivers')->cascadeOnDelete();
             $table->date('collection_date');
             $table->time('collection_time');
@@ -21,7 +21,6 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
             
-            // Composite index for frequent queries
             $table->index(['collection_date', 'driver_id']);
         });
     }

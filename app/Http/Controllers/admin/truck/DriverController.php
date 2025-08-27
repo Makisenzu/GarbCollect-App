@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\Baranggay;
 
 class DriverController extends Controller
 {
@@ -23,10 +24,13 @@ class DriverController extends Controller
                     ->whereNotIn('roles', ['admin', 'employee'])
                     ->orderBy('id', 'asc')
                     ->get();
+
+        $barangays = Baranggay::with('puroks')->get();
         
         return Inertia::render('Admin/drivers', [
             'drivers' => $drivers,
             'users' => $users,
+            'barangays' => $barangays,
             'stats' => [
                 [
                     'title' => 'Total Drivers',

@@ -12,8 +12,8 @@ const FormModal = ({
   fields = [],
   submitText = 'Submit',
   processing = false,
-  formData = {}, // Receive form data from parent
-  onFormChange = () => {} // Receive form change handler from parent
+  formData = {},
+  onFormChange = () => {}
 }) => {
   const [errors, setErrors] = useState({});
   const [isInitialized, setIsInitialized] = useState(false);
@@ -31,7 +31,6 @@ const FormModal = ({
       setIsInitialized(true);
     }
     
-    // Reset initialization when modal closes
     if (!show) {
       setIsInitialized(false);
     }

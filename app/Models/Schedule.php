@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Schedule extends Model
 {
     protected $fillable = [
-        'site_id',
+        'barangay_id',
         'driver_id',
         'collection_date',
         'collection_time',
@@ -20,8 +20,8 @@ class Schedule extends Model
         return $this->belongsTo(Driver::class);
     }
 
-    public function site() {
-        return $this->belongsTo(Site::class);
+    public function barangay() {
+        return $this->belongsTo(Baranggay::class);
     }
 
     public function user()
