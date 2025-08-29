@@ -73,7 +73,6 @@ class DriverController extends Controller
     
             if ($alreadyAssigned) {
                 return response()->json([
-                    'success' => false,
                     'message' => 'This driver is already assigned to this barangay on the selected date.'
                 ], 422);
             }
