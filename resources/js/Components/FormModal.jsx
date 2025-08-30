@@ -140,7 +140,7 @@ const FormModal = ({
                     </div>
                   );
                 })}
-              </div>
+              </div> 
 
               <div className="mt-6 flex justify-end space-x-3">
                 <button
