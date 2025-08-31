@@ -23,13 +23,12 @@ const DriverList = ({ drivers = [], schedules = [],activeFilter = all }) => {
   
           return (
             driver && (
-<DriverCard 
-  key={driver.id} 
-  driver={driver} 
-  schedule={schedules.filter(s => s.driver_id === driver.id)} 
-  isActive={driver.status === 'onduty' || driver.status === 'active'}
-/>
-
+              <DriverCard 
+                key={driver.id} 
+                driver={driver} 
+                schedule={schedules.filter(s => s.driver_id === driver.id)} 
+                isActive={driver.status === 'onduty' || driver.status === 'active'}
+              />
             )
           );
         })}

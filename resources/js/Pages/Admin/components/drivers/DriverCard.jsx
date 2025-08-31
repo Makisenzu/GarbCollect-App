@@ -266,7 +266,7 @@ const handleFormSubmit = async (data) => {
           {hasSchedule ? "Set another schedule" : "Schedule"}
       </button>
 
-</div>
+    </div>
 
       </div>
 
