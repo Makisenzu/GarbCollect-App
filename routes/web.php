@@ -4,6 +4,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\admin\LocationRoute\RouteController;
 use App\Http\Controllers\admin\resident\AreaController;
 use App\Http\Controllers\admin\truck\DriverController;
+use App\Http\Controllers\admin\truck\ScheduleController;
+use App\Models\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -64,6 +66,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('Admin/truckRoutes', [RouteController::class, 'index'
         ])->name('admin.truckRoutes');
 
+        Route::get('/admin/schedules', [ScheduleController::class, 'index'])->name('admin.schedules');
         Route::get('/{id}/barangay',[RouteController::class, 'getBarangay']);
         Route::get('/{id}/barangay/purok', [RouteController::class, 'getPurok']);
 
