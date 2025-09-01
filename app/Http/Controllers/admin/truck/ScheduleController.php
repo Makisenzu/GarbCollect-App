@@ -14,7 +14,7 @@ class ScheduleController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {
+    { 
         $drivers = Driver::with('user')->get();
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
 
