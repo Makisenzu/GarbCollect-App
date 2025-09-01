@@ -649,7 +649,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
                     'Tagapua', '#2F4F4F',
                     '#4F262A'
                 ],
-                'fill-opacity': 0.2
+                'fill-opacity': 0.5
             }
         });
 
