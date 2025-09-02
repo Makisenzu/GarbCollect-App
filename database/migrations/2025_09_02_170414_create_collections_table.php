@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('municipalities', function (Blueprint $table) {
+        Schema::create('collections', function (Blueprint $table) {
             $table->id();
-            $table->string('municipality_name');
-            $table->enum('type', ['city', 'municipality'])->nullable();
-            $table->string('is_capital')->default('false');
+            $table->foreignId('driver_id')->constrained('drivers');
+            $table->foreignId('category_id')->constrained('garbage_categories')->cascadeOnDelete();
+            $table->integer('sack_count');
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('municipality');
+        Schema::dropIfExists('collections');
     }
 };

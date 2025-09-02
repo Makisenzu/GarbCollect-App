@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('provinces', function (Blueprint $table) {
+        Schema::create('garbage_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('province_name');
-            $table->string('capital')->nullable();
+            $table->string('category_name');
             $table->timestamps();
         });
     }
@@ -24,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('provinces');
+        Schema::dropIfExists('garbage_categories');
     }
 };
