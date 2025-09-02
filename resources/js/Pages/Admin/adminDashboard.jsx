@@ -18,7 +18,6 @@ export default function AdminDashboard() {
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
                         
-                        {/* Active Drivers Card - Fixed */}
                         <div className="p-6 bg-white rounded-lg shadow">
                             <div className="flex items-center justify-between">
                                 <div className="mr-4">
@@ -33,7 +32,6 @@ export default function AdminDashboard() {
                             </div>
                         </div>
 
-                        {/* Collection Sites Card - Fixed */}
                         <div className="p-6 bg-white rounded-lg shadow">
                             <div className="flex items-center justify-between">
                                 <div className="mr-4">
@@ -49,7 +47,6 @@ export default function AdminDashboard() {
                             </div>
                         </div>
 
-                        {/* Registered Users Card - Fixed */}
                         <div className="p-6 bg-white rounded-lg shadow">
                             <div className="flex items-center justify-between">
                                 <div className="mr-4">
@@ -64,7 +61,6 @@ export default function AdminDashboard() {
                             </div>
                         </div>
 
-                        {/* Average Rating Card - Fixed */}
                         <div className="p-6 bg-white rounded-lg shadow">
                             <div className="flex items-center justify-between">
                                 <div className="mr-4">
