@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\admin\dashboard;
 
+use App\Models\Site;
+use Inertia\Inertia;
 use App\Models\Driver;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -15,8 +16,13 @@ class DashboardController extends Controller
     public function index()
     {
         $drivers = Driver::with('user')->get();
+        $sites = Site::with(['purok'])->get();
         return Inertia::render('Admin/adminDashboard', [
-            'drivers' => $drivers
+            'drivers' => $drivers,
+            'driverCount' => $drivers->where('status', 'active')->count(),
+            'driverTotal' => $drivers->count(),
+            'sites' => $sites,
+            'siteCount' => $sites->count()
         ]);
     }
 

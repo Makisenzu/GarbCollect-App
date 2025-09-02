@@ -1,8 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage, useForm, router } from '@inertiajs/react';
 import { CollectionChart, WasteChart } from '@/Pages/Admin/components/dashboard/chart';
 
 export default function AdminDashboard() {
+    const {drivers, driverCount, sites, siteCount, driverTotal} = usePage().props;
     return (
         <AuthenticatedLayout
             header={
@@ -22,7 +23,7 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-between">
                                 <div className="mr-4">
                                     <p className="text-sm font-medium text-gray-600">Active Drivers</p>
-                                    <p className="text-2xl font-semibold text-gray-900">24 <span className="text-sm text-green-600">+2 from yesterday</span></p>
+                                    <p className="text-2xl font-semibold text-gray-900">{driverCount} <span className="text-sm text-green-600">+2 from yesterday</span></p>
                                 </div>
                                 <div className="p-3 bg-blue-100 rounded-full">
                                     <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -37,7 +38,7 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-between">
                                 <div className="mr-4">
                                     <p className="text-sm font-medium text-gray-600">Collection Sites</p>
-                                    <p className="text-2xl font-semibold text-gray-900">156 <span className="text-sm text-green-600">+5 this week</span></p>
+                                    <p className="text-2xl font-semibold text-gray-900">{siteCount} <span className="text-sm text-green-600">+5 this week</span></p>
                                 </div>
                                 <div className="p-3 bg-green-100 rounded-full">
                                     <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -52,8 +53,8 @@ export default function AdminDashboard() {
                         <div className="p-6 bg-white rounded-lg shadow">
                             <div className="flex items-center justify-between">
                                 <div className="mr-4">
-                                    <p className="text-sm font-medium text-gray-600">Registered Users</p>
-                                    <p className="text-2xl font-semibold text-gray-900">2,847 <span className="text-sm text-green-600">+12% this month</span></p>
+                                    <p className="text-sm font-medium text-gray-600">Registered Driver</p>
+                                    <p className="text-2xl font-semibold text-gray-900">{driverTotal} <span className="text-sm text-green-600">+12% this month</span></p>
                                 </div>
                                 <div className="p-3 bg-purple-100 rounded-full">
                                     <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
