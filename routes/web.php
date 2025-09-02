@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\admin\dashboard\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\admin\LocationRoute\RouteController;
 use App\Http\Controllers\admin\resident\AreaController;
@@ -39,9 +40,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         //Admin Routes
         // DashBoard
-        Route::get('Admin/adminDashboard', function () {
-            return Inertia::render('Admin/adminDashboard');
-        })->name('admin.dashboard');
+        // Route::get('Admin/adminDashboard', function () {
+        //     return Inertia::render('Admin/adminDashboard');
+        // })->name('admin.dashboard');
+
+        Route::get('Admin/adminDashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
 
         //Driver Routes

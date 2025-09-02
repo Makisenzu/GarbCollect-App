@@ -70,11 +70,23 @@ export function WasteChart() {
             axisLine={false}
             tickLine={false}
           />
-          <YAxis 
+          {/* <YAxis 
             className="text-gray-600 text-sm"
             axisLine={false}
             tickLine={false}
-          />
+          /> */}
+
+        <YAxis 
+            className="text-gray-600 text-sm"
+            axisLine={false}
+            tickLine={false}
+            domain={[0, 'dataMax + 50']} // Add padding to the max value
+//   // or
+            //   domain={[0, 500]} // Set a fixed maximum
+  // or
+            //   domain={['dataMin', 'dataMax']} // Use exact min/max from data
+        />
+          
           <Tooltip 
             contentStyle={{ 
               backgroundColor: "white",
@@ -85,8 +97,8 @@ export function WasteChart() {
             }}
           />
           <Bar dataKey="organic" fill="#16a34a" radius={[1, 1, 0, 0]} />
-          <Bar dataKey="recyclable" fill="#22c55e" radius={[1, 1, 0, 0]} />
-          <Bar dataKey="general" fill="#4ade80" radius={[1, 1, 0, 0]} />
+          <Bar dataKey="recyclable" fill="#40CED3" radius={[1, 1, 0, 0]} />
+          <Bar dataKey="general" fill="#F56D6F" radius={[1, 1, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
