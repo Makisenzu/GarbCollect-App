@@ -8,7 +8,7 @@ export default function AdminDashboard() {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Collection Analysis
+                    Dashboard
                 </h2>
             }
         >
