@@ -14,7 +14,6 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
     const [cssLoaded, setCssLoaded] = useState(false);
     const [siteLocations, setSiteLocations] = useState([]);
     const [mapInitialized, setMapInitialized] = useState(false);
-
     const [color, setColor] = useState(null);
 
     const staticPolygonData = {
