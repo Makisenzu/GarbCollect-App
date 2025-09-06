@@ -1,4 +1,3 @@
-// import { AiFillDelete } from "react-icons/ai";
 import appLogo from '@/images/app-logo.png';
 export default function ApplicationLogo(props) {
     return (
