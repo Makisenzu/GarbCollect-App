@@ -87,7 +87,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </>
                             )}
 
-                            {user.roles === 'user' && (
+                            {user.roles === 'employee' && (
                                 <SidebarLink
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
@@ -209,7 +209,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </>
                             )}
 
-                            {user.roles === 'user' && (
+                            {user.roles === 'employee' && (
                                 <SidebarLink
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
