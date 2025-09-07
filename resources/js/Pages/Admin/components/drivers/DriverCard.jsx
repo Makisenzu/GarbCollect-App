@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import FormModal from '@/Components/FormModal';
-import { showAlert,  confirmDialog } from '@/SweetAlert'
+import { showAlert, confirmDialog } from '@/SweetAlert';
 import { router } from '@inertiajs/react';
 
-const DriverCard = ({ driver, schedule,isActive }) => {
+const DriverCard = ({ driver, schedule, isActive }) => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -30,96 +30,103 @@ const DriverCard = ({ driver, schedule,isActive }) => {
     fetchBarangayData();
   }, []);
 
+  const now = new Date();
+  const formattedDate = now.toISOString().split("T")[0];
+  const formattedTime = now.toTimeString().slice(0, 5);
 
+  const barangayFields = [
+    {
+      name: "driver_id",
+      type: "hidden",
+      value: driver.id,
+      disabled: true,
+    },
+    {
+      name: "barangay_id",
+      label: "Barangay",
+      type: "select",
+      required: true,
+      options:
+        barangays && barangays.length > 0
+          ? barangays.map((barangay) => ({
+              value: barangay.id,
+              label: barangay.baranggay_name,
+            }))
+          : [],
+    },
+    {
+      name: "collection_date",
+      label: "Date",
+      type: "date",
+      value: formattedDate,
+      min: formattedDate,
+      required: true,
+    },
+    {
+      name: "collection_time",
+      label: "Time",
+      type: "time",
+      value: formattedTime,
+      required: true,
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      required: true,
+      value: "active",
+      options: [
+        { value: "active", label: "Active" },
+        { value: "inactive", label: "In-active" },
+      ],
+    },
+    {
+      name: "notes",
+      label: "Additional note",
+      type: "text",
+      required: false,
+    },
+  ];
 
-const now = new Date();
-
-const formattedDate = now.toISOString().split("T")[0];
-const formattedTime = now.toTimeString().slice(0, 5);
-
-const barangayFields = [
-  {
-    name: "driver_id",
-    type: "hidden",
-    value: driver.id,
-    disabled: true,
-  },
-  {
-    name: "barangay_id",
-    label: "Barangay",
-    type: "select",
-    required: true,
-    options:
-      barangays && barangays.length > 0
-        ? barangays.map((barangay) => ({
-            value: barangay.id,
-            label: barangay.baranggay_name,
-          }))
-        : [],
-  },
-  {
-    name: "collection_date",
-    label: "Date",
-    type: "date",
-    value: formattedDate,
-    min: formattedDate,
-    required: true,
-  },
-  {
-    name: "collection_time",
-    label: "Time",
-    type: "time",
-    value: formattedTime,
-    required: true,
-  },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    required: true,
-    value: "active",
-    options: [
-      { value: "active", label: "Active" },
-      { value: "inactive", label: "In-active" },
-    ],
-  },
-  {
-    name: "notes",
-    label: "Additional note",
-    type: "text",
-    required: false,
-  },
-];
-
-  
-
-const handleFormSubmit = async (data) => {
-  setProcessing(true);
-  try {
-    await axios.post(`/admin/driver/assign`, data);
-    showAlert('success', 'Driver assigned');
-
-    router.reload({ only: ['drivers', 'schedules'] });
-    setOpenBarangayModal(false);
-  } catch (error) {
-    console.error('Failed to assign barangay:', error);
-    if (error.response) {
-      if (error.response.data.errors) {
-        const firstError = Object.values(error.response.data.errors)[0][0];
-        showAlert('error', firstError);
-      } else if (error.response.data.message) {
-        showAlert('error', error.response.data.message);
+  const handleFormSubmit = async (data) => {
+    setProcessing(true);
+    try {
+      await axios.post(`/admin/driver/assign`, data);
+      showAlert('success', 'Driver assigned');
+      router.reload({ only: ['drivers', 'schedules'] });
+      setOpenBarangayModal(false);
+    } catch (error) {
+      console.error('Failed to assign barangay:', error);
+      if (error.response) {
+        if (error.response.data.errors) {
+          const firstError = Object.values(error.response.data.errors)[0][0];
+          showAlert('error', firstError);
+        } else if (error.response.data.message) {
+          showAlert('error', error.response.data.message);
+        } else {
+          showAlert('error', 'Something went wrong');
+        }
       } else {
-        showAlert('error', 'Something went wrong');
+        showAlert('error', error.message || 'Network error');
       }
-    } else {
-      showAlert('error', error.message || 'Network error');
+    } finally {
+      setProcessing(false);
     }
-  } finally {
-    setProcessing(false);
-  }
-};
+  };
 
+  const handleDeleteDriver = async (driverId) => {
+    const confirmed = await confirmDialog(
+      'Are you sure?',
+      'This action will permanently remove the driver. This cannot be undone.'
+    );
+
+    if(!confirmed) return;
+
+    router.delete(`/delete/driver/${driverId}`, {
+      onSuccess: () => showAlert('success', 'Driver deleted successfully'),
+      onError: () => showAlert('error', 'Failed to remove driver'),
+    });
+  };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -220,7 +227,7 @@ const handleFormSubmit = async (data) => {
                   </li>
                   <li>
                     <button
-                      onClick={() => console.log('Remove pressed')}
+                      onClick={() => handleDeleteDriver(driver.id)}
                       className="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100"
                     >
                       Remove
@@ -234,7 +241,9 @@ const handleFormSubmit = async (data) => {
 
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /> </svg>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /> 
+            </svg>
             <span>{driver.user.email}</span>
           </div>
 
@@ -256,18 +265,14 @@ const handleFormSubmit = async (data) => {
           </div>
         </div>
 
-
-
         <div className="flex gap-2 pt-2">
-        <button
+          <button
             onClick={() => setOpenBarangayModal(true)}
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-3 rounded-md transition-colors"
-        >
-          {hasSchedule ? "Set another schedule" : "Schedule"}
-      </button>
-
-    </div>
-
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-3 rounded-md transition-colors"
+          >
+            {hasSchedule ? "Set another schedule" : "Schedule"}
+          </button>
+        </div>
       </div>
 
       <FormModal

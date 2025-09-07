@@ -193,7 +193,31 @@ class DriverController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        try {
+            $driver = Driver::with('user')->findOrFail($id);
+            
+            $hasSchedules = Schedule::where('driver_id', $id)->exists();
+            
+            if ($hasSchedules) {
+                return redirect()->back()->with('error', 'Cannot delete driver. This driver has existing schedules assigned.');
+            }
+            
+            if ($driver->user) {
+                $user = $driver->user;
+                $user->roles = 'applicant';
+                $user->save();
+            }
+            
+            $driver->delete();
+            
+            return redirect()->back()->with('success', 'Driver removed successfully. User role updated to applicant.');
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->back()->with('error', 'Driver not found!');
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete driver: ' . $e->getMessage());
+        }
     }
 
     /**

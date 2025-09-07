@@ -53,6 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admin/Driver/add', [DriverController::class, 'addDriver']);
         Route::get('/admin/getBarangay/{id}', [DriverController::class, 'getBarangayData']);
         Route::post('/admin/driver/assign', [DriverController::class, 'assignDriver'])->name('admin.driverAssign');
+        Route::delete('/delete/driver/{id}', [DriverController::class, 'destroy'])->name('admin.deleteDriver');
 
         //Resident Routes
         Route::get('/municipalities', [AreaController::class, 'index'])->name('admin.residents');
