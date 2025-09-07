@@ -127,7 +127,6 @@ const Dashboard = () => {
 
           <DriverList drivers={drivers} schedules={schedules} activeFilter={activeFilter} />
           
-          {/* Add Pagination component */}
           {drivers && drivers.links && (
             <Pagination links={drivers.links} />
           )}
