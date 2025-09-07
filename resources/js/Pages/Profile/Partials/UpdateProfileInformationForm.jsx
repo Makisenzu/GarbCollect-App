@@ -55,7 +55,7 @@ export default function UpdateProfileInformation({
                     <img
                         src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
                         alt="Profile"
-                        className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                        className="w-24 h-24 rounded-full object-cover border-4 border-cyan-400 shadow-lg"
                     />
                     <label htmlFor="picture" className="absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full cursor-pointer hover:bg-blue-700">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

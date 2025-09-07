@@ -98,6 +98,7 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                             )}
 
                             {user.roles === 'employee' && (
+                                <>
                                 <SidebarLink
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
@@ -107,6 +108,16 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                                     </div>
                                     Dashboard
                                 </SidebarLink>
+                                <SidebarLink
+                                    href={route('profile.edit')}
+                                    active={route().current('profile.edit')}
+                                >
+                                    <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                        <FaUser size={14} />
+                                    </div>
+                                    Profile
+                                </SidebarLink>
+                                </>
                             )}
                         </div>
                     </nav>
@@ -244,7 +255,11 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                                             type="button"
                                             className="inline-flex items-center p-2 border-transparent rounded-md text-gray-500 hover:text-gray-700 focus:outline-none"
                                         >
-                                            <FaUser size={20} />
+                                            <img
+                                                src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
+                                                alt="Profile"
+                                                className="w-7 h-7 rounded-full object-cover shadow-lg"
+                                            />
                                         </button>
                                     </span>
                                 </Dropdown.Trigger>
