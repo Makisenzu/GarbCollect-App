@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import Pagination from '@/Components/Pagination';
 import FormModal from '@/Components/FormModal';
 import { showAlert, confirmDialog } from '@/SweetAlert';
 import { router } from '@inertiajs/react';

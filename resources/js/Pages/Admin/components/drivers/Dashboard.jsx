@@ -3,12 +3,13 @@ import Header from '@/Pages/Admin/components/drivers/Header';
 import DriverFilter from '@/Pages/Admin/components/drivers/DriverFilter';
 import DriverList from '@/Pages/Admin/components/drivers/DriverList';
 import StatCard from '@/Pages/Admin/components/drivers/StatCard';
+import Pagination from '@/Components/Pagination'; // Import Pagination
 import FormModal from '@/Components/FormModal';
-import { showAlert,  confirmDialog } from '@/SweetAlert'
+import { showAlert, confirmDialog } from '@/SweetAlert'
 import { usePage, useForm, router } from '@inertiajs/react';
 
 const Dashboard = () => {
-  const { drivers, schedules, users, stats, } = usePage().props;
+  const { drivers, schedules, users, stats } = usePage().props;
   
   const [activeFilter, setActiveFilter] = React.useState('all');
   const [showAddDriverModal, setShowAddDriverModal] = React.useState(false);
@@ -79,14 +80,14 @@ const Dashboard = () => {
         <Header />
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-{stats && Array.isArray(stats) && stats.map((stat, index) => (
-  <StatCard 
-    key={index}
-    title={stat.title}
-    value={stat.value}
-    description={stat.description}
-  />
-))}
+          {stats && Array.isArray(stats) && stats.map((stat, index) => (
+            <StatCard 
+              key={index}
+              title={stat.title}
+              value={stat.value}
+              description={stat.description}
+            />
+          ))}
         </div>
         
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -111,6 +112,11 @@ const Dashboard = () => {
           </div>
 
           <DriverList drivers={drivers} schedules={schedules} activeFilter={activeFilter} />
+          
+          {/* Add Pagination component */}
+          {drivers && drivers.links && (
+            <Pagination links={drivers.links} />
+          )}
         </div>
 
         <FormModal

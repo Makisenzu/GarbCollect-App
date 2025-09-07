@@ -19,7 +19,7 @@ class DriverController extends Controller
      */
     public function index()
     {
-        $drivers = Driver::with('user')->get();
+        $drivers = Driver::with('user')->paginate(5);
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
         
         $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email', 'phone_num')
@@ -34,7 +34,7 @@ class DriverController extends Controller
             'stats' => [
                 [
                     'title' => 'Total Drivers',
-                    'value' => $drivers->count(),
+                    'value' => Driver::count(),
                     'description' => 'All registered drivers',
                     'change' => '+0%'
                 ],
