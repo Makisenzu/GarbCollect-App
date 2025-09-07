@@ -191,7 +191,7 @@ class DriverController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
         try {
             $driver = Driver::with('user')->findOrFail($id);
@@ -199,7 +199,10 @@ class DriverController extends Controller
             $hasSchedules = Schedule::where('driver_id', $id)->exists();
             
             if ($hasSchedules) {
-                return redirect()->back()->with('error', 'Cannot delete driver. This driver has existing schedules assigned.');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete driver. This driver has existing schedules assigned.'
+                ], 422);
             }
             
             if ($driver->user) {
@@ -210,13 +213,22 @@ class DriverController extends Controller
             
             $driver->delete();
             
-            return redirect()->back()->with('success', 'Driver removed successfully. User role updated to applicant.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Driver removed successfully.'
+            ]);
             
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return redirect()->back()->with('error', 'Driver not found!');
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver not found!'
+            ], 404);
             
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to delete driver: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete driver: ' . $e->getMessage()
+            ], 500);
         }
     }
 

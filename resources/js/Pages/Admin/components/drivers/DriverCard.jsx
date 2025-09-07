@@ -120,13 +120,27 @@ const DriverCard = ({ driver, schedule, isActive }) => {
       'Are you sure?',
       'This action will permanently remove the driver. This cannot be undone.'
     );
-
+  
     if(!confirmed) return;
-
-    router.delete(`/delete/driver/${driverId}`, {
-      onSuccess: () => showAlert('success', 'Driver deleted successfully'),
-      onError: () => showAlert('error', 'Failed to remove driver'),
-    });
+  
+    try {
+      const response = await axios.delete(`/delete/driver/${driverId}`);
+      
+      if (response.data.success) {
+        showAlert('success', response.data.message);
+        router.reload({ only: ['drivers', 'stats', 'users'] });
+      } else {
+        showAlert('error', response.data.message);
+      }
+    } catch (error) {
+      if (error.response?.status === 422) {
+        showAlert('error', error.response.data.message);
+      } else if (error.response?.data?.message) {
+        showAlert('error', error.response.data.message);
+      } else {
+        showAlert('error', 'Failed to remove driver');
+      }
+    }
   };
 
   useEffect(() => {
