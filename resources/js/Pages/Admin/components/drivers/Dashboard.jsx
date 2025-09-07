@@ -3,8 +3,9 @@ import Header from '@/Pages/Admin/components/drivers/Header';
 import DriverFilter from '@/Pages/Admin/components/drivers/DriverFilter';
 import DriverList from '@/Pages/Admin/components/drivers/DriverList';
 import StatCard from '@/Pages/Admin/components/drivers/StatCard';
-import Pagination from '@/Components/Pagination'; // Import Pagination
+import Pagination from '@/Components/Pagination';
 import FormModal from '@/Components/FormModal';
+import { MdOutlineDateRange } from "react-icons/md";
 import { showAlert, confirmDialog } from '@/SweetAlert'
 import { usePage, useForm, router } from '@inertiajs/react';
 
@@ -120,6 +121,13 @@ const Dashboard = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 Add Driver
+              </button>
+
+              <button 
+                className="flex items-center bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-sm text-sm font-medium py-2 px-2 rounded-md transition-colors"
+              >
+                <MdOutlineDateRange className="mr-2"/>
+                View Schedule
               </button>
               <DriverFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
             </div>
