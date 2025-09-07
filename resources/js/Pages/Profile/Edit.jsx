@@ -1,10 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
 export default function Edit({ mustVerifyEmail, status }) {
+    const { auth } = usePage().props;
     return (
         <AuthenticatedLayout
             header={
@@ -12,6 +13,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                     Profile
                 </h2>
             }
+            auth={auth}
         >
             <Head title="Profile" />
 

@@ -26,7 +26,7 @@ class ProfileController extends Controller
                 'user' => $request->user()->only([
                     'id', 'name', 'middlename', 'lastname', 'suffix', 
                     'gender', 'phone', 'phone_num', 'email', 'email_verified_at',
-                    'picture'
+                    'picture', 'roles'
                 ]),
             ],
         ]);

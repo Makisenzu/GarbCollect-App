@@ -13,8 +13,9 @@ import { FaUser } from "react-icons/fa6";
 import { FaUserGear } from "react-icons/fa6";
 import { TbLogout } from "react-icons/tb";
 
-export default function AuthenticatedLayout({ header, children }) {
-    const { auth } = usePage().props;
+export default function AuthenticatedLayout({ header, children, auth: propAuth }) {
+    const pageProps = usePage().props;
+    const auth = propAuth || pageProps.auth;
     const user = auth.user;
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -32,7 +33,6 @@ export default function AuthenticatedLayout({ header, children }) {
     const toggleMobileSidebar = () => {
         setMobileSidebarOpen(!mobileSidebarOpen);
     };
-
     return (
         <div className="min-h-screen bg-gray-100 flex">
             <div className="hidden md:flex md:flex-col w-64 bg-white shadow-lg">
@@ -46,16 +46,6 @@ export default function AuthenticatedLayout({ header, children }) {
                             {user.roles === 'admin' && (
                                 <>
                                     <SidebarLink
-                                        href={route('profile.edit')}
-                                        active={route().current('profile.edit')}
-                                    >
-                                        <div className="w-6 h-6 flex items-center justify-center mr-3">
-                                            <FaUser size={14} />
-                                        </div>
-                                        Profile
-                                    </SidebarLink>
-
-                                    <SidebarLink
                                         href={route('admin.dashboard')}
                                         active={route().current('admin.dashboard')}
                                     >
@@ -63,6 +53,16 @@ export default function AuthenticatedLayout({ header, children }) {
                                             <SlGraph size={18} />
                                         </div>
                                         Dashboard
+                                    </SidebarLink>
+
+                                    <SidebarLink
+                                        href={route('profile.edit')}
+                                        active={route().current('profile.edit')}
+                                    >
+                                        <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                            <FaUser size={14} />
+                                        </div>
+                                        Profile
                                     </SidebarLink>
 
                                     <SidebarLink

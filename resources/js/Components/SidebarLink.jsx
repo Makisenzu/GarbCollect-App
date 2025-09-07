@@ -4,11 +4,15 @@ export default function SidebarLink({
     href,
     active = false,
     children,
+    method = 'get',
+    as = 'a',
     ...props
 }) {
     return (
         <Link
             href={href}
+            method={method}
+            as={as}
             className={`flex items-center w-full px-4 py-4 transition-colors duration-200 rounded-none ${
                 active 
                     ? 'bg-green-100 text-green-800 border-l-4 border-green-600' 
