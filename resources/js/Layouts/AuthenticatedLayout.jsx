@@ -12,6 +12,7 @@ import { SlGraph } from "react-icons/sl";
 import { FaUser } from "react-icons/fa6";
 import { FaUserGear } from "react-icons/fa6";
 import { TbLogout } from "react-icons/tb";
+import { RiCalendarScheduleFill } from "react-icons/ri";
 
 export default function AuthenticatedLayout({ header, children, auth: propAuth }) {
     const pageProps = usePage().props;

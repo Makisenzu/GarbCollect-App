@@ -27,6 +27,7 @@
     },
     "dependencies": {
         "@sweetalert2/theme-bootstrap-4": "^5.0.27",
+        "date-fns": "^4.1.0",
         "lucide-react": "^0.542.0",
         "mapbox-gl": "^3.13.0",
         "react-icons": "^5.5.0",
