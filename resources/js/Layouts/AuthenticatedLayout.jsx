@@ -22,7 +22,7 @@ export default function AuthenticatedLayout({ header, children }) {
         switch(user.roles) {
             case 'admin':
                 return route('admin.dashboard');
-            case 'driver':
+            case 'employee':
                 return route('driver.dashboard');
             default:
                 return route('dashboard');
@@ -36,7 +36,7 @@ export default function AuthenticatedLayout({ header, children }) {
     return (
         <div className="min-h-screen bg-gray-100 flex">
             <div className="hidden md:flex md:flex-col w-64 bg-white shadow-lg">
-                <div className="flex items-center p-4 border-b border-gray-200">
+                <div className="flex items-center p-3 border-b border-gray-200">
                     <ApplicationLogo className="block h-10 w-auto fill-current text-gray-800" />
                 </div>
 
@@ -45,6 +45,16 @@ export default function AuthenticatedLayout({ header, children }) {
                         <div className="space-y-2">
                             {user.roles === 'admin' && (
                                 <>
+                                    <SidebarLink
+                                        href={route('profile.edit')}
+                                        active={route().current('profile.edit')}
+                                    >
+                                        <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                            <FaUser size={14} />
+                                        </div>
+                                        Profile
+                                    </SidebarLink>
+
                                     <SidebarLink
                                         href={route('admin.dashboard')}
                                         active={route().current('admin.dashboard')}
@@ -103,40 +113,16 @@ export default function AuthenticatedLayout({ header, children }) {
 
                     <div className="border-t border-gray-200 my-2"></div>
 
-                    <div className="p-4">
-                        <div className="relative">
-                            <div className="flex items-center px-3 py-2">
-                                <div className="flex-shrink-0">
-                                    <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <FaUser size={14} className="text-blue-600" />
-                                    </div>
-                                </div>
-                                <div className="ms-3 flex-1">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500 capitalize">{user.roles}</p>
-                                </div>
-                            </div>
-                            
-                            <div className="mt-3 space-y-1">
-                                <Dropdown.Link 
-                                    href={route('profile.edit')} 
-                                    className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                                >
-                                    <FaUserGear className="mr-2" size={14} />
-                                    Profile
-                                </Dropdown.Link>
-                                <Dropdown.Link 
-                                    href={route('logout')}
-                                    method="post"
-                                    as="button"
-                                    className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md w-full text-left"
-                                >
-                                    <TbLogout className="mr-2" size={14}/>
-                                    Log Out
-                                </Dropdown.Link>
-                            </div>
+                    <SidebarLink
+                        href={route('logout')}
+                        method="post"
+                        as="button"
+                    >
+                        <div className="w-6 h-6 flex items-center justify-center mr-3">
+                            <TbLogout size={18} />
                         </div>
-                    </div>
+                        Logout
+                    </SidebarLink>
                 </div>
             </div>
 
@@ -264,10 +250,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </Dropdown.Trigger>
 
                                 <Dropdown.Content>
-                                    <div className="px-4 py-2 border-b border-gray-100">
-                                        <div className="text-sm font-medium text-gray-800">{user.name}</div>
-                                        <div className="text-xs text-gray-500 capitalize">{user.roles}</div>
-                                    </div>
                                     <Dropdown.Link href={route('profile.edit')} className="flex items-center hover:text-blue-600">
                                         <FaUserGear className="mr-2" size={16} />
                                         Profile
