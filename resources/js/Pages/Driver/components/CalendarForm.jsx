@@ -33,7 +33,7 @@ const CalendarForm = ({ scheduleData }) => {
       const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
       const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
       return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-    } else { // day view
+    } else {
       return [startOfDay(currentDate)];
     }
   };
@@ -43,7 +43,7 @@ const CalendarForm = ({ scheduleData }) => {
       setCurrentDate(prev => direction === 'next' ? addWeeks(prev, 1) : subWeeks(prev, 1));
     } else if (viewMode === 'month') {
       setCurrentDate(prev => direction === 'next' ? addMonths(prev, 1) : subMonths(prev, 1));
-    } else { // day view
+    } else {
       setCurrentDate(prev => direction === 'next' ? addDays(prev, 1) : subDays(prev, 1));
     }
   };
@@ -125,7 +125,7 @@ const CalendarForm = ({ scheduleData }) => {
               setIsMobileMenuOpen(false);
             }}
           >
-            Back
+            Current
           </button>
           <button
             className={`px-3 py-1 rounded-md text-sm ${viewMode === 'day' ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
