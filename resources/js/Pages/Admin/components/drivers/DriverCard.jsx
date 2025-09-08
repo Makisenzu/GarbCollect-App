@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Pagination from '@/Components/Pagination';
 import FormModal from '@/Components/FormModal';
+import DriverModal from '@/Components/DriverModal';
 import { showAlert, confirmDialog } from '@/SweetAlert';
 import { router } from '@inertiajs/react';
 
 const DriverCard = ({ driver, schedule, isActive }) => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [showDriverModal, setShowDriverModal] = useState(false);
 
   const [barangays, setBarangays] = useState([]);
   const [barangayLoading, setBarangayLoading] = useState(false);
@@ -234,7 +236,7 @@ const DriverCard = ({ driver, schedule, isActive }) => {
                   </li>
                   <li>
                     <button
-                      onClick={() => console.log('Details pressed')}
+                      onClick={() => setShowDriverModal(true)}
                       className="block w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
                       View Details
@@ -301,6 +303,13 @@ const DriverCard = ({ driver, schedule, isActive }) => {
         onSubmit={handleFormSubmit}
         submitText="Assign"
         processing={processing}
+      />
+      
+      <DriverModal 
+        driver={driver}
+        schedules={schedule}
+        show={showDriverModal}
+        onClose={() => setShowDriverModal(false)}
       />
     </>
   );
