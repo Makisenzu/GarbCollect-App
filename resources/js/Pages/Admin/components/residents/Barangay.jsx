@@ -14,7 +14,7 @@ export default function Barangay({ barangays, links }) {
           <div key={barangay.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
             <div className="mb-4">
               <h3 className="text-lg font-semibold text-gray-800">{barangay.baranggay_name}</h3>
-              <p className="text-sm text-gray-500">Puroks: {barangay.puroks_count || 0}</p>
+              <p className="text-sm text-gray-500">Total Purok: {barangay.puroks_count || 0}</p>
             </div>
             <div className="space-y-4">
               <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm">
