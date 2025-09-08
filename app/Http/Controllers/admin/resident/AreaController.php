@@ -17,10 +17,11 @@ class AreaController extends Controller
     public function index()
     {
         $municipalities = Municipality::withCount('baranggays')->get();
+        $barangayData = Baranggay::withCount('puroks')->paginate(6);
     
         return Inertia::render('Admin/residents', [
             'municipalities' => $municipalities,
-            'baranggays' => [],
+            'baranggays' => $barangayData,
             'puroks' => [],
             'total_barangay' => $municipalities->sum('baranggays_count'),
         ]);
