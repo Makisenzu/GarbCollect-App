@@ -23,7 +23,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
                 type: "Feature",
                 properties: {
                     id: 1,
-                    barangay: "San Francisco Agusan del Sur",
+                    barangay: "San Francisco",
                 },
                 geometry: {
                     type: "Polygon",
@@ -525,9 +525,10 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
             container: mapContainer.current,
             // style: 'mapbox://styles/mapbox/streets-v11',
             style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
-            center: [125.97666490, 8.50410607],
+            // center: [125.97666490, 8.50410607],
+            center: [125.94849837776422, 8.483022468128098],
             attributionControl: false,
-            zoom: 13,
+            zoom: 10.5,
         });
 
         map.current.on('load', () => {
@@ -646,6 +647,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
                     'San Isidro', '#8FBC8F',
                     'Santa Ana', '#483D8B',
                     'Tagapua', '#2F4F4F',
+                    'San Francisco', '#FFE659',
                     '#4F262A'
                 ],
                 'fill-opacity': 0.5

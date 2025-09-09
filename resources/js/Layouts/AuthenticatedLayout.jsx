@@ -95,6 +95,7 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                                         </div>
                                         Sites
                                     </SidebarLink>
+
                                 </>
                             )}
 
