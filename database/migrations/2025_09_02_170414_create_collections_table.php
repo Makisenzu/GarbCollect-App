@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('collections', function (Blueprint $table) {
             $table->id();
             $table->foreignId('driver_id')->constrained('drivers');
-            $table->foreignId('category_id')->constrained('garbage_categories')->cascadeOnDelete();
+            $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
             $table->integer('sack_count');
             $table->timestamps();
         });
