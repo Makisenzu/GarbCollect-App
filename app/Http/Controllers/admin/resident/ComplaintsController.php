@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
+use App\Models\Complaint;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+use function Termwind\render;
 
 class ComplaintsController extends Controller
 {
@@ -11,7 +16,6 @@ class ComplaintsController extends Controller
      */
     public function index()
     {
-        //
     }
 
     /**
@@ -20,6 +24,17 @@ class ComplaintsController extends Controller
     public function create()
     {
         //
+    }
+
+
+    public function newCategory(Request $request) 
+    {
+        $validatedData = $request->validate([
+            'category_name' => ['required', 'max:255']
+        ]);
+
+        $data = Category::create($validatedData);
+        return redirect()->back()->with('success', 'Category inserted successfully');
     }
 
     /**

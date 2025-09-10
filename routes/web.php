@@ -6,11 +6,13 @@ use App\Http\Controllers\admin\LocationRoute\RouteController;
 use App\Http\Controllers\admin\resident\AreaController;
 use App\Http\Controllers\admin\truck\DriverController;
 use App\Http\Controllers\admin\truck\ScheduleController;
+use App\Http\Controllers\ComplaintsController;
 use App\Models\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+use function Pest\Laravel\get;
 
 Route::get('/', function () {
     return Inertia::render('Users/Home');
@@ -65,6 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/municipality/barangay/purok/{id}/delete', [AreaController::class, 'deletePurok']);
         Route::put('/municipality/barangay/editBarangay/{id}', [AreaController::class, 'editBarangay']);
         Route::put('/municipality/barangay/editPurok/{id}', [AreaController::class, 'editPurok']);
+        // Route::get('/municipality/categories', [ComplaintsController::class, 'index']);
 
         //Truck Routes
         Route::get('Admin/truckRoutes', [RouteController::class, 'index'

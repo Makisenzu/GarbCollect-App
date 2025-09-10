@@ -8,6 +8,7 @@ use App\Models\Baranggay;
 use App\Models\Municipality;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 
 class AreaController extends Controller
 {
@@ -17,11 +18,13 @@ class AreaController extends Controller
     public function index()
     {
         $municipalities = Municipality::withCount('baranggays')->get();
+        $categories = Category::all();
         $barangayData = Baranggay::withCount('puroks')->paginate(6);
     
         return Inertia::render('Admin/residents', [
             'municipalities' => $municipalities,
             'baranggays' => $barangayData,
+            'categories' => $categories,
             'puroks' => [],
             'total_barangay' => $municipalities->sum('baranggays_count'),
         ]);

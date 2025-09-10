@@ -4,10 +4,11 @@ import Barangay from './components/residents/Barangay';
 import Reviews from './components/residents/Reviews';
 
 export default function Residents() {
-  const { baranggays } = usePage().props;
+  const { baranggays, categories } = usePage().props;
   
   const barangaysData = baranggays.data || baranggays;
   const paginationLinks = baranggays.links || null;
+  console.log(categories);
 
   return (
     <AuthenticatedLayout
