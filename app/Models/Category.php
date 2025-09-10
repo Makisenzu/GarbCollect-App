@@ -13,4 +13,8 @@ class Category extends Model
     public function collections() {
         return $this->hasMany(Collection::class);
     }
+
+    public function reviews() {
+        return $this->hasMany(Review::class);
+    }
 }

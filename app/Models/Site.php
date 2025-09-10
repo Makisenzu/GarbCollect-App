@@ -19,4 +19,8 @@ class Site extends Model
     public function purok () {
         return $this->belongsTo(Purok::class);
     }
+
+    public function reviews() {
+        return $this->hasMany(Review::class);
+    }
 }
