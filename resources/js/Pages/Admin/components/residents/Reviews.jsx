@@ -5,7 +5,7 @@ export default function Reviews() {
         {
           id: 1,
           user: 'Maria Santos',
-          role: 'Barangay Captain',
+          role: 'Resident',
           barangay: 'San Isidro',
           rating: 4.8,
           comment: 'The resident management system has made our record-keeping so much more efficient. Highly recommended!',
@@ -15,8 +15,8 @@ export default function Reviews() {
         {
           id: 2,
           user: 'Juan dela Cruz',
-          role: 'Admin Staff',
-          barangay: 'Poblacion',
+          role: 'Resident',
+          barangay: 'Alegria',
           rating: 4.5,
           comment: 'Easy to use and has all the features we need for managing resident information.',
           date: '1 week ago',
@@ -26,7 +26,7 @@ export default function Reviews() {
           id: 3,
           user: 'Ana Rodriguez',
           role: 'Barangay Secretary',
-          barangay: 'Nueva Esperanza',
+          barangay: 'Barangay 1',
           rating: 5.0,
           comment: 'The reporting features have saved us countless hours of manual work. Excellent system!',
           date: '3 days ago',
@@ -38,8 +38,8 @@ export default function Reviews() {
         <div className="mt-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">User Reviews</h2>
-              <p className="text-gray-600">What barangay officials are saying about the system</p>
+              <h2 className="text-2xl font-bold text-gray-800">Reviews</h2>
+              {/* <p className="text-gray-600">San Francisco u</p> */}
             </div>
             <div className="flex items-center">
               <div className="flex items-center mr-2">
