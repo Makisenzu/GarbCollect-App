@@ -21,4 +21,8 @@ class Review extends Model
     public function category() {
         return $this->belongsTo(Category::class);
     }
+
+    public function replies() {
+        return $this->hasMany(Reply::class);
+    }
 }
