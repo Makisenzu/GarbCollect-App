@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Models\Driver;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Review;
 
 class DashboardController extends Controller
 {
@@ -17,12 +18,14 @@ class DashboardController extends Controller
     {
         $drivers = Driver::with('user')->get();
         $sites = Site::with(['purok'])->get();
+        $pending = Review::with(['site', 'category'])->get();
         return Inertia::render('Admin/adminDashboard', [
             'drivers' => $drivers,
             'driverCount' => $drivers->where('status', 'active')->count(),
             'driverTotal' => $drivers->count(),
             'sites' => $sites,
-            'siteCount' => $sites->count()
+            'siteCount' => $sites->count(),
+            'pendingCount' => $pending->count()
         ]);
     }
 
