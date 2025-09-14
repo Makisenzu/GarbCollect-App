@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/ReviewController.php
 
 namespace App\Http\Controllers\admin\Ai;
 
