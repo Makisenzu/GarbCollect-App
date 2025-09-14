@@ -9,9 +9,11 @@ class Review extends Model
     protected $fillable = [
         'fullname',
         'site_id',
-        'complaint_id',
+        'category_id',
         'review_content',
-        'rate'
+        'rate',
+        'status',
+        'moderation_flags'
     ];
 
     public function site() {

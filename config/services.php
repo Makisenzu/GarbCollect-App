@@ -18,6 +18,11 @@ return [
         'key' => env('OPEN_AI_KEY'),
     ],
 
+    'openrouter' => [
+        'key' => env('OPENROUTER_API_KEY'),
+        'url' => env('OPENROUTER_API_URL', 'https://openrouter.ai/api/v1'),
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

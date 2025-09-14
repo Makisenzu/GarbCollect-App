@@ -1,18 +1,21 @@
 <?php
 
-use App\Http\Controllers\admin\dashboard\DashboardController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\admin\LocationRoute\RouteController;
-use App\Http\Controllers\admin\resident\AreaController;
-use App\Http\Controllers\admin\truck\DriverController;
-use App\Http\Controllers\admin\truck\ScheduleController;
-use App\Http\Controllers\ComplaintsController;
-use App\Models\Schedule;
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
+use Illuminate\Support\Facades\Http;
+use App\Models\Schedule;
 use function Pest\Laravel\get;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Application;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ComplaintsController;
+use App\Http\Controllers\admin\Ai\ReviewController;
+use App\Http\Controllers\admin\truck\DriverController;
+
+use App\Http\Controllers\admin\resident\AreaController;
+
+use App\Http\Controllers\admin\truck\ScheduleController;
+use App\Http\Controllers\admin\dashboard\DashboardController;
+use App\Http\Controllers\admin\LocationRoute\RouteController;
 
 Route::get('/', function () {
     return Inertia::render('Users/Home');
@@ -33,6 +36,7 @@ Route::get('/employee/login', function () {
     ]);
 });
 
+Route::post('/reviews', [ReviewController::class, 'store']);
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');

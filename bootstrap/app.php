@@ -19,7 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'municipality/barangay/addNewGarbageSite',
             '/admin/Driver/add',
-            '/admin/getBarangay/{id}'
+            '/admin/getBarangay/{id}',
+            '/reviews'
         ]);
     
         $middleware->web(append: [

@@ -19,7 +19,6 @@ return new class extends Migration
             $table->text('review_content');
             $table->unsignedTinyInteger('rate');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
-            $table->
             $table->json('moderation_flags')->nullable();
             $table->timestamps();
         });
