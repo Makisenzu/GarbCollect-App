@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import mapboxgl from 'mapbox-gl';
 import { GrLocationPin } from "react-icons/gr";
+import { CiLocationOn } from "react-icons/ci";
 import { ImLocation } from "react-icons/im";
 import { GiControlTower } from "react-icons/gi";
 import axios from 'axios';
@@ -549,7 +550,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
             el.className = 'custom-marker';
             
             const root = createRoot(el);
-            root.render(<GrLocationPin size={40} color="#FC2622" />);
+            root.render(<CiLocationOn size={30} color="#FC2622" />);
 
             markerRef.current = new mapboxgl.Marker({
                 element: el,
