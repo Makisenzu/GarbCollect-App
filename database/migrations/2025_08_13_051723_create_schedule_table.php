@@ -17,11 +17,10 @@ return new class extends Migration
             $table->foreignId('driver_id')->constrained('drivers')->cascadeOnDelete();
             $table->date('collection_date');
             $table->time('collection_time');
-            $table->time('finished_time');
+            $table->time('finished_time')->nullable();
             $table->string('status')->default('pending');
             $table->text('notes')->nullable();
             $table->timestamps();
-            
             $table->index(['collection_date', 'driver_id']);
         });
     }
