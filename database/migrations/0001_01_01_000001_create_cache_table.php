@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('owner');
             $table->integer('expiration');
         });
-    }
+    } 
 
     /**
      * Reverse the migrations.
