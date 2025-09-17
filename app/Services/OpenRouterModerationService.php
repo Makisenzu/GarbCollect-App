@@ -31,7 +31,10 @@ class OpenRouterModerationService
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => 'You are a content moderation system. Analyze the text for toxicity, hate speech, harassment, or inappropriate content. Respond with JSON only: {"flagged": boolean, "reason": string, "categories": {"toxic": boolean, "hate": boolean, "harassment": boolean, "explicit": boolean}}'
+                        'content' => 'You are a content moderation system. Analyze the text for toxicity,
+                                      hate speech, harassment, or inappropriate content. Respond with JSON only: 
+                                      {"flagged": boolean, "reason": string, "categories": 
+                                      {"toxic": boolean, "hate": boolean, "harassment": boolean, "explicit": boolean}}'
                     ],
                     [
                         'role' => 'user',
@@ -122,7 +125,7 @@ class OpenRouterModerationService
 
                 if (in_array($word, ['fuck', 'shit', 'asshole', 'bastard', 'bitch', 'cunt'])) {
                     $categories['explicit'] = true;
-                } elseif (in_array($word, ['nigger', 'retard', 'fag', 'faggot'])) {
+                } elseif (in_array($word, ['nigger', 'retard', 'fag', 'faggot', 'nigga'])) {
                     $categories['hate'] = true;
                 } elseif (in_array($word, ['kill', 'murder', 'terrorist', 'suicide'])) {
                     $categories['violent'] = true;
