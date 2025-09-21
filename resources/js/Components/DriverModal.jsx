@@ -176,7 +176,7 @@ const DriverModal = ({ driver, schedules, show, onClose }) => {
                             {formatTimeTo12Hour(schedule.collection_time)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {schedule.end_time ? formatTimeTo12Hour(schedule.end_time) : 'N/A'}
+                            {schedule.finished_time ? formatTimeTo12Hour(schedule.finished_time) : 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
