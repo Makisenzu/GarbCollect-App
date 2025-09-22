@@ -15,6 +15,15 @@ return [
 
     'default' => env('REVERB_SERVER', 'reverb'),
 
+    'connections' => [
+        'reverb' => [
+            'driver' => 'reverb',
+            'host' => env('REVERB_HOST', '0.0.0.0'),
+            'port' => env('REVERB_PORT', 8080),
+            'scheme' => env('REVERB_SCHEME', 'http'),
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Reverb Servers
