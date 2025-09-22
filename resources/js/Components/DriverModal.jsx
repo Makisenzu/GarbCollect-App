@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ClientPagination from '@/Components/ClientPagination';
+import { CircleLoader } from 'react-spinners';
 
-const DriverModal = ({ driver, schedules, show, onClose }) => {
+const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = false }) => {
   if (!show || !driver) return null;
   
   const [currentPage, setCurrentPage] = useState(1);
+  const [isSchedulesLoading, setIsSchedulesLoading] = useState(true);
   const itemsPerPage = 5;
+
+  useEffect(() => {
+    if (show) {
+      setIsSchedulesLoading(true);
+      const timer = setTimeout(() => {
+        setIsSchedulesLoading(false);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [show, schedules]);
 
   const driverSchedules = schedules.filter(schedule => 
     schedule.driver_id === driver.id
@@ -130,14 +143,19 @@ const DriverModal = ({ driver, schedules, show, onClose }) => {
           <div>
             <div className="flex justify-between items-center mb-4">
               <h4 className="text-lg font-semibold text-gray-900">Scheduled Collection</h4>
-              {driverSchedules.length > 0 && (
+              {!isSchedulesLoading && driverSchedules.length > 0 && (
                 <span className="text-sm text-gray-500">
                   Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, driverSchedules.length)} of {driverSchedules.length} schedules
                 </span>
               )}
             </div>
             
-            {driverSchedules.length > 0 ? (
+            {isSchedulesLoading || isLoadingSchedules ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <CircleLoader color="#00de08" size={20} loading={true} />
+                <p className="mt-2 text-gray-600">Loading schedules...</p>
+              </div>
+            ) : driverSchedules.length > 0 ? (
               <>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
