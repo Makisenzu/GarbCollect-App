@@ -20,7 +20,8 @@ export default function Residents() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Barangay 
             barangays={barangaysData} 
-            links={paginationLinks} 
+            links={paginationLinks}
+            mapBoxKey={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN} 
           />
           <Reviews/>
         </div>
