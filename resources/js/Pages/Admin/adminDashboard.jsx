@@ -6,7 +6,7 @@ import { WelcomeHero } from './components/dashboard/WelcomeHero';
 
 
 export default function AdminDashboard() {
-    const {drivers, driverCount, sites, siteCount, driverTotal, pendingCount} = usePage().props;
+    const {drivers, driverCount, sites, siteCount, driverTotal, pendingCount, schedules} = usePage().props;
     return (
         <AuthenticatedLayout
             header={
@@ -19,7 +19,9 @@ export default function AdminDashboard() {
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <WelcomeHero/>
+                    <WelcomeHero
+                        schedules={schedules}
+                    />
                     
                     <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2">
                         <CollectionChart />
@@ -84,7 +86,7 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 mb-8">
+                    {/* <div className="grid grid-cols-1 gap-6 mb-8">
                         <div className="p-6 bg-white rounded-lg border border-gray-100 shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-900 mb-5">Recent Activity</h3>
                             <ul className="divide-y divide-gray-100">
@@ -116,7 +118,7 @@ export default function AdminDashboard() {
                                 </li>
                             </ul>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </AuthenticatedLayout>
