@@ -16,17 +16,13 @@ class EmployeeController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
-        // Get the driver record associated with the logged-in user
         $driver = $user->driver;
         
         if ($driver) {
-            // Get schedules only for this specific driver
             $schedules = Schedule::with(['barangay', 'driver.user'])
-                ->where('driver_id', $driver->id)  // Filter by driver's ID
+                ->where('driver_id', $driver->id)
                 ->get();
         } else {
-            // If user is not associated with a driver, return empty collection
             $schedules = collect([]);
         }
         
