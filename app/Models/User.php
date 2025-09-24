@@ -59,4 +59,9 @@ class User extends Authenticatable
     public function drivers() {
         return $this->hasMany(Driver::class);
     }
+
+    public function driver()
+    {
+        return $this->hasOne(Driver::class);
+    }
 }

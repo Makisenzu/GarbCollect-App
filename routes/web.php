@@ -16,6 +16,7 @@ use App\Http\Controllers\admin\resident\AreaController;
 use App\Http\Controllers\admin\truck\ScheduleController;
 use App\Http\Controllers\admin\dashboard\DashboardController;
 use App\Http\Controllers\admin\LocationRoute\RouteController;
+use App\Http\Controllers\truck\EmployeeController;
 
 Route::get('/', function () {
     return Inertia::render('Users/Home');
@@ -38,9 +39,10 @@ Route::get('/employee/login', function () {
 
 Route::post('/reviews', [ReviewController::class, 'store']);
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    
+    Route::middleware('roles:employee')->group(function () {
+        Route::get('/dashboard', [EmployeeController::class, 'index'])->name('dashboard');
+    });
     
     Route::middleware('roles:admin')->group(function () {
 

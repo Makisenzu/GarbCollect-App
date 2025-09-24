@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   format, 
   startOfMonth, 
@@ -21,6 +21,35 @@ const CalendarForm = ({ scheduleData }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('month');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [formattedSchedules, setFormattedSchedules] = useState({});
+
+  useEffect(() => {
+    if (scheduleData && Array.isArray(scheduleData)) {
+      const formattedData = {};
+      
+      scheduleData.forEach(schedule => {
+        const dateKey = schedule.collection_date;
+        const time = format(new Date(`2000-01-01T${schedule.collection_time}`), 'h:mm a');
+        
+        if (!formattedData[dateKey]) {
+          formattedData[dateKey] = [];
+        }
+        
+        formattedData[dateKey].push({
+          id: schedule.id,
+          address: schedule.barangay?.baranggay_name || 'Unknown Location',
+          time: time,
+          status: schedule.status,
+          type: schedule.barangay?.type || 'Unknown Type',
+          originalData: schedule
+        });
+      });
+      
+      setFormattedSchedules(formattedData);
+    } else if (scheduleData && typeof scheduleData === 'object') {
+      setFormattedSchedules(scheduleData);
+    }
+  }, [scheduleData]);
 
   const getDaysToShow = () => {
     if (viewMode === 'week') {
@@ -56,7 +85,7 @@ const CalendarForm = ({ scheduleData }) => {
     if (schedules.length === 0) return 'bg-white';
     
     const hasOverdue = schedules.some(s => s.status === 'overdue');
-    const hasPending = schedules.some(s => s.status === 'pending');
+    const hasPending = schedules.some(s => s.status === 'pending' || s.status === 'active');
     const allCompleted = schedules.every(s => s.status === 'completed');
     
     if (hasOverdue) return 'bg-red-100 border border-red-300';
@@ -64,6 +93,35 @@ const CalendarForm = ({ scheduleData }) => {
     if (allCompleted) return 'bg-green-100 border border-green-300';
     
     return 'bg-white';
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-200 text-green-800';
+      case 'active':
+      case 'pending':
+        return 'bg-yellow-200 text-yellow-800';
+      case 'overdue':
+        return 'bg-red-200 text-red-800';
+      default:
+        return 'bg-gray-200 text-gray-700';
+    }
+  };
+
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case 'active':
+        return 'Active';
+      case 'completed':
+        return 'Completed';
+      case 'overdue':
+        return 'Overdue';
+      case 'pending':
+        return 'Pending';
+      default:
+        return status;
+    }
   };
 
   const days = getDaysToShow();
@@ -173,7 +231,7 @@ const CalendarForm = ({ scheduleData }) => {
           <div className="grid grid-cols-7 gap-0 border-t border-l border-gray-300 min-w-[500px] sm:min-w-0">
             {days.map((day) => {
               const dateKey = format(day, 'yyyy-MM-dd');
-              const daySchedules = scheduleData[dateKey] || [];
+              const daySchedules = formattedSchedules[dateKey] || [];
               const isCurrentMonth = viewMode === 'week' || isSameMonth(day, currentDate);
               const isCurrentDay = isToday(day);
 
@@ -203,25 +261,18 @@ const CalendarForm = ({ scheduleData }) => {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-1">
-                    {daySchedules.slice(0, window.innerWidth < 640 ? 1 : 3).map((schedule) => {
-                      let statusColor = 'bg-gray-200 text-gray-700';
-                      if (schedule.status === 'completed') statusColor = 'bg-green-200 text-green-800';
-                      if (schedule.status === 'pending') statusColor = 'bg-yellow-200 text-yellow-800';
-                      if (schedule.status === 'overdue') statusColor = 'bg-red-200 text-red-800';
-
-                      return (
-                        <div
-                          key={schedule.id}
-                          className={`text-xs p-0.5 sm:p-1 rounded truncate ${statusColor}`}
-                          title={`${schedule.time} - ${schedule.address} (${schedule.status})`}
-                        >
-                          <div className="flex items-center gap-0.5 sm:gap-1">
-                            <span className="hidden xs:inline">{schedule.time}</span>
-                            <span className="truncate flex-1 text-xs">{schedule.address}</span>
-                          </div>
+                    {daySchedules.slice(0, window.innerWidth < 640 ? 1 : 3).map((schedule) => (
+                      <div
+                        key={schedule.id}
+                        className={`text-xs p-0.5 sm:p-1 rounded truncate ${getStatusColor(schedule.status)}`}
+                        title={`${schedule.time} - ${schedule.address} (${getStatusDisplay(schedule.status)})`}
+                      >
+                        <div className="flex items-center gap-0.5 sm:gap-1">
+                          <span className="hidden xs:inline">{schedule.time}</span>
+                          <span className="truncate flex-1 text-xs">{schedule.address}</span>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                     {daySchedules.length > (window.innerWidth < 640 ? 1 : 3) && (
                       <div className="text-xs text-gray-500 text-center">
                         +{daySchedules.length - (window.innerWidth < 640 ? 1 : 3)} more
@@ -241,35 +292,24 @@ const CalendarForm = ({ scheduleData }) => {
             {format(currentDate, 'EEEE, MMMM d, yyyy')}
           </div>
           <div className="space-y-3">
-            {(scheduleData[format(currentDate, 'yyyy-MM-dd')] || []).map((schedule) => {
-              let statusColor = 'bg-gray-100 text-gray-800';
-              if (schedule.status === 'completed') statusColor = 'bg-green-100 text-green-800';
-              if (schedule.status === 'pending') statusColor = 'bg-yellow-100 text-yellow-800';
-              if (schedule.status === 'overdue') statusColor = 'bg-red-100 text-red-800';
-
-              return (
-                <div
-                  key={schedule.id}
-                  className={`p-3 rounded-lg ${statusColor}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="font-semibold">{schedule.time}</div>
-                      <div className="text-sm mt-1">{schedule.address}</div>
-                      <div className="text-xs mt-2 capitalize">{schedule.type}</div>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      schedule.status === 'completed' ? 'bg-green-200 text-green-800' :
-                      schedule.status === 'pending' ? 'bg-yellow-200 text-yellow-800' :
-                      'bg-red-200 text-red-800'
-                    }`}>
-                      {schedule.status}
-                    </span>
+            {(formattedSchedules[format(currentDate, 'yyyy-MM-dd')] || []).map((schedule) => (
+              <div
+                key={schedule.id}
+                className={`p-3 rounded-lg ${getStatusColor(schedule.status).replace('200', '100').replace('700', '800')}`}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="font-semibold">{schedule.time}</div>
+                    <div className="text-sm mt-1">{schedule.address}</div>
+                    <div className="text-xs mt-2 capitalize">{schedule.type}</div>
                   </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}>
+                    {getStatusDisplay(schedule.status)}
+                  </span>
                 </div>
-              );
-            })}
-            {(!scheduleData[format(currentDate, 'yyyy-MM-dd')] || scheduleData[format(currentDate, 'yyyy-MM-dd')].length === 0) && (
+              </div>
+            ))}
+            {(!formattedSchedules[format(currentDate, 'yyyy-MM-dd')] || formattedSchedules[format(currentDate, 'yyyy-MM-dd')].length === 0) && (
               <div className="text-center text-gray-500 py-8">
                 No schedules for this day
               </div>
@@ -285,7 +325,7 @@ const CalendarForm = ({ scheduleData }) => {
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-200 rounded"></div>
-          <span>Pending</span>
+          <span>Active/Pending</span>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-200 rounded"></div>

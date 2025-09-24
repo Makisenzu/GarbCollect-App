@@ -1,8 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import CalendarForm from './Driver/components/CalendarForm';
 
 export default function Dashboard() {
+    const { schedules } = usePage().props;
+    console.log(schedules);
+
     const scheduleData = {
         '2025-09-08': [
             {
@@ -94,13 +97,12 @@ export default function Dashboard() {
             }
         ]
     };
-    console.log("Schedule data:", scheduleData);
 
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Driver Dashboard
+                    Driver Dashboards
                 </h2>
             }
         >
@@ -110,7 +112,7 @@ export default function Dashboard() {
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
-                            <CalendarForm scheduleData={scheduleData} />
+                            <CalendarForm scheduleData={schedules} />
                         </div>
                     </div>
                 </div>

@@ -2,17 +2,37 @@
 
 namespace App\Http\Controllers\truck;
 
-use App\Http\Controllers\Controller;
+use Inertia\Inertia;
+use App\Models\Schedule;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
-class Schedule extends Controller
+class EmployeeController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
+        $user = Auth::user();
+        
+        // Get the driver record associated with the logged-in user
+        $driver = $user->driver;
+        
+        if ($driver) {
+            // Get schedules only for this specific driver
+            $schedules = Schedule::with(['barangay', 'driver.user'])
+                ->where('driver_id', $driver->id)  // Filter by driver's ID
+                ->get();
+        } else {
+            // If user is not associated with a driver, return empty collection
+            $schedules = collect([]);
+        }
+        
+        return Inertia::render('Dashboard', [
+            'schedules' => $schedules
+        ]);
     }
 
     /**
