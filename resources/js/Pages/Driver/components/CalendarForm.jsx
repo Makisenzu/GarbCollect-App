@@ -84,9 +84,9 @@ const CalendarForm = ({ scheduleData }) => {
   const getDayBackgroundColor = (day, schedules) => {
     if (schedules.length === 0) return 'bg-white';
     
-    const hasOverdue = schedules.some(s => s.status === 'overdue');
+    const hasOverdue = schedules.some(s => s.status === 'FAILED');
     const hasPending = schedules.some(s => s.status === 'pending' || s.status === 'active');
-    const allCompleted = schedules.every(s => s.status === 'completed');
+    const allCompleted = schedules.every(s => s.status === 'done');
     
     if (hasOverdue) return 'bg-red-100 border border-red-300';
     if (hasPending) return 'bg-yellow-100 border border-yellow-300';
@@ -97,12 +97,12 @@ const CalendarForm = ({ scheduleData }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed':
+      case 'done':
         return 'bg-green-200 text-green-800';
       case 'active':
       case 'pending':
         return 'bg-yellow-200 text-yellow-800';
-      case 'overdue':
+      case 'FAILED':
         return 'bg-red-200 text-red-800';
       default:
         return 'bg-gray-200 text-gray-700';
@@ -325,11 +325,11 @@ const CalendarForm = ({ scheduleData }) => {
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-200 rounded"></div>
-          <span>Active/Pending</span>
+          <span>Pending</span>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-200 rounded"></div>
-          <span>Overdue</span>
+          <span>Failed</span>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\truck;
 
+use Carbon\Carbon;
 use Inertia\Inertia;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
@@ -15,6 +16,10 @@ class EmployeeController extends Controller
      */
     public function index()
     {
+        Schedule::where('status', 'active')
+            ->whereRaw('collection_date < CURDATE()')
+            ->update(['status' => 'FAILED']);
+    
         $user = Auth::user();
         $driver = $user->driver;
         

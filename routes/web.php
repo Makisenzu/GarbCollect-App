@@ -45,13 +45,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     
     Route::middleware('roles:admin')->group(function () {
-
-        //Admin Routes
-        // DashBoard
-        // Route::get('Admin/adminDashboard', function () {
-        //     return Inertia::render('Admin/adminDashboard');
-        // })->name('admin.dashboard');
-
         Route::get('Admin/adminDashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
 
