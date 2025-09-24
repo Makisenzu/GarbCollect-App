@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ClientPagination from '@/Components/ClientPagination';
-import { CircleLoader } from 'react-spinners';
+import { CircleLoader, RingLoader } from 'react-spinners';
 
 const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = false }) => {
   if (!show || !driver) return null;
@@ -152,7 +152,11 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
             
             {isSchedulesLoading || isLoadingSchedules ? (
               <div className="flex flex-col items-center justify-center py-8">
-                <CircleLoader color="#00de08" size={20} loading={true} />
+                <RingLoader 
+                  color="#00de08" 
+                  size={50}
+                  loading={true}
+                />
                 <p className="mt-2 text-gray-600">Loading schedules...</p>
               </div>
             ) : driverSchedules.length > 0 ? (
