@@ -5,6 +5,7 @@ import { GrLocationPin } from "react-icons/gr";
 import { CiLocationOn } from "react-icons/ci";
 import { ImLocation } from "react-icons/im";
 import { GiControlTower } from "react-icons/gi";
+import { FaLocationDot } from "react-icons/fa6";
 import axios from 'axios';
 
 export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
@@ -787,7 +788,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger }) {
             if (markerType === 'station') {
                 root.render(<GiControlTower size={size} color={'#4F262A'} />);
             } else {
-                root.render(<ImLocation size={size} color={markerColor} />);
+                root.render(<FaLocationDot size={size} color={markerColor} />);
             }
         }
 
