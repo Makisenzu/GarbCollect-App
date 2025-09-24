@@ -3,7 +3,6 @@ import { Head } from '@inertiajs/react';
 import CalendarForm from '@/Components/CalendarForm';
 
 export default function DriverHome() {
-    // Static schedule data
     const scheduleData = {
         '2023-11-15': [
             {
