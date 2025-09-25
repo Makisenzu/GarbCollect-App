@@ -17,7 +17,7 @@ export default function AdminDashboard() {
         >
             <Head title='Dashboard'/>
 
-            <div className="py-8">
+            <div className="py-1">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <WelcomeHero
                         schedules={schedules}
