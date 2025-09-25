@@ -110,15 +110,6 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                                     </div>
                                     Dashboard
                                 </SidebarLink>
-                                <SidebarLink
-                                    href={route('profile.edit')}
-                                    active={route().current('profile.edit')}
-                                >
-                                    <div className="w-6 h-6 flex items-center justify-center mr-3">
-                                        <FaUser size={14} />
-                                    </div>
-                                    Schedule
-                                </SidebarLink>
 
                                 <SidebarLink
                                     href={route('profile.edit')}
