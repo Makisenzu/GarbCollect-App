@@ -257,9 +257,9 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Driver
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Driver Status
-                  </th>
+                  </th> */}
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Collection Date
                   </th>
@@ -285,7 +285,7 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
                         License: {schedule.driver?.license_number || 'N/A'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         getDriverStatus(schedule.driver_id) === 'active' 
                           ? 'bg-green-100 text-green-800'
@@ -295,7 +295,7 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
                       }`}>
                         {getDriverStatus(schedule.driver_id)}
                       </span>
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(schedule.collection_date)}
                     </td>
