@@ -11,9 +11,12 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
   const [currentPage, setCurrentPage] = useState(1);
   const [isSchedulesLoading, setIsSchedulesLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDriverEditModal, setShowDriverEditModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [formData, setFormData] = useState({});
+  const [driverFormData, setDriverFormData] = useState({});
   const [processing, setProcessing] = useState(false);
+  const [driverProcessing, setDriverProcessing] = useState(false);
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -54,6 +57,29 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
       type: 'textarea',
       required: false,
       rows: 3
+    }
+  ];
+
+  const driverFields = [
+    {
+      name: 'status',
+      label: 'Driver Status',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'onduty', label: 'On Duty' },
+        { value: 'resigned', label: 'Resigned' }
+      ]
+    },
+    {
+      name: 'license_number',
+      label: 'License Number',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter license number'
     }
   ];
 
@@ -139,11 +165,47 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
     }
   };
 
+  const handleDriverEdit = () => {
+    const editData = {
+      status: driver.status || '',
+      license_number: driver.license_number || ''
+    };
+    
+    setDriverFormData(editData);
+    setShowDriverEditModal(true);
+  };
+
+  const handleDriverEditSubmit = async (formData) => {
+    setDriverProcessing(true);
+    
+    try {
+      await router.patch(`/admin/drivers/${driver.id}`, formData, {
+        preserveScroll: true,
+        onSuccess: () => {
+          showAlert('success', 'Driver updated successfully');
+          setShowDriverEditModal(false);
+          setDriverFormData({});
+          router.reload();
+        },
+        onError: (errors) => {
+          console.log('Driver edit errors:', errors);
+          showAlert('error', 'Failed to update driver');
+        },
+        onFinish: () => {
+          setDriverProcessing(false);
+        }
+      });
+    } catch (error) {
+      console.error('Driver edit submission error:', error);
+      setDriverProcessing(false);
+    }
+  };
+
   const handleRemove = async (schedule) => {
     const confirmed = await confirmDialog(
       'Delete Schedule',
       `Are you sure you want to delete this schedule for ${schedule.barangay?.baranggay_name || schedule.baranggay_name || 'this barangay'}?`,
-      'warning'
+      'Delete'
     );
 
     if (confirmed) {
@@ -195,10 +257,24 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
               </div>
               
               <div className="flex-grow">
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {driver.user?.name} {driver.user?.lastname}
-                </h3>
-                <p className="text-gray-600 mb-4">{driver.user?.email}</p>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {driver.user?.name} {driver.user?.lastname}
+                    </h3>
+                    <p className="text-gray-600">{driver.user?.email}</p>
+                  </div>
+                  <button
+                    onClick={handleDriverEdit}
+                    className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                    title="Edit Driver"
+                  >
+                    <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Driver
+                  </button>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -206,15 +282,19 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                     <p className="font-medium">{driver.license_number}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Status</p>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                      ${driver.status === 'active' ? 'bg-green-100 text-green-800' : 
-                      driver.status === 'inactive' ? 'bg-red-100 text-red-800' : 
-                      driver.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                      driver.status === 'onduty' ? 'bg-blue-100 text-blue-800' : 
-                      'bg-gray-100 text-gray-800'}`}>
-                      {driver.status.charAt(0).toUpperCase() + driver.status.slice(1)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-500">Status</p>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                        ${driver.status === 'active' ? 'bg-green-100 text-green-800' : 
+                        driver.status === 'inactive' ? 'bg-red-100 text-red-800' : 
+                        driver.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                        driver.status === 'onduty' ? 'bg-blue-100 text-blue-800' : 
+                        'bg-gray-100 text-gray-800'}`}>
+                        {driver.status.charAt(0).toUpperCase() + driver.status.slice(1)}
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Phone</p>
@@ -372,6 +452,22 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
         processing={processing}
         formData={formData}
         onFormChange={setFormData}
+      />
+
+      <FormModal
+        show={showDriverEditModal}
+        onClose={() => {
+          setShowDriverEditModal(false);
+          setDriverFormData({});
+        }}
+        title="Edit Driver"
+        initialData={driver}
+        onSubmit={handleDriverEditSubmit}
+        fields={driverFields}
+        submitText={driverProcessing ? 'Updating...' : 'Update Driver'}
+        processing={driverProcessing}
+        formData={driverFormData}
+        onFormChange={setDriverFormData}
       />
     </>
   );

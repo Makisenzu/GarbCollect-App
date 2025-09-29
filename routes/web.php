@@ -56,6 +56,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admin/driver/assign', [DriverController::class, 'assignDriver'])->name('admin.driverAssign');
         Route::delete('/delete/driver/{id}', [DriverController::class, 'destroy'])->name('admin.deleteDriver');
         Route::patch('/admin/driver/schedule/{id}', [DriverController::class, 'editDriverSchedule'])->name('admin.editDriverSchedule');
+        Route::patch('/admin/drivers/{id}', [DriverController::class, 'editDriver'])->name('admin.drivers.update');
+        Route::delete('/admin/driver/schedule/{id}', [DriverController::class, 'deleteDriverSchedule'])->name('admin.deleteDriverSchedule');
 
         //Resident Routes
         Route::get('/municipalities', [AreaController::class, 'index'])->name('admin.residents');

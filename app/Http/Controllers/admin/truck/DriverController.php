@@ -66,6 +66,20 @@ class DriverController extends Controller
                 'status' => ['required', 'in:active,inactive'],
                 'notes' => ['max:255']
             ]);
+            $driver = Driver::find($assignData['driver_id']);
+            
+            if (!$driver) {
+                return response()->json([
+                    'message' => 'Driver not found.'
+                ], 422);
+            }
+    
+            $allowedStatuses = ['active', 'onduty'];
+            if (!in_array($driver->status, $allowedStatuses)) {
+                return response()->json([
+                    'message' => 'Cannot assign driver. Driver is "' . $driver->status . '". Only active or on-duty drivers can be assigned.'
+                ], 422);
+            }
     
             $alreadyAssigned = Schedule::where('driver_id', $assignData['driver_id'])
                 ->where('barangay_id', $assignData['barangay_id'])
@@ -82,7 +96,7 @@ class DriverController extends Controller
     
             return response()->json([
                 'success' => true,
-                'message' => 'Driver assigned!',
+                'message' => 'Driver assigned successfully!',
                 'data' => $data
             ]);
         } catch (\Exception $e) {
@@ -127,6 +141,31 @@ class DriverController extends Controller
             return redirect()->back()->with('error', 'Failed to update schedule: ' . $e->getMessage());
         }
     }
+
+    public function editDriver(Request $request, string $id) {
+        try {
+            $data = $request->validate([
+                'status' => ['required', 'in:active,inactive,pending,onduty,resigned'],
+                'license_number' => ['required', 'string', 'max:255', 'unique:drivers,license_number,' . $id]
+            ]);
+    
+            $driverData = Driver::findOrFail($id);
+            $driverData->update($data);
+            return redirect()->back()->with('success', 'Driver edited successfully');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Failed to edit driver: ' . $e->getMessage());
+        } 
+    }
+
+    public function deleteDriverSchedule ($id) {
+        try {
+            $schedule = Schedule::findOrFail($id);
+            $schedule->delete();
+            return redirect()->back()->with('success', 'Schedule deleted successfully');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete schedule: ' . $e->getMessage());
+        }
+    } 
 
     /**
      * Show the form for creating a new resource.
