@@ -155,14 +155,37 @@ const DriverCard = ({ driver, schedule, isActive }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const statusText = isActive
-    ? driver.status === 'on duty'
-      ? 'on duty'
-      : 'active'
-    : 'off duty';
+  // Fixed status text with proper capitalization
+  const getStatusText = () => {
+    if (!isActive) {
+      return 'Off Duty';
+    }
+    
+    // Handle different status values with proper capitalization
+    switch (driver.status) {
+      case 'on duty':
+      case 'onduty':
+        return 'On Duty';
+      case 'active':
+        return 'Active';
+      case 'inactive':
+        return 'Inactive';
+      case 'pending':
+        return 'Pending';
+      case 'resigned':
+        return 'Resigned';
+      default:
+        // Capitalize first letter for any other status
+        return driver.status ? 
+          driver.status.charAt(0).toUpperCase() + driver.status.slice(1) : 
+          'Unknown';
+    }
+  };
+
+  const statusText = getStatusText();
 
   const statusColor = isActive
-    ? driver.status === 'on duty'
+    ? driver.status === 'on duty' || driver.status === 'onduty'
       ? 'bg-green-100 text-green-800'
       : 'bg-blue-100 text-blue-800'
     : 'bg-gray-100 text-gray-800';
@@ -226,14 +249,6 @@ const DriverCard = ({ driver, schedule, isActive }) => {
             {open && (
               <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg z-50">
                 <ul className="py-1 text-sm text-gray-700">
-                  {/* <li>
-                    <button
-                      onClick={() => console.log('Edit pressed')}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
-                      Edit
-                    </button>
-                  </li> */}
                   <li>
                     <button
                       onClick={() => setShowDriverModal(true)}

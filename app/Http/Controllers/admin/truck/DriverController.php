@@ -22,6 +22,7 @@ class DriverController extends Controller
     {
         $drivers = Driver::with('user')->paginate(6);
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
+        $barangays = Baranggay::all();
         
         $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email', 'phone_num')
                     ->whereNotIn('roles', ['admin', 'employee'])
@@ -32,6 +33,7 @@ class DriverController extends Controller
             'drivers' => $drivers,
             'schedules' => $schedules,
             'users' => $users,
+            'barangays' => $barangays,
             'stats' => [
                 [
                     'title' => 'Total Drivers',
