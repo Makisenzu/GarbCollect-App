@@ -3,12 +3,19 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import Map from './components/truckRoutes/Map';
 import InsertNewSite from './components/truckRoutes/InsertNewSite';
+import FormModal from '@/Components/FormModal';
 import { FaMap } from 'react-icons/fa';
+import { router } from '@inertiajs/react';
+import { showAlert, confirmDialog } from '@/SweetAlert';
 
 export default function TruckRoutes({ auth, mapboxKey }) {
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [collectionSites, setCollectionSites] = useState([]);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [editingSite, setEditingSite] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editFormData, setEditFormData] = useState({});
+    const [editProcessing, setEditProcessing] = useState(false);
 
     const handleLocationSelect = (location) => {
         setSelectedLocation(location);
@@ -30,6 +37,91 @@ export default function TruckRoutes({ auth, mapboxKey }) {
         }, 0);
     };
 
+    const handleEditSite = (siteData) => {
+        setEditingSite(siteData);
+        setEditFormData({
+            site_name: siteData.site_name || '',
+            status: siteData.status || 'active'
+        });
+        setShowEditModal(true);
+    };
+
+    const handleDeleteSite = async (siteData) => {
+        const confirmed = await confirmDialog(
+            'Delete Site',
+            `Are you sure you want to delete "${siteData.site_name}"? This action cannot be undone.`,
+            'Delete'
+        );
+
+        if (confirmed) {
+            try {
+                await router.delete(`/delete/site/${siteData.id}`, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        showAlert('success', 'Site deleted successfully');
+                        setRefreshTrigger(prev => prev + 1);
+                    },
+                    onError: () => {
+                        showAlert('error', 'Failed to delete site');
+                    }
+                });
+            } catch (error) {
+                console.error('Delete error:', error);
+                showAlert('error', 'Failed to delete site');
+            }
+        }
+    };
+
+    const handleEditSubmit = async (formData) => {
+        setEditProcessing(true);
+
+        try {
+            await router.patch(`/edit/site/${editingSite.id}`, formData, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    showAlert('success', 'Site updated successfully');
+                    setShowEditModal(false);
+                    setEditingSite(null);
+                    setEditFormData({});
+                    setRefreshTrigger(prev => prev + 1);
+                },
+                onError: (errors) => {
+                    console.log('Update errors:', errors);
+                    showAlert('error', 'Failed to update site');
+                },
+                onFinish: () => {
+                    setEditProcessing(false);
+                }
+            });
+        } catch (error) {
+            console.error('Edit submission error:', error);
+            setEditProcessing(false);
+        }
+    };
+
+
+    const editSiteFields = [
+        {
+            name: 'site_name',
+            label: 'Site Name',
+            type: 'text',
+            required: true,
+            placeholder: 'Enter site name'
+        },
+        {
+            name: 'status',
+            label: 'Status',
+            type: 'select',
+            required: true,
+            options: [
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'maintenance', label: 'Maintenance' }
+            ]
+        }
+    ];
+
     return (
         <AuthenticatedLayout>
             <Head title="Truck Routes" />
@@ -42,6 +134,8 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                             onLocationSelect={handleLocationSelect}
                             collectionSites={collectionSites}
                             refreshTrigger={refreshTrigger}
+                            onEditSite={handleEditSite}
+                            onDeleteSite={handleDeleteSite}
                         />
                     </div>
                     
@@ -52,6 +146,24 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                         />
                     </div>
                 </div>
+
+                {/* Edit Site Modal using FormModal */}
+                <FormModal
+                    show={showEditModal}
+                    onClose={() => {
+                        setShowEditModal(false);
+                        setEditingSite(null);
+                        setEditFormData({});
+                    }}
+                    title="Edit Site"
+                    initialData={editingSite}
+                    onSubmit={handleEditSubmit}
+                    fields={editSiteFields}
+                    submitText={editProcessing ? 'Updating...' : 'Update Site'}
+                    processing={editProcessing}
+                    formData={editFormData}
+                    onFormChange={setEditFormData}
+                />
             </div>
         </AuthenticatedLayout>
     );

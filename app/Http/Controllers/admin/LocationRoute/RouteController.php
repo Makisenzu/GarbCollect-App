@@ -9,6 +9,7 @@ use App\Models\Baranggay;
 use App\Models\Municipality;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Exception;
 
 class RouteController extends Controller
 {
@@ -94,6 +95,31 @@ class RouteController extends Controller
                 'message' => 'Failed to add new site',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function editSite (Request $request, string $id) {
+        try {
+            $data = $request->validate([
+                'site_name' => ['required', 'string', 'max:255'],
+                'status' => ['required', 'string', 'in:active,inactive,pending,maintenance']
+            ]);
+
+            $siteData = Site::findOrFail($id);
+            $siteData->update($data);
+            return redirect()->back()->with('success', 'Site edited successfully');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Failed to edit site' . $e->getMessage());
+        }
+    }
+
+    public function deleteSite($id) {
+        try {
+            $siteData = Site::findOrFail($id);
+            $siteData->delete();
+            return redirect()->back()->with('success', 'Site deleted successfully');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete site' . $e->getMessage());
         }
     }
 

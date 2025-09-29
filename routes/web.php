@@ -81,6 +81,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/municipality/barangay/purok/sites', [RouteController::class, 'getSiteLocation']);
         Route::post('/municipality/barangay/addNewGarbageSite', [RouteController::class, 'addCollectionRoute']);
+        Route::patch('/edit/site/{id}', [RouteController::class, 'editSite']);
+        Route::delete('/delete/site/{id}', [RouteController::class, 'deleteSite']);
 
     });
      
