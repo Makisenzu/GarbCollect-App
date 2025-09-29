@@ -155,13 +155,11 @@ const DriverCard = ({ driver, schedule, isActive }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fixed status text with proper capitalization
   const getStatusText = () => {
     if (!isActive) {
       return 'Off Duty';
     }
     
-    // Handle different status values with proper capitalization
     switch (driver.status) {
       case 'on duty':
       case 'onduty':
@@ -175,7 +173,6 @@ const DriverCard = ({ driver, schedule, isActive }) => {
       case 'resigned':
         return 'Resigned';
       default:
-        // Capitalize first letter for any other status
         return driver.status ? 
           driver.status.charAt(0).toUpperCase() + driver.status.slice(1) : 
           'Unknown';
