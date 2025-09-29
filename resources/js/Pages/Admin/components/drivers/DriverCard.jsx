@@ -226,14 +226,14 @@ const DriverCard = ({ driver, schedule, isActive }) => {
             {open && (
               <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg z-50">
                 <ul className="py-1 text-sm text-gray-700">
-                  <li>
+                  {/* <li>
                     <button
                       onClick={() => console.log('Edit pressed')}
                       className="block w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
                       Edit
                     </button>
-                  </li>
+                  </li> */}
                   <li>
                     <button
                       onClick={() => setShowDriverModal(true)}

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Baranggay;
 use App\Models\Schedule;
+use Exception;
 
 class DriverController extends Controller
 {
@@ -107,6 +108,23 @@ class DriverController extends Controller
                 'message' => 'Failed to fetch barangays',
                 'error' => $e->getMessage()
             ]);
+        }
+    }
+
+    public function editDriverSchedule(Request $request, string $id) {
+        try {
+            $data = $request->validate([
+                'collection_date' => ['required', 'date', 'after_or_equal:today'],
+                'collection_time' => ['required', 'date_format:H:i'],
+                'notes' => ['nullable', 'string', 'max:255']
+            ]);
+    
+            $scheduleData = Schedule::findOrFail($id);
+            $scheduleData->update($data);
+            
+            return redirect()->back()->with('success', 'Schedule updated successfully');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Failed to update schedule: ' . $e->getMessage());
         }
     }
 
