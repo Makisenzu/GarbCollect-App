@@ -17,6 +17,11 @@ class DashboardController extends Controller
      */
     public function index()
     {
+
+        Schedule::where('status', 'active')
+        ->whereRaw('collection_date < CURDATE()')
+        ->update(['status' => 'FAILED']);
+        
         $drivers = Driver::with('user')->get();
         $sites = Site::with(['purok'])->get();
         $pending = Review::with(['site', 'category'])->get();
