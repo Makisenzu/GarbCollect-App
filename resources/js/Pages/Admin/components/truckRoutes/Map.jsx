@@ -4,8 +4,8 @@ import mapboxgl from 'mapbox-gl';
 import { GrLocationPin } from "react-icons/gr";
 import { CiLocationOn } from "react-icons/ci";
 import { GiControlTower } from "react-icons/gi";
-import { FaLocationDot } from "react-icons/fa6";
 import axios from 'axios';
+import can from "@/images/can.png";
 
 export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEditSite, onDeleteSite }) {
     const mapContainer = useRef(null);
@@ -43,470 +43,41 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
                         [125.93730538303595, 8.548744057251142], [125.9349976967647, 8.577733038602531], [125.99912782475212 ,8.575510286263182]
                     ]]
                 }
-                
             },
-            // {
-            //     //Alegria Center [126.01045429538931, 8.506148297802667]
-            //     type: "Feature",
-            //     properties: {
-            //         id: 2,
-            //         barangay: "Barangay Alegria",
-            //         area: "1.8 km²",
-            //         description: "Barangay Alegria"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.99837144161182, 8.507586533411711], [125.99901091035099, 8.497409989136372], [126.0100646778181, 8.496561776899355],
-            //             [126.02169138217351, 8.499149065256034], [126.0219820497818, 8.511740285924205], [126.01234978971047, 8.515026816627952],
-            //             [126.00034895626129, 8.511586483479249]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     //Alegria Center [126.01045429538931, 8.506148297802667]
-            //     type: "Feature",
-            //     properties: {
-            //         id: 2,
-            //         barangay: "Barangay 1",
-            //         area: "1.8 km²",
-            //         description: "Barangay 1"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.99837144161182, 8.507586533411711], [125.99901091035099, 8.497409989136372], [126.0100646778181, 8.496561776899355],
-            //             [126.02169138217351, 8.499149065256034], [126.0219820497818, 8.511740285924205], [126.01234978971047, 8.515026816627952],
-            //             [126.00034895626129, 8.511586483479249]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 3,
-            //         barangay: "Barangay 2",
-            //         area: "2.2 km²",
-            //         description: "Barangay 2"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.935, 8.495], [125.950, 8.500], [125.955, 8.510],
-            //             [125.950, 8.520], [125.935, 8.525], [125.920, 8.520],
-            //             [125.915, 8.510], [125.920, 8.500], [125.935, 8.495]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 4,
-            //         barangay: "Barangay 3",
-            //         area: "1.9 km²",
-            //         description: "Barangay 3"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [126.000, 8.480], [126.015, 8.485], [126.020, 8.495],
-            //             [126.015, 8.505], [126.000, 8.510], [125.985, 8.505],
-            //             [125.980, 8.495], [125.985, 8.485], [126.000, 8.480]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 5,
-            //         barangay: "Barangay 4",
-            //         area: "2.1 km²",
-            //         description: "Barangay 4"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.925, 8.530], [125.940, 8.535], [125.945, 8.545],
-            //             [125.940, 8.555], [125.925, 8.560], [125.910, 8.555],
-            //             [125.905, 8.545], [125.910, 8.535], [125.925, 8.530]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 6,
-            //         barangay: "Barangay 5",
-            //         area: "2.3 km²",
-            //         description: "Barangay 5"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.985, 8.550], [126.000, 8.555], [126.005, 8.565],
-            //             [126.000, 8.575], [125.985, 8.580], [125.970, 8.575],
-            //             [125.965, 8.565], [125.970, 8.555], [125.985, 8.550]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 7,
-            //         barangay: "Bayugan 2",
-            //         area: "2.0 km²",
-            //         description: "Barangay Bayugan 2"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.915, 8.465], [125.930, 8.470], [125.935, 8.480],
-            //             [125.930, 8.490], [125.915, 8.495], [125.900, 8.490],
-            //             [125.895, 8.480], [125.900, 8.470], [125.915, 8.465]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 8,
-            //         barangay: "Bitan-agan",
-            //         area: "2.4 km²",
-            //         description: "Barangay Bitan-agan"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [126.005, 8.505], [126.020, 8.510], [126.025, 8.520],
-            //             [126.020, 8.530], [126.005, 8.535], [125.990, 8.530],
-            //             [125.985, 8.520], [125.990, 8.510], [126.005, 8.505]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 9,
-            //         barangay: "Borbon",
-            //         area: "1.7 km²",
-            //         description: "Barangay Borbon"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.950, 8.460], [125.965, 8.465], [125.970, 8.475],
-            //             [125.965, 8.485], [125.950, 8.490], [125.935, 8.485],
-            //             [125.930, 8.475], [125.935, 8.465], [125.950, 8.460]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 10,
-            //         barangay: "Buenasuerte",
-            //         area: "2.6 km²",
-            //         description: "Barangay Buenasuerte"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.905, 8.520], [125.920, 8.525], [125.925, 8.535],
-            //             [125.920, 8.545], [125.905, 8.550], [125.890, 8.545],
-            //             [125.885, 8.535], [125.890, 8.525], [125.905, 8.520]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 11,
-            //         barangay: "Caimpugan",
-            //         area: "2.7 km²",
-            //         description: "Barangay Caimpugan"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.980, 8.460], [125.995, 8.465], [126.000, 8.475],
-            //             [125.995, 8.485], [125.980, 8.490], [125.965, 8.485],
-            //             [125.960, 8.475], [125.965, 8.465], [125.980, 8.460]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 12,
-            //         barangay: "Das-agan",
-            //         area: "1.6 km²",
-            //         description: "Barangay Das-agan"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.930, 8.500], [125.945, 8.505], [125.950, 8.515],
-            //             [125.945, 8.525], [125.930, 8.530], [125.915, 8.525],
-            //             [125.910, 8.515], [125.915, 8.505], [125.930, 8.500]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 13,
-            //         barangay: "Ebro",
-            //         area: "2.8 km²",
-            //         description: "Barangay Ebro"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.995, 8.490], [126.010, 8.495], [126.015, 8.505],
-            //             [126.010, 8.515], [125.995, 8.520], [125.980, 8.515],
-            //             [125.975, 8.505], [125.980, 8.495], [125.995, 8.490]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 14,
-            //         barangay: "Hubang",
-            //         area: "1.5 km²",
-            //         description: "Barangay Hubang"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.910, 8.480], [125.925, 8.485], [125.930, 8.495],
-            //             [125.925, 8.505], [125.910, 8.510], [125.895, 8.505],
-            //             [125.890, 8.495], [125.895, 8.485], [125.910, 8.480]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 15,
-            //         barangay: "Karaus",
-            //         area: "2.9 km²",
-            //         description: "Barangay Karaus"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.940, 8.440], [125.955, 8.445], [125.960, 8.455],
-            //             [125.955, 8.465], [125.940, 8.470], [125.925, 8.465],
-            //             [125.920, 8.455], [125.925, 8.445], [125.940, 8.440]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 16,
-            //         barangay: "Ladgadan",
-            //         area: "1.4 km²",
-            //         description: "Barangay Ladgadan"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.970, 8.430], [125.985, 8.435], [125.990, 8.445],
-            //             [125.985, 8.455], [125.970, 8.460], [125.955, 8.455],
-            //             [125.950, 8.445], [125.955, 8.435], [125.970, 8.430]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 17,
-            //         barangay: "Lapinigan",
-            //         area: "3.0 km²",
-            //         description: "Barangay Lapinigan"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.920, 8.430], [125.935, 8.435], [125.940, 8.445],
-            //             [125.935, 8.455], [125.920, 8.460], [125.905, 8.455],
-            //             [125.900, 8.445], [125.905, 8.435], [125.920, 8.430]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 18,
-            //         barangay: "Lucac",
-            //         area: "1.3 km²",
-            //         description: "Barangay Lucac"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.960, 8.410], [125.975, 8.415], [125.980, 8.425],
-            //             [125.975, 8.435], [125.960, 8.440], [125.945, 8.435],
-            //             [125.940, 8.425], [125.945, 8.415], [125.960, 8.410]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 19,
-            //         barangay: "Mate",
-            //         area: "3.1 km²",
-            //         description: "Barangay Mate"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.990, 8.420], [126.005, 8.425], [126.010, 8.435],
-            //             [126.005, 8.445], [125.990, 8.450], [125.975, 8.445],
-            //             [125.970, 8.435], [125.975, 8.425], [125.990, 8.420]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 20,
-            //         barangay: "New Visayas",
-            //         area: "1.2 km²",
-            //         description: "Barangay New Visayas"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.930, 8.410], [125.945, 8.415], [125.950, 8.425],
-            //             [125.945, 8.435], [125.930, 8.440], [125.915, 8.435],
-            //             [125.910, 8.425], [125.915, 8.415], [125.930, 8.410]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 21,
-            //         barangay: "Ormaca",
-            //         area: "3.2 km²",
-            //         description: "Barangay Ormaca"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [126.000, 8.400], [126.015, 8.405], [126.020, 8.415],
-            //             [126.015, 8.425], [126.000, 8.430], [125.985, 8.425],
-            //             [125.980, 8.415], [125.985, 8.405], [126.000, 8.400]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 22,
-            //         barangay: "Pasta",
-            //         area: "1.1 km²",
-            //         description: "Barangay Pasta"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.950, 8.390], [125.965, 8.395], [125.970, 8.405],
-            //             [125.965, 8.415], [125.950, 8.420], [125.935, 8.415],
-            //             [125.930, 8.405], [125.935, 8.395], [125.950, 8.390]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 23,
-            //         barangay: "Pisa-an",
-            //         area: "3.3 km²",
-            //         description: "Barangay Pisa-an"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.980, 8.380], [125.995, 8.385], [126.000, 8.395],
-            //             [125.995, 8.405], [125.980, 8.410], [125.965, 8.405],
-            //             [125.960, 8.395], [125.965, 8.385], [125.980, 8.380]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 24,
-            //         barangay: "Rizal",
-            //         area: "1.0 km²",
-            //         description: "Barangay Rizal"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.920, 8.370], [125.935, 8.375], [125.940, 8.385],
-            //             [125.935, 8.395], [125.920, 8.400], [125.905, 8.395],
-            //             [125.900, 8.385], [125.905, 8.375], [125.920, 8.370]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 25,
-            //         barangay: "San Isidro",
-            //         area: "3.4 km²",
-            //         description: "Barangay San Isidro"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [126.010, 8.360], [126.025, 8.365], [126.030, 8.375],
-            //             [126.025, 8.385], [126.010, 8.390], [125.995, 8.385],
-            //             [125.990, 8.375], [125.995, 8.365], [126.010, 8.360]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 26,
-            //         barangay: "Santa Ana",
-            //         area: "0.9 km²",
-            //         description: "Barangay Santa Ana"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.940, 8.350], [125.955, 8.355], [125.960, 8.365],
-            //             [125.955, 8.375], [125.940, 8.380], [125.925, 8.375],
-            //             [125.920, 8.365], [125.925, 8.355], [125.940, 8.350]
-            //         ]]
-            //     }
-            // },
-            // {
-            //     type: "Feature",
-            //     properties: {
-            //         id: 27,
-            //         barangay: "Tagapua",
-            //         area: "3.5 km²",
-            //         description: "Barangay Tagapua"
-            //     },
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [[
-            //             [125.970, 8.340], [125.985, 8.345], [125.990, 8.355],
-            //             [125.985, 8.365], [125.970, 8.370], [125.955, 8.365],
-            //             [125.950, 8.355], [125.955, 8.345], [125.970, 8.340]
-            //         ]]
-            //     }
-            // }
         ]
+    };
+
+    // Barangay color mapping
+    const barangayColors = {
+        'Alegria': '#FF5733',
+        'Barangay 1': '#33FF57',
+        'Barangay 2': '#3357FF',
+        'Barangay 3': '#F033FF',
+        'Barangay 4': '#FF33F0',
+        'Barangay 5': '#33FFF0',
+        'Bayugan 2': '#8A2BE2',
+        'Bitan-agan': '#A52A2A',
+        'Borbon': '#DEB887',
+        'Buenasuerte': '#5F9EA0',
+        'Caimpugan': '#7FFF00',
+        'Das-agan': '#D2691E',
+        'Ebro': '#FF7F50',
+        'Hubang': '#6495ED',
+        'Karaus': '#DC143C',
+        'Ladgadan': '#00FFFF',
+        'Lapinigan': '#00008B',
+        'Lucac': '#008B8B',
+        'Mate': '#B8860B',
+        'New Visayas': '#006400',
+        'Ormaca': '#8B008B',
+        'Pasta': '#556B2F',
+        'Pisa-an': '#FF8C00',
+        'Rizal': '#9932CC',
+        'San Isidro': '#8FBC8F',
+        'Santa Ana': '#483D8B',
+        'Tagapua': '#2F4F4F',
+        'San Francisco': '#FFE659',
+        '_default': '#4F262A'
     };
 
     useEffect(() => {
@@ -637,33 +208,6 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
                 'fill-color': [
                     'match',
                     ['get', 'barangay'],
-                    'Barangay Alegria', '#FF5733',
-                    'Barangay 1', '#33FF57',
-                    'Barangay 2', '#3357FF',
-                    'Barangay 3', '#F033FF',
-                    'Barangay 4', '#FF33F0',
-                    'Barangay 5', '#33FFF0',
-                    'Bayugan 2', '#8A2BE2',
-                    'Bitan-agan', '#A52A2A',
-                    'Borbon', '#DEB887',
-                    'Buenasuerte', '#5F9EA0',
-                    'Caimpugan', '#7FFF00',
-                    'Das-agan', '#D2691E',
-                    'Ebro', '#FF7F50',
-                    'Hubang', '#6495ED',
-                    'Karaus', '#DC143C',
-                    'Ladgadan', '#00FFFF',
-                    'Lapinigan', '#00008B',
-                    'Lucac', '#008B8B',
-                    'Mate', '#B8860B',
-                    'New Visayas', '#006400',
-                    'Ormaca', '#8B008B',
-                    'Pasta', '#556B2F',
-                    'Pisa-an', '#FF8C00',
-                    'Rizal', '#9932CC',
-                    'San Isidro', '#8FBC8F',
-                    'Santa Ana', '#483D8B',
-                    'Tagapua', '#2F4F4F',
                     'San Francisco', '#FFE659',
                     '#4F262A'
                 ],
@@ -762,61 +306,54 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
         return popupElement;
     };
 
-    const addMarker = (coordinates, type = 'manual', title = '', siteData = null) => {
+    const createImageMarker = (siteData) => {
+        const barangayName = siteData?.purok?.baranggay?.baranggay_name;
+        const borderColor = barangayColors[barangayName] || barangayColors['_default'];
+
+        const markerElement = document.createElement('div');
+        markerElement.className = 'custom-image-marker';
+        markerElement.innerHTML = `
+            <div class="relative">
+                <div class="w-10 h-10 rounded-full border-10 flex items-center justify-center overflow-hidden" 
+                     style="border-color: ${borderColor}; background-color: ${borderColor}20;">
+                    <img src="${can}" 
+                         alt="${siteData.site_name}" 
+                         class="w-8 h-8 object-cover rounded-full"
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold\\' style=\\'background-color: ${borderColor}\\'>${siteData.site_name?.charAt(0) || 'S'}</div>'">
+                </div>
+            </div>
+        `;
+
+        return markerElement;
+    };
+
+    const createStationIcon = () => {
         const el = document.createElement('div');
         el.className = 'custom-marker';
-        const barangay_colors =  {
-            'Alegria': '#FF5733',
-            'Barangay 1': '#33FF57',
-            'Barangay 2': '#3357FF',
-            'Barangay 3': '#F033FF',
-            'Barangay 4': '#FF33F0',
-            'Barangay 5': '#33FFF0',
-            'Bayugan 2': '#8A2BE2',
-            'Bitan-agan': '#A52A2A',
-            'Borbon': '#DEB887',
-            'Buenasuerte': '#5F9EA0',
-            'Caimpugan': '#7FFF00',
-            'Das-agan': '#D2691E',
-            'Ebro': '#FF7F50',
-            'Hubang': '#6495ED',
-            'Karaus': '#DC143C',
-            'Ladgadan': '#00FFFF',
-            'Lapinigan': '#00008B',
-            'Lucac': '#008B8B',
-            'Mate': '#B8860B',
-            'New Visayas': '#006400',
-            'Ormaca': '#8B008B',
-            'Pasta': '#556B2F',
-            'Pisa-an': '#FF8C00',
-            'Rizal': '#9932CC',
-            'San Isidro': '#8FBC8F',
-            'Santa Ana': '#483D8B',
-            'Tagapua': '#2F4F4F',
-            '_default': '#4F262A'
-        }
-
-        let markerColor = '';
-        const barangay_name = siteData?.purok?.baranggay?.baranggay_name;
-        const markerType = siteData?.type || 'site';
-        markerColor = barangay_colors[barangay_name] || barangay_colors['_default'];
-    
-        const size = type === 'site' ? 30 : 15;
-        
         const root = createRoot(el);
+        root.render(<GiControlTower size={30} color={'#4F262A'} />);
+        return { element: el, root };
+    };
+
+    const addMarker = (coordinates, type = 'manual', title = '', siteData = null) => {
+        let markerElement;
+        let root = null;
         
-        if(type === 'manual') {
+        if (type === 'manual') {
+            markerElement = document.createElement('div');
+            markerElement.className = 'custom-marker';
+            root = createRoot(markerElement);
             root.render(<GrLocationPin size={15} color="#FC2622" />);
+        } else if (siteData?.type === 'station') {
+            const stationIcon = createStationIcon();
+            markerElement = stationIcon.element;
+            root = stationIcon.root;
         } else {
-            if (markerType === 'station') {
-                root.render(<GiControlTower size={size} color={'#4F262A'} />);
-            } else {
-                root.render(<FaLocationDot size={size} color={markerColor} />);
-            }
+            markerElement = createImageMarker(siteData);
         }
 
         const marker = new mapboxgl.Marker({
-            element: el,
+            element: markerElement,
             draggable: false
         })
         .setLngLat(coordinates)
@@ -836,7 +373,10 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
             markerRef.current = marker;
         }
     
-        marker._root = root;
+        if (root) {
+            marker._root = root;
+        }
+    
         return marker;
     };
 
