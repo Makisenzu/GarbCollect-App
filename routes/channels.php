@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\Broadcast;
 
+Broadcast::channel('public-driver-locations', function ($user) {
+    return true; // Anyone can listen
+});
+
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });

@@ -108,6 +108,7 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
   };
 
   const formatTimeTo12Hour = (timeString) => {
+    console.log('Input time:', timeString);
     if (!timeString) return 'N/A';
     
     try {
@@ -374,9 +375,9 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                 ${schedule.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                                schedule.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
-                                schedule.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                schedule.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                schedule.status === 'failed' ? 'bg-red-100 text-red-800' : 
+                                schedule.status === 'progress' ? 'bg-yellow-100 text-yellow-800' :
+                                schedule.status === 'active' ? 'bg-blue-100 text-blue-800' :
                                 'bg-gray-100 text-gray-800'}`}>
                                 {schedule.status?.charAt(0)?.toUpperCase() + schedule.status?.slice(1)?.replace('_', ' ') || 'N/A'}
                               </span>

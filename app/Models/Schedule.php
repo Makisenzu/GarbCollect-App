@@ -1,13 +1,14 @@
 <?php
 
 namespace App\Models;
-use App\Models\Driver;
-use App\Models\User;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Schedule extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'barangay_id',
         'driver_id',
@@ -17,11 +18,25 @@ class Schedule extends Model
         'notes'
     ];
 
-    public function driver() {
-        return $this->belongsTo(Driver::class, 'driver_id');
+    protected $casts = [
+        'collection_date' => 'date',
+    ];
+
+    public function driver()
+    {
+        return $this->belongsTo(Driver::class, 'driver_id')->with('user');
     }
 
-    public function barangay() {
+    public function barangay()
+    {
         return $this->belongsTo(Baranggay::class);
+    }
+
+    public function getCollectionTimeAttribute($value)
+    {
+        if (strlen($value) > 8) {
+            return substr($value, 0, 8);
+        }
+        return $value;
     }
 }

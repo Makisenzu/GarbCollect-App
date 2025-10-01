@@ -8,18 +8,44 @@ use App\Models\Schedule;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    protected function updateScheduleStatuses()
+    {
+        DB::update("
+            UPDATE schedules 
+            SET status = 'failed', 
+                updated_at = NOW() 
+            WHERE status = 'active' 
+            AND collection_date < CURDATE()
+        ");
+    
+        DB::update("
+            UPDATE schedules 
+            SET status = 'in_progress', 
+                updated_at = NOW() 
+            WHERE status = 'active' 
+            AND collection_date = CURDATE() 
+            AND collection_time <= TIME(NOW())
+        ");
+    
+        DB::update("
+            UPDATE schedules 
+            SET status = 'completed', 
+                updated_at = NOW() 
+            WHERE status = 'in_progress' 
+            AND collection_date < CURDATE()
+        ");
+    }
     public function index()
     {
-        Schedule::where('status', 'active')
-            ->whereRaw('collection_date < CURDATE()')
-            ->update(['status' => 'FAILED']);
-    
+        $this->updateScheduleStatuses();
+
         $user = Auth::user();
         $driver = $user->driver;
         
