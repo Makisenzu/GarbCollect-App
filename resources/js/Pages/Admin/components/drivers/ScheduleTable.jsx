@@ -102,11 +102,11 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
+      progress: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
       active: { color: 'bg-blue-100 text-blue-800', label: 'Active' },
       inactive: { color: 'bg-gray-100 text-gray-800', label: 'Inactive' },
       completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
-      cancelled: { color: 'bg-red-100 text-red-800', label: 'Cancelled' }
+      failed: { color: 'bg-red-100 text-red-800', label: 'Failed' }
     };
     
     const config = statusConfig[status] || { color: 'bg-gray-100 text-gray-800', label: status };
@@ -267,7 +267,7 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
                     Collection Time
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Schedule Status
+                    Status
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Notes
