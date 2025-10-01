@@ -25,6 +25,10 @@ class Baranggay extends Model
         return $this->belongsTo(Municipality::class);
     }
 
+    public function driver() {
+        return $this->hasMany(Driver::class);
+    }
+
     public function schedules() {
         return $this->hasMany(Schedule::class);
     }
