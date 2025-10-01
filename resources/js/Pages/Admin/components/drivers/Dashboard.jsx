@@ -47,7 +47,7 @@ const Dashboard = () => {
       placeholder: 'Enter license number'
     },
     {
-      name: 'assigned_barangay',
+      name: 'barangay_id',
       label: 'Assigned Barangay',
       type: 'select',
       required: true,

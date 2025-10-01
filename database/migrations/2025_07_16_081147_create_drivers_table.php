@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('drivers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('assigned_barangay')->constrained('baranggays')->cascadeOnDelete();
+            $table->foreignId('barangay_id')->constrained('baranggays')->cascadeOnDelete();
             $table->string('license_number')->nullable()->comment('Official driver license ID');
             $table->string('status')->default('active');
             $table->decimal('current_latitude', 10, 8)->nullable();

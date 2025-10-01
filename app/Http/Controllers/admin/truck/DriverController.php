@@ -197,7 +197,7 @@ class DriverController extends Controller
     {
         $validatedData = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
-            'assigned_barangay' => ['required', 'exists:baranggays,id'],
+            'barangay_id' => ['required', 'exists:baranggays,id'],
             'license_number' => ['required', 'string', 'unique:drivers,license_number', 'max:255'],
             'status' => ['required', 'in:active,inactive,pending,onduty,resigned'],
             'current_latitude' => ['numeric', 'nullable'],
