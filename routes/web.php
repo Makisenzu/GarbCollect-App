@@ -35,7 +35,7 @@ Route::get('/employee/login', function () {
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
-});
+})->name('loginPage');
 
 Route::post('/reviews', [ReviewController::class, 'store']);
 Route::middleware(['auth', 'verified'])->group(function () {
