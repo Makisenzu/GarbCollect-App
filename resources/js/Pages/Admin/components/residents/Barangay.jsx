@@ -24,6 +24,7 @@ export default function Barangay({ barangays, links, mapBoxKey }) {
     "Barangay 4": 15,
     "Barangay 5": 15, 
   };
+  
 
   const handleViewBarangay = (barangay) => {
     setSelectedBarangay(barangay);

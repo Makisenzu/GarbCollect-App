@@ -6,7 +6,7 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
     const map = useRef(null);
     const [cssLoaded, setCssLoaded] = useState(false);
 
-    const staticPolygonData = {
+    const allBarangayPolygons = {
         type: "FeatureCollection",
         features: [
             {
@@ -34,7 +34,100 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
                     ]]
                 }
             },
+            {
+                type: "Feature",
+                properties: {
+                    id: 2,
+                    barangay: "Alegria",
+                },
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [[
+                        [126.005, 8.510], [126.015, 8.510], [126.015, 8.502], [126.005, 8.502], [126.005, 8.510]
+                    ]]
+                }
+            },
+            {
+                type: "Feature",
+                properties: {
+                    id: 3,
+                    barangay: "Barangay 1",
+                },
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [[
+                        [125.970, 8.515], [125.980, 8.515], [125.980, 8.508], [125.970, 8.508], [125.970, 8.515]
+                    ]]
+                }
+            },
+            {
+                type: "Feature",
+                properties: {
+                    id: 4,
+                    barangay: "Barangay 2",
+                },
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [[
+                        [125.975, 8.512], [125.985, 8.512], [125.985, 8.505], [125.975, 8.505], [125.975, 8.512]
+                    ]]
+                }
+            },
+            {
+                type: "Feature",
+                properties: {
+                    id: 5,
+                    barangay: "Barangay 3",
+                },
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [[
+                        [125.966, 8.512], [125.976, 8.512], [125.976, 8.505], [125.966, 8.505], [125.966, 8.512]
+                    ]]
+                }
+            },
+            {
+                type: "Feature",
+                properties: {
+                    id: 6,
+                    barangay: "Barangay 4",
+                },
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [[
+                        [125.974, 8.510], [125.984, 8.510], [125.984, 8.503], [125.974, 8.503], [125.974, 8.510]
+                    ]]
+                }
+            },
+            {
+                type: "Feature",
+                properties: {
+                    id: 7,
+                    barangay: "Barangay 5",
+                },
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [[
+                        [125.740, 8.720], [125.750, 8.720], [125.750, 8.710], [125.740, 8.710], [125.740, 8.720]
+                    ]]
+                }
+            },
         ]
+    };
+
+    const getFilteredPolygonData = () => {
+        if (!barangayName) {
+            return allBarangayPolygons;
+        }
+        
+        const filteredFeatures = allBarangayPolygons.features.filter(
+            feature => feature.properties.barangay === barangayName
+        );
+        
+        return {
+            type: "FeatureCollection",
+            features: filteredFeatures
+        };
     };
 
     useEffect(() => {
@@ -57,7 +150,7 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
         const defaultCenter = centerFocus || [125.94849837776422, 8.483022468128098];
         const defaultZoom = centerFocus ? zoomLevel : 10.5;
 
-        console.log('Initializing map with center:', defaultCenter, 'zoom:', defaultZoom);
+        console.log('Initializing map with center:', defaultCenter, 'zoom:', defaultZoom, 'barangay:', barangayName);
 
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
@@ -68,8 +161,9 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
         });
 
         map.current.on('load', () => {
-            console.log('Map loaded, adding polygon layer');
-            addPolygonLayer(staticPolygonData);
+            console.log('Map loaded, adding polygon layer for:', barangayName);
+            const filteredData = getFilteredPolygonData();
+            addPolygonLayer(filteredData);
         });
 
         return () => {
@@ -79,6 +173,15 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
             }
         };
     }, [mapBoxKey, cssLoaded]);
+
+    useEffect(() => {
+        if (!map.current || !map.current.isStyleLoaded()) return;
+
+        console.log('Barangay changed to:', barangayName);
+        const filteredData = getFilteredPolygonData();
+        updatePolygonLayer(filteredData);
+
+    }, [barangayName]);
 
     useEffect(() => {
         if (!map.current || !centerFocus) return;
@@ -121,9 +224,15 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
                     'match',
                     ['get', 'barangay'],
                     'San Francisco', '#FFE659',
+                    'Alegria', '#FF5733',
+                    'Barangay 1', '#33FF57',
+                    'Barangay 2', '#3357FF',
+                    'Barangay 3', '#F033FF',
+                    'Barangay 4', '#FF33F0',
+                    'Barangay 5', '#33FFF0',
                     '#4F262A'
                 ],
-                'fill-opacity': 0.5
+                'fill-opacity': 0.7
             }
         });
 
@@ -133,7 +242,7 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
             source: 'polygons',
             paint: {
                 'line-color': '#000',
-                'line-width': 2
+                'line-width': 3
             }
         });
 
@@ -144,6 +253,13 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
         map.current.on('mouseleave', 'polygons-fill', () => {
             map.current.getCanvas().style.cursor = '';
         });
+    };
+
+    const updatePolygonLayer = (geoJsonData) => {
+        if (!map.current || !map.current.getSource('polygons')) return;
+        
+        const source = map.current.getSource('polygons');
+        source.setData(geoJsonData);
     };
 
     return (
