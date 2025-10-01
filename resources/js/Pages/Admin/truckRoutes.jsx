@@ -147,7 +147,6 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                     </div>
                 </div>
 
-                {/* Edit Site Modal using FormModal */}
                 <FormModal
                     show={showEditModal}
                     onClose={() => {

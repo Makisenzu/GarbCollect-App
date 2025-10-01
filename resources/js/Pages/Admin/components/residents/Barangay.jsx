@@ -9,6 +9,20 @@ export default function Barangay({ barangays, links, mapBoxKey }) {
 
   const barangayCenters = {
     "Alegria": [126.01045429538931, 8.506148297802667],
+    "Barangay 1": [125.97512115693803, 8.511864385615809],
+    "Barangay 2": [125.98099219188884, 8.508107108611867],
+    "Barangay 3": [125.97177795028654, 8.508231712526168],
+    "Barangay 4": [125.97986446160564, 8.50665021927368],
+    "Barangay 5": [125.7451770647528, 8.71373963951153],
+  };
+
+  const barangayZoomLevels = {
+    "Alegria": 14,
+    "Barangay 1": 15,
+    "Barangay 2": 15,
+    "Barangay 3": 15,
+    "Barangay 4": 15,
+    "Barangay 5": 15, 
   };
 
   const handleViewBarangay = (barangay) => {
@@ -69,6 +83,7 @@ export default function Barangay({ barangays, links, mapBoxKey }) {
                   mapBoxKey={mapBoxKey}
                   centerFocus={barangayCenters[selectedBarangay.baranggay_name] || [125.94849837776422, 8.483022468128098]}
                   barangayName={selectedBarangay.baranggay_name}
+                  zoomLevel={barangayZoomLevels[selectedBarangay.baranggay_name] || 13}
                 />
               </div>
             </div>

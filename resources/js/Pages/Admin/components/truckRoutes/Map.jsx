@@ -47,7 +47,6 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
         ]
     };
 
-    // Barangay color mapping
     const barangayColors = {
         'Alegria': '#FF5733',
         'Barangay 1': '#33FF57',
@@ -127,6 +126,8 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
 
         map.current.on('click', async (e) => {
             const { lng, lat } = e.lngLat;
+
+            console.log(lng, lat);
             
             if (markerRef.current) {
                 markerRef.current.remove();

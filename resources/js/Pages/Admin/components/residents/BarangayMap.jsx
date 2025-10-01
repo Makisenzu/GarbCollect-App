@@ -1,8 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
-import { createRoot } from 'react-dom/client';
 import mapboxgl from 'mapbox-gl';
 
-export default function BarangayMap({ mapBoxKey, centerFocus, barangayName }) {
+export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoomLevel = 13 }) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const [cssLoaded, setCssLoaded] = useState(false);
@@ -56,7 +55,9 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName }) {
         mapboxgl.accessToken = mapBoxKey;
 
         const defaultCenter = centerFocus || [125.94849837776422, 8.483022468128098];
-        const defaultZoom = centerFocus ? 13 : 10.5;
+        const defaultZoom = centerFocus ? zoomLevel : 10.5;
+
+        console.log('Initializing map with center:', defaultCenter, 'zoom:', defaultZoom);
 
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
@@ -67,11 +68,8 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName }) {
         });
 
         map.current.on('load', () => {
+            console.log('Map loaded, adding polygon layer');
             addPolygonLayer(staticPolygonData);
-            
-            if (centerFocus && barangayName) {
-                addBarangayCenterMarker(centerFocus, barangayName);
-            }
         });
 
         return () => {
@@ -80,7 +78,21 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName }) {
                 map.current = null;
             }
         };
-    }, [mapBoxKey, cssLoaded, centerFocus, barangayName]);
+    }, [mapBoxKey, cssLoaded]);
+
+    useEffect(() => {
+        if (!map.current || !centerFocus) return;
+
+        console.log('Zooming to center:', centerFocus, 'Barangay:', barangayName, 'Zoom level:', zoomLevel);
+
+        map.current.flyTo({
+            center: centerFocus,
+            zoom: zoomLevel,
+            essential: true,
+            duration: 1000,
+        });
+
+    }, [centerFocus, barangayName, zoomLevel]);
 
     const addPolygonLayer = (geoJsonData) => {
         if (!map.current) return;
@@ -132,33 +144,6 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName }) {
         map.current.on('mouseleave', 'polygons-fill', () => {
             map.current.getCanvas().style.cursor = '';
         });
-    };
-
-    const addBarangayCenterMarker = (coordinates, barangayName) => {
-        const el = document.createElement('div');
-        el.className = 'custom-marker';
-        
-        const root = createRoot(el);
-
-        const marker = new mapboxgl.Marker({
-            element: el,
-            draggable: false
-        })
-        .setLngLat(coordinates)
-        .addTo(map.current);
-
-        const popup = new mapboxgl.Popup({ offset: 25 })
-            .setHTML(`
-                <div class="p-2">
-                    <h3 class="font-bold">${barangayName}</h3>
-                    <p>Barangay Center</p>
-                </div>
-            `);
-        
-        marker.setPopup(popup);
-
-        marker._root = root;
-        return marker;
     };
 
     return (
