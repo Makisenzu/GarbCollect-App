@@ -52,6 +52,11 @@ class DriverController extends Controller
                     'value' => $drivers->where('status', 'onduty')->count(),
                     'description' => 'Drivers currently on duty',
                     'change' => '+0%'
+                ],
+                [
+                    'title' => "Failed Collections",
+                    'value' => $schedules->where('status', 'failed')->count(),
+                    'description' => "Failed collection schedules",
                 ]
             ]
         ]);
