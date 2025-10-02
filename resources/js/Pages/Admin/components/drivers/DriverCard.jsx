@@ -44,18 +44,19 @@ const DriverCard = ({ driver, schedule, isActive }) => {
       value: driver.id,
       disabled: true,
     },
+    
     {
       name: "barangay_id",
-      label: "Barangay",
-      type: "select",
-      required: true,
-      options:
-        barangays && barangays.length > 0
-          ? barangays.map((barangay) => ({
-              value: barangay.id,
-              label: barangay.baranggay_name,
-            }))
-          : [],
+      type: "hidden",
+      value: driver.barangay_id,
+    },
+    {
+      name: "barangay_display",
+      label: "Assigned Barangay",
+      type: "text",
+      value: driver.barangay.baranggay_name,
+      disabled: true,
+      required: false,
     },
     {
       name: "collection_date",
@@ -303,7 +304,7 @@ const DriverCard = ({ driver, schedule, isActive }) => {
         onClose={() => setOpenBarangayModal(false)}
         title={`Assign Schedule to ${driver.user.name}`}
         fields={barangayFields}
-        initialData={{ driver_id: driver.id }}
+        initialData={{ driver_id: driver.id, barangay_id: driver.barangay_id, barangay_display: driver.barangay.baranggay_name }}
         formData={formData}
         onFormChange={setFormData}
         onSubmit={handleFormSubmit}
