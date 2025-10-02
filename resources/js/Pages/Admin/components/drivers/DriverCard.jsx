@@ -267,7 +267,7 @@ const DriverCard = ({ driver, schedule, isActive }) => {
             )}
           </div>
         </div>
-
+{/* 
         <div className="space-y-2 mb-4">
 
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -286,7 +286,7 @@ const DriverCard = ({ driver, schedule, isActive }) => {
             </svg>
             <span>{driver.user.phone_num}</span>
           </div>
-        </div>
+        </div> */}
 
         <div className="flex gap-2 pt-2">
           <button
