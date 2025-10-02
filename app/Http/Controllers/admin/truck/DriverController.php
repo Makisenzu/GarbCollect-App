@@ -20,7 +20,7 @@ class DriverController extends Controller
      */
     public function index()
     {
-        $drivers = Driver::with('user')->paginate(6);
+        $drivers = Driver::with('user', 'barangay')->paginate(6);
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
         $barangays = Baranggay::all();
         

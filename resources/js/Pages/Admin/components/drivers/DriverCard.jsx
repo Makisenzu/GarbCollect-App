@@ -155,6 +155,28 @@ const DriverCard = ({ driver, schedule, isActive }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const getStatusColor = () => {
+    if (!isActive) {
+      return 'bg-gray-500';
+    }
+    
+    switch (driver.status) {
+      case 'on duty':
+      case 'onduty':
+        return 'bg-green-500';
+      case 'active':
+        return 'bg-blue-500';
+      case 'inactive':
+        return 'bg-red-500';
+      case 'pending':
+        return 'bg-yellow-500';
+      case 'resigned':
+        return 'bg-gray-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
   const getStatusText = () => {
     if (!isActive) {
       return 'Off Duty';
@@ -180,12 +202,7 @@ const DriverCard = ({ driver, schedule, isActive }) => {
   };
 
   const statusText = getStatusText();
-
-  const statusColor = isActive
-    ? driver.status === 'on duty' || driver.status === 'onduty'
-      ? 'bg-green-100 text-green-800'
-      : 'bg-blue-100 text-blue-800'
-    : 'bg-gray-100 text-gray-800';
+  const statusColor = getStatusColor();
 
   const getInitialsFromName = (firstName, lastName) => {
     const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
@@ -214,12 +231,15 @@ const DriverCard = ({ driver, schedule, isActive }) => {
               </div>
             )}
             <div>
-              <h3 className="font-semibold text-gray-900">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                 {driver.user.name} {driver.user.lastname}
+                <span 
+                  className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColor}`}
+                  title={statusText}
+                >
+                </span>
               </h3>
-              <span className={`text-xs px-2 py-1 rounded-full ${statusColor}`}>
-                {statusText}
-              </span>
+              <p className="text-sm text-gray-600 mt-1">{driver.user.email}</p>
             </div>
           </div>
 
@@ -267,26 +287,6 @@ const DriverCard = ({ driver, schedule, isActive }) => {
             )}
           </div>
         </div>
-{/* 
-        <div className="space-y-2 mb-4">
-
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-              />
-            </svg>
-            <span>{driver.user.phone_num}</span>
-          </div>
-        </div> */}
 
         <div className="flex gap-2 pt-2">
           <button

@@ -259,12 +259,27 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
               
               <div className="flex-grow">
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900">
-                      {driver.user?.name} {driver.user?.lastname}
-                    </h3>
-                    <p className="text-gray-600">{driver.user?.email}</p>
-                  </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    {driver.user?.name} {driver.user?.lastname}
+                    <div className="relative group flex-shrink-0">
+                      <span 
+                        className={`w-2 h-2 rounded-full block
+                          ${driver.status === 'onduty' ? 'bg-green-500' : 
+                            driver.status === 'inactive' ? 'bg-red-500' : 
+                            driver.status === 'pending' ? 'bg-yellow-500' : 
+                            driver.status === 'active' ? 'bg-blue-500' : 
+                            'bg-gray-500'}`}
+                      >
+                      </span>
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                        {driver.status.charAt(0).toUpperCase() + driver.status.slice(1)}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                      </div>
+                    </div>
+                  </h3>
+                  <p className="text-gray-600">{driver.user?.email}</p>
+                </div>
                   <button
                     onClick={handleDriverEdit}
                     className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
@@ -282,7 +297,7 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                     <p className="text-sm text-gray-500">License Number</p>
                     <p className="font-medium">{driver.license_number}</p>
                   </div>
-                  <div>
+                  {/* <div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm text-gray-500">Status</p>
                     </div>
@@ -296,11 +311,17 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                         {driver.status.charAt(0).toUpperCase() + driver.status.slice(1)}
                       </span>
                     </div>
-                  </div>
+                  </div> */}
                   <div>
                     <p className="text-sm text-gray-500">Phone</p>
                     <p className="font-medium">{driver.user.phone_num || 'N/A'}</p>
                   </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">Barangay Assigned</p>
+                    <p className="font-medium">{driver.barangay?.baranggay_name || 'N/A'}</p>
+                  </div>
+
                   <div>
                     <p className="text-sm text-gray-500">Employment Date</p>
                     <p className="font-medium">{formatDate(driver.created_at)}</p>

@@ -29,7 +29,7 @@ class Driver extends Model
     }
 
     public function barangay() {
-        return $this->hasOne(Baranggay::class);
+        return $this->belongsTo(Baranggay::class, 'barangay_id');
     }
 
     public function schedules()
