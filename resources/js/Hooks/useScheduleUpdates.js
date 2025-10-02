@@ -19,12 +19,9 @@ export default function useScheduleUpdates() {
             return;
         }
 
-        console.log('Setting up real-time listener for driver:', driverId);
-
         try {
             window.Echo.private(`driver.${driverId}`)
                 .listen('.new.schedule', (e) => {
-                    console.log('New schedule event received:', e);
                     setSchedules(prev => [e.schedule, ...prev]);
                     setNotification({
                         type: 'success',
@@ -37,8 +34,6 @@ export default function useScheduleUpdates() {
                         setNotification(null);
                     }, 5000);
                 });
-
-            console.log('Successfully subscribed to channel:', `driver.${driverId}`);
         } catch (error) {
             console.error('Error setting up Echo listener:', error);
         }

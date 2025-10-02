@@ -3,12 +3,41 @@ import { Head, usePage } from '@inertiajs/react';
 import StatCard from './Admin/components/drivers/StatCard';
 import Schedule from './Driver/components/Schedule';
 import useScheduleUpdates from '@/Hooks/useScheduleUpdates';
+import { useMemo } from 'react';
 
 export default function Dashboard() {
-    const { stats, hasDriver, auth } = usePage().props;
+    const { stats: initialStats, hasDriver, auth } = usePage().props;
     const { schedules, notification, setNotification } = useScheduleUpdates();
 
-    console.log('Current driver ID:', auth?.user?.driver?.id);
+    const realTimeStats = useMemo(() => {
+        if (!hasDriver || schedules.length === 0) {
+            return initialStats;
+        }
+
+        return [
+            {
+                'title': 'Total Schedules',
+                'value': schedules.length,
+                'description': 'All your schedules'
+            },
+            {
+                'title': 'Completed',
+                'value': schedules.filter(s => s.status === 'completed').length,
+                'description': 'Successful collections'
+            },
+            {
+                'title': 'Pending',
+                'value': schedules.filter(s => s.status === 'active').length,
+                'description': 'Upcoming schedules'
+            },
+            {
+                'title': 'Failed',
+                'value': schedules.filter(s => s.status === 'failed').length,
+                'description': 'Failed collections'
+            }
+        ];
+    }, [schedules, hasDriver, initialStats]);
+
 
     return (
         <AuthenticatedLayout
@@ -38,13 +67,6 @@ export default function Dashboard() {
                                 <p className="mt-1 text-sm text-gray-600">
                                     {notification.message}
                                 </p>
-                                {/* {notification.schedule && (
-                                    <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                                        <div><strong>Barangay:</strong> {notification.schedule.barangay?.baranggay_name}</div>
-                                        <div><strong>Date:</strong> {notification.schedule.collection_date}</div>
-                                        <div><strong>Time:</strong> {notification.schedule.collection_time}</div>
-                                    </div>
-                                )} */}
                             </div>
                             <button
                                 onClick={() => setNotification(null)}
@@ -63,7 +85,7 @@ export default function Dashboard() {
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="mb-8">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                            {stats && Array.isArray(stats) && stats.map((stat, index) => (
+                            {realTimeStats && Array.isArray(realTimeStats) && realTimeStats.map((stat, index) => (
                                 <StatCard 
                                     key={index}
                                     title={stat.title}

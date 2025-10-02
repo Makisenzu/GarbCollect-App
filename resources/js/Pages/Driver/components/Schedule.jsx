@@ -89,13 +89,11 @@ const Schedule = ({ drivers, barangays, schedules }) => {
   };
 
   const getDriverName = (driverId) => {
-    // First try to get from schedule relationship
     const schedule = schedules.find(s => s.driver_id == driverId);
     if (schedule && schedule.driver && schedule.driver.user) {
       return `${schedule.driver.user.name} ${schedule.driver.user.lastname}`;
     }
     
-    // Then try from drivers prop
     const driver = drivers.find(d => d.id == driverId);
     if (driver && driver.user) {
       return `${driver.user.name} ${driver.user.lastname}`;
