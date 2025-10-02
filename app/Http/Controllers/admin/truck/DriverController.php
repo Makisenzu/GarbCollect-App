@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\admin\truck;
 
+use Exception;
 use App\Models\User;
 use Inertia\Inertia;
 use App\Models\Driver;
+use App\Models\Schedule;
+use App\Models\Baranggay;
+use App\Events\NewSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Models\Baranggay;
-use App\Models\Schedule;
-use Exception;
 
 class DriverController extends Controller
 {
@@ -100,6 +101,8 @@ class DriverController extends Controller
             }
     
             $data = Schedule::create($assignData);
+
+            event(new NewSchedule($data));
     
             return response()->json([
                 'success' => true,

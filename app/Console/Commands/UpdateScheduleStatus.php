@@ -42,7 +42,7 @@ class UpdateScheduleStatus extends Command
                 UPDATE schedules 
                 SET status = 'completed', 
                     updated_at = NOW() 
-                WHERE status = 'in_progress' 
+                WHERE status = 'progress' 
                 AND collection_date < CURDATE()
             ");
 

@@ -1,118 +1,92 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, usePage } from '@inertiajs/react';
-import CalendarForm from './Driver/components/CalendarForm';
+import StatCard from './Admin/components/drivers/StatCard';
+import Schedule from './Driver/components/Schedule';
+import useScheduleUpdates from '@/Hooks/useScheduleUpdates';
 
 export default function Dashboard() {
-    const { schedules } = usePage().props;
-    console.log(schedules);
+    const { stats, hasDriver, auth } = usePage().props;
+    const { schedules, notification, setNotification } = useScheduleUpdates();
 
-    const scheduleData = {
-        '2025-09-08': [
-            {
-                id: '1',
-                address: '123 Main St',
-                time: '9:00 AM',
-                status: 'pending',
-                type: 'residential'
-            },
-            {
-                id: '2',
-                address: '456 Oak Ave',
-                time: '2:30 PM',
-                status: 'completed',
-                type: 'commercial'
-            }
-        ],
-        '2025-09-09': [
-            {
-                id: '3',
-                address: '789 Pine Rd',
-                time: '10:15 AM',
-                status: 'overdue',
-                type: 'recycling'
-            }
-        ],
-        '2025-09-10': [
-            {
-                id: '4',
-                address: '101 Maple Ln',
-                time: '8:45 AM',
-                status: 'pending',
-                type: 'residential'
-            },
-            {
-                id: '5',
-                address: '202 Birch Blvd',
-                time: '11:30 AM',
-                status: 'pending',
-                type: 'commercial'
-            },
-            {
-                id: '6',
-                address: '303 Cedar Ct',
-                time: '3:00 PM',
-                status: 'pending',
-                type: 'recycling'
-            }
-        ],
-        '2025-09-11': [
-            {
-                id: '7',
-                address: '404 Spruce St',
-                time: '9:30 AM',
-                status: 'completed',
-                type: 'residential'
-            },
-            {
-                id: '8',
-                address: '505 Willow Way',
-                time: '1:15 PM',
-                status: 'completed',
-                type: 'commercial'
-            }
-        ],
-        '2025-09-12': [
-            {
-                id: '9',
-                address: '606 Elm Dr',
-                time: '10:00 AM',
-                status: 'overdue',
-                type: 'residential'
-            }
-        ],
-        '2025-09-13': [
-            {
-                id: '10',
-                address: '707 Redwood Rd',
-                time: '8:00 AM',
-                status: 'pending',
-                type: 'commercial'
-            },
-            {
-                id: '11',
-                address: '808 Sequoia St',
-                time: '2:00 PM',
-                status: 'pending',
-                type: 'recycling'
-            }
-        ]
-    };
+    console.log('Current driver ID:', auth?.user?.driver?.id);
 
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Driver Dashboards
+                    Driver Dashboard
                 </h2>
             }
         >
             <Head title="Driver Dashboard" />
 
-            <div className="py-1">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            {/* <CalendarForm scheduleData={schedules} /> */}
+            {notification && (
+                <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border border-green-200">
+                    <div className="p-4">
+                        <div className="flex items-start">
+                            <div className="flex-shrink-0">
+                                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="ml-3 flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                    {notification.title}
+                                </p>
+                                <p className="mt-1 text-sm text-gray-600">
+                                    {notification.message}
+                                </p>
+                                {/* {notification.schedule && (
+                                    <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                                        <div><strong>Barangay:</strong> {notification.schedule.barangay?.baranggay_name}</div>
+                                        <div><strong>Date:</strong> {notification.schedule.collection_date}</div>
+                                        <div><strong>Time:</strong> {notification.schedule.collection_time}</div>
+                                    </div>
+                                )} */}
+                            </div>
+                            <button
+                                onClick={() => setNotification(null)}
+                                className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="py-6">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <div className="mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                            {stats && Array.isArray(stats) && stats.map((stat, index) => (
+                                <StatCard 
+                                    key={index}
+                                    title={stat.title}
+                                    value={stat.value}
+                                    description={stat.description}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div className="p-6">
+                            {hasDriver ? (
+                                <Schedule 
+                                    drivers={[]}
+                                    barangays={[]}
+                                    schedules={schedules}
+                                />
+                            ) : (
+                                <div className="text-center py-12">
+                                    <p className="text-gray-500">Complete your driver profile to view schedules.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
