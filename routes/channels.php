@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('public-driver-locations', function ($user) {
-    return true; // Anyone can listen
+    return true;
 });
 
 Broadcast::channel('driver.{driverId}', function ($user, $driverId) {
