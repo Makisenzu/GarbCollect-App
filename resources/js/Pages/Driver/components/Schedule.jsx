@@ -105,19 +105,6 @@ const Schedule = ({ drivers, barangays, schedules }) => {
     );
   };
 
-  const getBarangayName = () => {
-    if (assignedBarangay && assignedBarangay.baranggay_name) {
-      return assignedBarangay.baranggay_name;
-    }
-
-    if (assignedBarangayId) {
-      const barangay = barangays.find(b => b.id == assignedBarangayId);
-      return barangay ? barangay.baranggay_name : 'Assigned Barangay';
-    }
-    
-    return 'Assigned Barangay';
-  };
-
   const handleStartCollection = (schedule) => {
     console.log('Starting collection for:', schedule);
   };
@@ -196,10 +183,7 @@ const Schedule = ({ drivers, barangays, schedules }) => {
     <div className="bg-white rounded-lg p-4 sm:p-6">
       <div className="flex flex-col gap-4 mb-6">
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Collection Schedules</h2>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            Schedules for {getBarangayName()}
-          </p>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Collection Schedules</h2>  
         </div>
         
         <div>
@@ -263,7 +247,7 @@ const Schedule = ({ drivers, barangays, schedules }) => {
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900">No schedules found</h3>
           <p className="mt-1 text-sm text-gray-500">
-            No schedules found for {getBarangayName()} in this period.
+            No schedules found in this period.
           </p>
         </div>
       ) : (
@@ -335,7 +319,7 @@ const Schedule = ({ drivers, barangays, schedules }) => {
 
           <div className="mt-4 flex flex-col sm:flex-row justify-between items-center text-xs sm:text-sm text-gray-500 gap-2">
             <div>
-              Showing {filteredSchedules.length} schedule{filteredSchedules.length !== 1 ? 's' : ''} for {getBarangayName()}
+              Showing {filteredSchedules.length} schedule{filteredSchedules.length !== 1 ? 's' : ''}
             </div>
             <div>
               Updated: {new Date().toLocaleTimeString()}
