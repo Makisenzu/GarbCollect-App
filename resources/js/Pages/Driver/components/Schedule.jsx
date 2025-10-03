@@ -138,6 +138,36 @@ const Schedule = ({ drivers, barangays, schedules }) => {
     return driver ? driver.license_number : 'N/A';
   };
 
+  const handleStartCollection = (schedule) => {
+    console.log('Starting collection for:', schedule);
+  };
+
+  const handleViewDetails = (schedule) => {
+    console.log('Viewing details for:', schedule);
+  };
+
+  const getStartButtonProps = (schedule) => {
+    if (schedule.status === 'active') {
+      return {
+        disabled: true,
+        className: 'bg-gray-400 text-white px-3 py-1 rounded text-sm font-medium cursor-not-allowed',
+        text: 'Start'
+      };
+    } else if (schedule.status === 'progress') {
+      return {
+        disabled: false,
+        className: 'bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors',
+        text: 'Start'
+      };
+    } else {
+      return {
+        disabled: true,
+        className: 'bg-gray-400 text-white px-3 py-1 rounded text-sm font-medium cursor-not-allowed',
+        text: 'Start'
+      };
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
@@ -230,29 +260,45 @@ const Schedule = ({ drivers, barangays, schedules }) => {
                     Status
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Notes
+                    Action
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSchedules.map((schedule) => (
-                  <tr key={schedule.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(schedule.collection_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatTime(schedule.collection_time)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(schedule.status)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
-                      <div className="truncate" title={schedule.notes}>
-                        {schedule.notes || 'None'}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredSchedules.map((schedule) => {
+                  const startButtonProps = getStartButtonProps(schedule);
+                  
+                  return (
+                    <tr key={schedule.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(schedule.collection_date)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatTime(schedule.collection_time)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(schedule.status)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => !startButtonProps.disabled && handleStartCollection(schedule)}
+                            disabled={startButtonProps.disabled}
+                            className={startButtonProps.className}
+                          >
+                            {startButtonProps.text}
+                          </button>
+                          <button
+                            onClick={() => handleViewDetails(schedule)}
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                          >
+                            Details
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
