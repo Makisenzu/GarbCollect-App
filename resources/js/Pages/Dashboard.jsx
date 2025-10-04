@@ -4,6 +4,7 @@ import StatCard from './Admin/components/drivers/StatCard';
 import Schedule from './Driver/components/Schedule';
 import useScheduleUpdates from '@/Hooks/useScheduleUpdates';
 import { useMemo } from 'react';
+import CalendarWidget from './Driver/components/CalendarWidget';
 
 export default function Dashboard() {
     const { stats: initialStats, hasDriver, auth } = usePage().props;
@@ -38,11 +39,13 @@ export default function Dashboard() {
         ];
     }, [schedules, hasDriver, initialStats]);
 
+    console.log('Current driver ID:', auth?.user?.driver?.id);
 
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                    Driver Dashboard
                 </h2>
             }
         >
@@ -66,6 +69,11 @@ export default function Dashboard() {
                                 <p className="mt-1 text-sm text-gray-600">
                                     {notification.message}
                                 </p>
+                                {notification.schedule && (
+                                    <div className="mt-2 text-xs text-gray-500">
+                                        New schedule added to {notification.schedule.barangay?.baranggay_name}
+                                    </div>
+                                )}
                             </div>
                             <button
                                 onClick={() => setNotification(null)}
@@ -83,7 +91,7 @@ export default function Dashboard() {
             <div className="py-6">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="mb-8">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                             {realTimeStats && Array.isArray(realTimeStats) && realTimeStats.map((stat, index) => (
                                 <StatCard 
                                     key={index}
@@ -92,6 +100,14 @@ export default function Dashboard() {
                                     description={stat.description}
                                 />
                             ))}
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                            <div className="p-6">
+                                <CalendarWidget schedules={schedules} />
+                            </div>
                         </div>
                     </div>
 

@@ -18,7 +18,7 @@ return [
     'connections' => [
         'reverb' => [
             'driver' => 'reverb',
-            'host' => env('REVERB_HOST', '0.0.0.0'),
+            'host' => env('REVERB_HOST', '192.168.8.112'),
             'port' => env('REVERB_PORT', 8080),
             'scheme' => env('REVERB_SCHEME', 'http'),
         ],
