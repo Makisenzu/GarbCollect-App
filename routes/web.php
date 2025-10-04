@@ -42,6 +42,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::middleware('roles:employee')->group(function () {
         Route::get('/dashboard', [EmployeeController::class, 'index'])->name('dashboard');
+        Route::get('/schedules/{id}', [EmployeeController::class, 'show']);
+        Route::get('/barangay/{barangayId}/sites', [EmployeeController::class, 'getActiveSites']);
     });
     
     Route::middleware('roles:admin')->group(function () {

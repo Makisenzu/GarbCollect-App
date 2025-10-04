@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\truck;
 
 use Carbon\Carbon;
+use App\Models\Site;
 use Inertia\Inertia;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
@@ -55,6 +56,33 @@ class EmployeeController extends Controller
             AND status != 'onduty'
         ");
     }
+
+    public function getActiveSchedule()
+    {
+        $schedule = Schedule::where('status', 'active')
+            ->with(['driver.user', 'barangay'])
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => $schedule
+        ]);
+    }
+
+public function getActiveSites($barangayId)
+{
+    $sites = Site::whereHas('purok.baranggay', function($query) use ($barangayId) {
+        $query->where('id', $barangayId);
+    })
+    ->where('status', 'active')
+    ->with(['purok.baranggay'])
+    ->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $sites
+    ]);
+}
 
 public function index()
 {
@@ -131,9 +159,22 @@ public function index()
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        //
+        $schedule = Schedule::with(['driver.user', 'barangay'])
+            ->find($id);
+
+        if (!$schedule) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Schedule not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $schedule
+        ]);
     }
 
     /**

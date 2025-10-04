@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import TaskMap from './TaskMap'; // Import the TaskMap component
 
-const Schedule = ({ drivers, barangays, schedules }) => {
+const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => {
   const [timePeriod, setTimePeriod] = useState('today');
   const [filteredSchedules, setFilteredSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [showTaskMap, setShowTaskMap] = useState(false);
 
   const assignedBarangay = drivers.length > 0 ? drivers[0]?.barangay : null;
   const assignedBarangayId = assignedBarangay?.id || (schedules.length > 0 ? schedules[0]?.barangay_id : null);
@@ -61,6 +64,39 @@ const Schedule = ({ drivers, barangays, schedules }) => {
     setLoading(false);
   }, [assignedBarangayId, timePeriod, schedules]);
 
+  const handleStartCollection = (schedule) => {
+    console.log('Starting collection for:', schedule);
+    setSelectedSchedule(schedule);
+    setShowTaskMap(true);
+    
+    if (onStartTask) {
+      onStartTask(schedule);
+    }
+  };
+
+  const handleCloseTaskMap = () => {
+    setShowTaskMap(false);
+    setSelectedSchedule(null);
+  };
+
+  const handleTaskComplete = (completedData) => {
+    console.log('Task completed:', completedData);
+    setShowTaskMap(false);
+    setSelectedSchedule(null);
+  };
+
+  const handleLocationSelect = (location) => {
+    console.log('Location selected:', location);
+  };
+
+  const handleEditSite = (site) => {
+    console.log('Edit site:', site);
+  };
+
+  const handleDeleteSite = (site) => {
+    console.log('Delete site:', site);
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -105,33 +141,23 @@ const Schedule = ({ drivers, barangays, schedules }) => {
     );
   };
 
-  const handleStartCollection = (schedule) => {
-    console.log('Starting collection for:', schedule);
-  };
-
   const handleViewDetails = (schedule) => {
     console.log('Viewing details for:', schedule);
   };
 
   const getStartButtonProps = (schedule) => {
-    if (schedule.status === 'active') {
-      return {
-        disabled: true,
-        className: 'bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium cursor-not-allowed w-full',
-        text: 'Start'
-      };
-    } else if (schedule.status === 'progress') {
-      return {
-        disabled: false,
-        className: 'bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors w-full',
-        text: 'Start'
-      };
+    if (schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'progress') {
+        return {
+            disabled: false,
+            className: 'bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors w-full',
+            text: 'Start Task'
+        };
     } else {
-      return {
-        disabled: true,
-        className: 'bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium cursor-not-allowed w-full',
-        text: 'Start'
-      };
+        return {
+            disabled: true,
+            className: 'bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium cursor-not-allowed w-full',
+            text: 'Start Task'
+        };
     }
   };
 
@@ -178,6 +204,65 @@ const Schedule = ({ drivers, barangays, schedules }) => {
       </div>
     );
   };
+
+
+if (showTaskMap && selectedSchedule) {
+  return (
+    <div className="bg-white rounded-lg p-4 sm:p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+          Collection Task - {formatDate(selectedSchedule.collection_date)}
+        </h2>
+        <button
+          onClick={handleCloseTaskMap}
+          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+        >
+          Back to Schedules
+        </button>
+      </div>
+      
+      <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <strong>Date:</strong> {formatDate(selectedSchedule.collection_date)}
+          </div>
+          <div>
+            <strong>Time:</strong> {formatTime(selectedSchedule.collection_time)}
+          </div>
+          <div>
+            <strong>Driver:</strong> {selectedSchedule.driver?.user?.name || 'N/A'}
+          </div>
+        </div>
+      </div>
+
+      <div className="h-96 rounded-lg overflow-hidden">
+        <TaskMap
+          mapboxKey={mapboxKey}
+          onLocationSelect={handleLocationSelect}
+          refreshTrigger={selectedSchedule.id}
+          onEditSite={handleEditSite}
+          onDeleteSite={handleDeleteSite}
+          scheduleId={selectedSchedule.id}
+        />
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button
+          onClick={handleCloseTaskMap}
+          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => handleTaskComplete({ scheduleId: selectedSchedule.id })}
+          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+        >
+          Complete Task
+        </button>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="bg-white rounded-lg p-4 sm:p-6">
