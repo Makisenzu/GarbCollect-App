@@ -19,6 +19,7 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
     const [currentLocation, setCurrentLocation] = useState(null);
     const [routeInfo, setRouteInfo] = useState(null);
     const [mapError, setMapError] = useState(null);
+    const [customStyleLoaded, setCustomStyleLoaded] = useState(false);
 
     const staticPolygonData = {
         type: "FeatureCollection",
@@ -154,7 +155,7 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
 
             map.current = new mapboxgl.Map({
                 container: mapContainer.current,
-                style: 'mapbox://styles/mapbox/streets-v12',
+                style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
                 center: [125.94849837776422, 8.483022468128098],
                 zoom: 10.5,
                 attributionControl: false,
@@ -170,14 +171,7 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
             map.current.on('load', () => {
                 console.log('Map loaded successfully');
                 setMapInitialized(true);
-                
-                map.current.setStyle('mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7')
-                    .then(() => {
-                        console.log('Custom style loaded');
-                    })
-                    .catch((error) => {
-                        console.error('Failed to load custom style, using default:', error);
-                    });
+                setCustomStyleLoaded(true);
             });
 
             map.current.on('error', (e) => {
@@ -200,19 +194,24 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
                 map.current.remove();
                 map.current = null;
                 setMapInitialized(false);
+                setCustomStyleLoaded(false);
             }
         };
     }, [mapboxKey, cssLoaded]);
 
     useEffect(() => {
-        if (mapInitialized && siteLocations.length > 0) {
-            console.log('Adding site markers and route');
+        if (mapInitialized && customStyleLoaded && siteLocations.length > 0 && routeCoordinates.length > 0) {
+            console.log('All conditions met for adding route and markers');
+            
+            clearSiteMarkers();
+            
             addSiteMarkers();
-            if (routeCoordinates.length > 0) {
+            
+            setTimeout(() => {
                 addRouteLayer();
-            }
+            }, 300);
         }
-    }, [mapInitialized, siteLocations, routeCoordinates]);
+    }, [mapInitialized, customStyleLoaded, siteLocations, routeCoordinates]);
 
     const calculateOptimalRoute = async (sites, barangayId) => {
         if (!mapboxKey || sites.length < 2) return;
@@ -313,27 +312,41 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
 
     const calculateRouteFromCurrentLocation = async (currentPos, sites) => {
         if (!currentPos || sites.length === 0) return;
-
+    
         try {
             const coordinates = `${currentPos[0]},${currentPos[1]};` + 
                                sites.map(site => 
                                    `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`
                                ).join(';');
-
+    
             const response = await fetch(
                 `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?` +
                 `access_token=${mapboxKey}&geometries=geojson&overview=full&steps=true`
             );
-
+    
             const data = await response.json();
             
             if (data.routes && data.routes.length > 0) {
                 const route = data.routes[0];
+                
+                // Update the route coordinates which will trigger the useEffect
                 setRouteCoordinates(route.geometry.coordinates);
                 setRouteInfo({
                     duration: Math.round(route.duration / 60),
                     distance: (route.distance / 1000).toFixed(1)
                 });
+                
+                console.log('Route from current location calculated:', {
+                    duration: Math.round(route.duration / 60) + 'min',
+                    distance: (route.distance / 1000).toFixed(1) + 'km'
+                });
+                
+                // Force update the route layer after a short delay
+                setTimeout(() => {
+                    if (map.current && route.geometry.coordinates.length > 0) {
+                        addRouteLayer();
+                    }
+                }, 500);
             }
         } catch (error) {
             console.error('Error calculating route from current location:', error);
@@ -341,7 +354,20 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
     };
 
     const addRouteLayer = () => {
-        if (!map.current || routeCoordinates.length === 0) return;
+        if (!map.current || routeCoordinates.length === 0) {
+            console.log('Cannot add route: missing map or coordinates');
+            return;
+        }
+
+        if (!map.current.isStyleLoaded()) {
+            console.log('Map style not loaded yet, waiting...');
+            map.current.once('styledata', () => {
+                setTimeout(addRouteLayer, 100);
+            });
+            return;
+        }
+
+        console.log('Adding route layer with', routeCoordinates.length, 'coordinates');
 
         ['route', 'route-glow', 'route-direction'].forEach(layerId => {
             if (map.current.getLayer(layerId)) {
@@ -353,68 +379,100 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
             map.current.removeSource('route');
         }
 
-        map.current.addSource('route', {
-            type: 'geojson',
-            data: {
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                    type: 'LineString',
-                    coordinates: routeCoordinates
+        try {
+            map.current.addSource('route', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    properties: {},
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: routeCoordinates
+                    }
                 }
-            }
-        });
+            });
 
-        const barangayName = activeSchedule?.barangay_name || 'San Francisco';
-        const routeColor = barangayColors[barangayName] || barangayColors['_default'];
+            const barangayName = activeSchedule?.barangay_name || 'San Francisco';
+            const routeColor = barangayColors[barangayName] || barangayColors['_default'];
 
-        map.current.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            paint: {
-                'line-color': routeColor,
-                'line-width': 6,
-                'line-opacity': 0.9
-            }
-        });
+            const isMobile = window.innerWidth < 768;
+            const lineWidth = isMobile ? 5 : 6;
+            const glowWidth = isMobile ? 10 : 12;
 
-        map.current.addLayer({
-            id: 'route-glow',
-            type: 'line',
-            source: 'route',
-            layout: {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            paint: {
-                'line-color': routeColor,
-                'line-width': 12,
-                'line-opacity': 0.3,
-                'line-blur': 8
-            }
-        });
+            map.current.addLayer({
+                id: 'route-glow',
+                type: 'line',
+                source: 'route',
+                layout: {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                paint: {
+                    'line-color': routeColor,
+                    'line-width': glowWidth,
+                    'line-opacity': 0.4,
+                    'line-blur': 8
+                }
+            });
 
-        fitMapToRoute();
+            map.current.addLayer({
+                id: 'route',
+                type: 'line',
+                source: 'route',
+                layout: {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                paint: {
+                    'line-color': routeColor,
+                    'line-width': lineWidth,
+                    'line-opacity': 0.9
+                }
+            });
+
+            console.log('Route layers added successfully');
+
+            setTimeout(() => {
+                fitMapToRoute();
+            }, 200);
+
+        } catch (error) {
+            console.error('Error adding route layer:', error);
+            
+            setTimeout(() => {
+                addRouteLayer();
+            }, 500);
+        }
     };
 
     const fitMapToRoute = () => {
-        if (!map.current || routeCoordinates.length === 0) return;
+        if (!map.current || routeCoordinates.length === 0 || siteLocations.length === 0) return;
 
         const bounds = new mapboxgl.LngLatBounds();
+        
+        siteLocations.forEach(site => {
+            if (site.longitude && site.latitude) {
+                bounds.extend([parseFloat(site.longitude), parseFloat(site.latitude)]);
+            }
+        });
+
         routeCoordinates.forEach(coord => {
             bounds.extend(coord);
         });
-        
-        map.current.fitBounds(bounds, {
-            padding: 50,
-            duration: 1000,
-            essential: true
-        });
+
+        const isMobile = window.innerWidth < 768;
+        const padding = isMobile ? 30 : 50;
+
+        try {
+            map.current.fitBounds(bounds, {
+                padding: padding,
+                duration: 1000,
+                essential: true,
+                maxZoom: 15
+            });
+        } catch (error) {
+            console.error('Error fitting map to bounds:', error);
+        }
     };
 
     const addPolygonLayer = (geoJsonData) => {
@@ -566,18 +624,39 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
 
         return marker;
     };
+    const refreshRouteLayer = () => {
+        if (map.current && routeCoordinates.length > 0) {
+            addRouteLayer();
+        }
+    };
 
     const getCurrentLocation = () => {
         if (navigator.geolocation) {
             setLoading(true);
+            
+            // Add accuracy debugging
+            console.log('Requesting high accuracy location...');
+            
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
-                    const { latitude, longitude } = position.coords;
+                    const { latitude, longitude, accuracy } = position.coords;
                     const currentPos = [longitude, latitude];
+                    
+                    console.log('Location obtained:', {
+                        latitude,
+                        longitude,
+                        accuracy: accuracy + ' meters',
+                        url: `https://www.google.com/maps?q=${latitude},${longitude}`
+                    });
+                    
                     setCurrentLocation(currentPos);
                     
+                    // Clear existing current location marker first
+                    const existingMarker = document.querySelector('.current-location-marker');
+                    if (existingMarker) existingMarker.remove();
+                    
                     addCurrentLocationMarker(currentPos);
-
+    
                     if (siteLocations.length > 0) {
                         await calculateRouteFromCurrentLocation(currentPos, siteLocations);
                     }
@@ -590,18 +669,40 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
                             duration: 1500
                         });
                     }
+                    
                     setLoading(false);
                 },
                 (error) => {
                     console.error('Error getting location:', error);
                     setLoading(false);
+                    
+                    let errorMessage = 'Unable to get your location. ';
+                    
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += 'Please allow location access in your browser settings.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += 'Location information is unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += 'Location request timed out. Try moving to an area with better signal.';
+                            break;
+                        default:
+                            errorMessage += 'An unknown error occurred.';
+                            break;
+                    }
+                    
+                    alert(errorMessage);
                 },
                 {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 60000
+                    enableHighAccuracy: true,    // Use GPS if available
+                    timeout: 30000,              // Increased timeout to 30 seconds
+                    maximumAge: 0                // Don't use cached position
                 }
             );
+        } else {
+            alert('Geolocation is not supported by your browser.');
         }
     };
 
@@ -664,38 +765,45 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
             {/* {process.env.NODE_ENV === 'development' && (
                 <div className="absolute top-4 left-4 z-30 bg-black/80 text-white p-2 rounded text-xs max-w-xs">
                     <div>CSS: {cssLoaded ? '✅' : '❌'}</div>
-                    <div>Key: {mapboxKey ? '✅' : '❌'}</div>
                     <div>Map: {mapInitialized ? '✅' : '❌'}</div>
+                    <div>Style: {customStyleLoaded ? '✅' : '❌'}</div>
                     <div>Sites: {siteLocations.length}</div>
                     <div>Route: {routeCoordinates.length > 0 ? '✅' : '❌'}</div>
+                    <div>Mobile: {window.innerWidth < 768 ? '✅' : '❌'}</div>
                 </div>
             )} */}
 
-            <div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
-                <button
-                    onClick={getCurrentLocation}
-                    className="bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-gray-50"
-                    title="Current Location & Route"
-                >
-                    <IoNavigate className="w-6 h-6 text-blue-600" />
-                </button>
-    
-                <button
-                    onClick={() => onTaskComplete && onTaskComplete({ scheduleId })}
-                    className="bg-green-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-green-600 flex items-center justify-center"
-                    title="Complete Task"
-                >
-                    <IoCheckmark className="w-6 h-6" />
-                </button>
+<div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
+    <div className="flex flex-col items-center">
+        <button
+            onClick={getCurrentLocation}
+            className="bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-gray-50"
+            title="Current Location & Route"
+        >
+            <IoNavigate className="w-6 h-6 text-blue-600" />
+        </button>
+        {/* Optional: Add a small refresh indicator */}
+        {currentLocation && (
+            <div className="w-2 h-2 bg-green-500 rounded-full mt-1 animate-pulse"></div>
+        )}
+    </div>
 
-                <button
-                    onClick={onTaskCancel}
-                    className="bg-red-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-red-600 flex items-center justify-center"
-                    title="Cancel Task"
-                >
-                    <IoClose className="w-6 h-6" />
-                </button>
-            </div>
+    <button
+        onClick={() => onTaskComplete && onTaskComplete({ scheduleId })}
+        className="bg-green-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-green-600 flex items-center justify-center"
+        title="Complete Task"
+    >
+        <IoCheckmark className="w-6 h-6" />
+    </button>
+
+    <button
+        onClick={onTaskCancel}
+        className="bg-red-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-red-600 flex items-center justify-center"
+        title="Cancel Task"
+    >
+        <IoClose className="w-6 h-6" />
+    </button>
+</div>
     
             {activeSchedule && (
                 <div className="absolute bottom-4 left-4 z-10 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg">
