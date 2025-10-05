@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ClientPagination from '@/Components/ClientPagination';
 import { CircleLoader, RingLoader } from 'react-spinners';
 import FormModal from '@/Components/FormModal';
@@ -30,13 +30,87 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
     }
   }, [show, schedules]);
 
-  const driverSchedules = schedules.filter(schedule => 
-    schedule.driver_id === driver.id
-  );
+  // Sort and group schedules by month and date
+  const { sortedAndGroupedSchedules, monthlySchedules } = useMemo(() => {
+    const driverSchedules = schedules.filter(schedule => 
+      schedule.driver_id === driver.id
+    );
 
-  const totalPages = Math.ceil(driverSchedules.length / itemsPerPage);
+    // Sort schedules by date (earliest first) and then by time
+    const sortedSchedules = [...driverSchedules].sort((a, b) => {
+      const dateA = new Date(a.collection_date);
+      const dateB = new Date(b.collection_date);
+      
+      // First compare by date
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateA.getTime() - dateB.getTime();
+      }
+      
+      // If same date, compare by time
+      const timeA = a.collection_time || '00:00';
+      const timeB = b.collection_time || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+
+    // Group schedules by month-year for display purposes
+    const groupedByMonth = sortedSchedules.reduce((acc, schedule) => {
+      const date = new Date(schedule.collection_date);
+      const monthYear = date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long' 
+      });
+      
+      if (!acc[monthYear]) {
+        acc[monthYear] = [];
+      }
+      acc[monthYear].push(schedule);
+      return acc;
+    }, {});
+
+    // Convert to array format for easier rendering
+    const monthlySchedulesArray = Object.entries(groupedByMonth).map(([monthYear, schedules]) => ({
+      monthYear,
+      schedules
+    }));
+
+    // Sort months chronologically (earliest first)
+    monthlySchedulesArray.sort((a, b) => {
+      const dateA = new Date(a.monthYear);
+      const dateB = new Date(b.monthYear);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    return {
+      sortedAndGroupedSchedules: sortedSchedules,
+      monthlySchedules: monthlySchedulesArray
+    };
+  }, [schedules, driver.id]);
+
+  const totalPages = Math.ceil(sortedAndGroupedSchedules.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedSchedules = driverSchedules.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedSchedules = sortedAndGroupedSchedules.slice(startIndex, startIndex + itemsPerPage);
+
+  // Flatten monthly schedules for single table display
+  const flattenedSchedulesWithMonths = useMemo(() => {
+    const result = [];
+    
+    monthlySchedules.forEach(({ monthYear, schedules }) => {
+      // Add month header
+      result.push({ type: 'month-header', monthYear });
+      // Add schedules for this month
+      schedules.forEach(schedule => {
+        result.push({ type: 'schedule', schedule });
+      });
+    });
+
+    return result;
+  }, [monthlySchedules]);
+
+  // Get paginated items (including month headers)
+  const paginatedItems = useMemo(() => {
+    const allItems = flattenedSchedulesWithMonths;
+    return allItems.slice(startIndex, startIndex + itemsPerPage);
+  }, [flattenedSchedulesWithMonths, startIndex, itemsPerPage]);
 
   const scheduleFields = [
     {
@@ -108,7 +182,6 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
   };
 
   const formatTimeTo12Hour = (timeString) => {
-    console.log('Input time:', timeString);
     if (!timeString) return 'N/A';
     
     try {
@@ -297,21 +370,6 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                     <p className="text-sm text-gray-500">License Number</p>
                     <p className="font-medium">{driver.license_number}</p>
                   </div>
-                  {/* <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-500">Status</p>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                        ${driver.status === 'active' ? 'bg-green-100 text-green-800' : 
-                        driver.status === 'inactive' ? 'bg-red-100 text-red-800' : 
-                        driver.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                        driver.status === 'onduty' ? 'bg-blue-100 text-blue-800' : 
-                        'bg-gray-100 text-gray-800'}`}>
-                        {driver.status.charAt(0).toUpperCase() + driver.status.slice(1)}
-                      </span>
-                    </div>
-                  </div> */}
                   <div>
                     <p className="text-sm text-gray-500">Phone</p>
                     <p className="font-medium">{driver.user.phone_num || 'N/A'}</p>
@@ -333,9 +391,9 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h4 className="text-lg font-semibold text-gray-900">Scheduled Collection</h4>
-                {!isSchedulesLoading && driverSchedules.length > 0 && (
+                {!isSchedulesLoading && sortedAndGroupedSchedules.length > 0 && (
                   <span className="text-sm text-gray-500">
-                    Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, driverSchedules.length)} of {driverSchedules.length} schedules
+                    Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedAndGroupedSchedules.length)} of {sortedAndGroupedSchedules.length} schedules
                   </span>
                 )}
               </div>
@@ -349,15 +407,12 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                   />
                   <p className="mt-2 text-gray-600">Loading schedules...</p>
                 </div>
-              ) : driverSchedules.length > 0 ? (
+              ) : sortedAndGroupedSchedules.length > 0 ? (
                 <>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Barangay
-                          </th> */}
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Date
                           </th>
@@ -379,58 +434,70 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {paginatedSchedules.map((schedule) => (
-                          <tr key={schedule.id}>
-                            {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {schedule.barangay?.baranggay_name || schedule.baranggay_name || 'N/A'}
-                            </td> */}
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {formatDate(schedule.collection_date)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {formatTimeTo12Hour(schedule.collection_time)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {schedule.finished_time ? formatTimeTo12Hour(schedule.finished_time) : 'N/A'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                ${schedule.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                                schedule.status === 'failed' ? 'bg-red-100 text-red-800' : 
-                                schedule.status === 'progress' ? 'bg-yellow-100 text-yellow-800' :
-                                schedule.status === 'active' ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'}`}>
-                                {schedule.status?.charAt(0)?.toUpperCase() + schedule.status?.slice(1)?.replace('_', ' ') || 'N/A'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                              {schedule.notes || 'None'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => handleEdit(schedule)}
-                                  className="text-blue-600 hover:text-blue-900 transition-colors"
-                                  title="Edit Schedule"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
+                        {paginatedItems.map((item, index) => {
+                          if (item.type === 'month-header') {
+                            return (
+                              <tr key={`month-${item.monthYear}`} className="bg-gray-50">
+                                <td colSpan="6" className="px-6 py-3">
+                                  <h5 className="font-semibold text-gray-900 text-sm">
+                                    {item.monthYear}
+                                  </h5>
+                                </td>
+                              </tr>
+                            );
+                          } else {
+                            const schedule = item.schedule;
+                            return (
+                              <tr key={schedule.id}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {formatDate(schedule.collection_date)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {formatTimeTo12Hour(schedule.collection_time)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {schedule.finished_time ? formatTimeTo12Hour(schedule.finished_time) : 'N/A'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    ${schedule.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                                    schedule.status === 'failed' ? 'bg-red-100 text-red-800' : 
+                                    schedule.status === 'progress' ? 'bg-yellow-100 text-yellow-800' :
+                                    schedule.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-gray-100 text-gray-800'}`}>
+                                    {schedule.status?.charAt(0)?.toUpperCase() + schedule.status?.slice(1)?.replace('_', ' ') || 'N/A'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                                  {schedule.notes || 'None'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => handleEdit(schedule)}
+                                      className="text-blue-600 hover:text-blue-900 transition-colors"
+                                      title="Edit Schedule"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                    </button>
 
-                                <button
-                                  onClick={() => handleRemove(schedule)}
-                                  className="text-red-600 hover:text-red-900 transition-colors"
-                                  title="Remove Schedule"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                                    <button
+                                      onClick={() => handleRemove(schedule)}
+                                      className="text-red-600 hover:text-red-900 transition-colors"
+                                      title="Remove Schedule"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          }
+                        })}
                       </tbody>
                     </table>
                   </div>
