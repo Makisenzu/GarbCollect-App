@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import mapboxgl from 'mapbox-gl';
 import { GiControlTower } from "react-icons/gi";
-import { IoClose, IoCheckmark, IoNavigate } from "react-icons/io5";
+import { IoClose, IoCheckmark, IoNavigate, IoSparkles, IoChevronDown, IoChevronUp } from "react-icons/io5";
 import axios from 'axios';
 import can from "@/images/can.png";
 
@@ -20,37 +20,27 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
     const [routeInfo, setRouteInfo] = useState(null);
     const [mapError, setMapError] = useState(null);
     const [customStyleLoaded, setCustomStyleLoaded] = useState(false);
+    const [aiOptimizedRoute, setAiOptimizedRoute] = useState(null);
+    const [nearestSite, setNearestSite] = useState(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const [showAIPanel, setShowAIPanel] = useState(false);
+    const [showControls, setShowControls] = useState(true);
 
-    const staticPolygonData = {
-        type: "FeatureCollection",
-        features: [
-            {
-                type: "Feature",
-                properties: {
-                    id: 1,
-                    barangay: "San Francisco",
-                },
-                geometry: {
-                    type: "Polygon",
-                    coordinates: [[
-                        [125.99912782475212 ,8.575510286263182], [126.00025443311193, 8.571458743014418], [126.02485768210255 ,8.565939354188075],
-                        [126.04450490232114, 8.466818846605392], [126.1103129490703, 8.46664901562528], [126.06009804976281 ,8.415887696221361],
-                        [126.07054556119789, 8.402939305491458], [126.02793797928399, 8.40460170458961], [126.02527178904438, 8.408548502194648],
-                        [126.02427353120135 ,8.409252626098564], [126.02385934340657 ,8.40926067897989] , [126.0212174711134, 8.407984558278983],
-                        [126.02055643141244, 8.408178587487853], [126.01856794991, 8.409294302964668], [126.01662892223891, 8.4046902116812],
-                        [126.01474001557193, 8.406036008364552], [126.01358506617925, 8.404625448531675], [126.00952801076892, 8.405454403475574],
-                        [126.00777831277611, 8.404925515942836], [126.00658549599319, 8.403966025428687], [126.00485033177199, 8.403227717091895],
-                        [126.00509998136846, 8.401577514556351], [126.00574801766186, 8.400888351042127], [125.97641093552602, 8.391757550629634],
-                        [125.97390880231916, 8.39080800207968],  [125.97081543981409, 8.39161874461628], [125.96745822964954, 8.39014796167777],
-                        [125.96303628490449,  8.389036768089781], [125.95862571497344, 8.38720153395198], [125.96318041276902, 8.371729751905093],
-                        [125.95503341347933, 8.369405592514127], [125.95860757814717, 8.355388169154793], [125.92791631975041, 8.347929528410077],
-                        [125.89113139787435, 8.393374892862454], [125.88334005008488, 8.417552308867386], [125.79651821810683, 8.548921445742934],
-                        [125.93730538303595, 8.548744057251142], [125.9349976967647, 8.577733038602531], [125.99912782475212 ,8.575510286263182]
-                    ]]
-                }
-            },
-        ]
-    };
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            if (mobile) {
+                setShowAIPanel(false);
+                setShowControls(true);
+            }
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const barangayColors = {
         'Alegria': '#FF5733',
@@ -157,15 +147,17 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
                 container: mapContainer.current,
                 style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
                 center: [125.94849837776422, 8.483022468128098],
-                zoom: 10.5,
+                zoom: isMobile ? 11 : 10.5,
                 attributionControl: false,
                 interactive: true,
-                scrollZoom: true,
+                scrollZoom: !isMobile, // Disable scroll zoom on mobile for better touch
                 dragPan: true,
                 dragRotate: false,
                 keyboard: false,
-                doubleClickZoom: true,
+                doubleClickZoom: !isMobile,
                 touchZoomRotate: true,
+                touchPitch: false,
+                cooperativeGestures: isMobile, // Better for mobile
             });
 
             map.current.on('load', () => {
@@ -197,7 +189,7 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
                 setCustomStyleLoaded(false);
             }
         };
-    }, [mapboxKey, cssLoaded]);
+    }, [mapboxKey, cssLoaded, isMobile]);
 
     useEffect(() => {
         if (mapInitialized && customStyleLoaded && siteLocations.length > 0 && routeCoordinates.length > 0) {
@@ -212,6 +204,135 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
             }, 300);
         }
     }, [mapInitialized, customStyleLoaded, siteLocations, routeCoordinates]);
+
+    // AI-powered route optimization
+    const analyzeAndOptimizeRoute = async (driverLocation, sites) => {
+        if (!driverLocation || sites.length === 0) return null;
+
+        try {
+            console.log('🤖 AI analyzing optimal route...');
+            
+            // Calculate distances to all sites
+            const sitesWithDistances = sites.map(site => {
+                const distance = calculateDistance(
+                    driverLocation[1], driverLocation[0],
+                    parseFloat(site.latitude), parseFloat(site.longitude)
+                );
+                return {
+                    ...site,
+                    distance,
+                    coordinates: [parseFloat(site.longitude), parseFloat(site.latitude)]
+                };
+            });
+
+            // Sort by distance
+            const sortedSites = sitesWithDistances.sort((a, b) => a.distance - b.distance);
+            const nearest = sortedSites[0];
+            setNearestSite(nearest);
+
+            console.log('📍 Nearest site:', {
+                name: nearest.site_name,
+                distance: nearest.distance.toFixed(2) + ' km',
+                coordinates: nearest.coordinates
+            });
+
+            // Get real-time route from driver to nearest site
+            const routeResponse = await fetch(
+                `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+                `${driverLocation[0]},${driverLocation[1]};` +
+                `${nearest.coordinates[0]},${nearest.coordinates[1]}?` +
+                `access_token=${mapboxKey}&geometries=geojson&overview=full&steps=true`
+            );
+
+            const routeData = await routeResponse.json();
+
+            if (routeData.routes && routeData.routes.length > 0) {
+                const optimalRoute = routeData.routes[0];
+                
+                const aiResult = {
+                    nearestSite: nearest,
+                    route: optimalRoute.geometry.coordinates,
+                    duration: Math.round(optimalRoute.duration / 60),
+                    distance: (optimalRoute.distance / 1000).toFixed(1),
+                    trafficConditions: analyzeTrafficConditions(optimalRoute),
+                    recommendation: generateRecommendation(optimalRoute, nearest)
+                };
+
+                console.log('🚀 AI Route Analysis:', aiResult);
+                setAiOptimizedRoute(aiResult);
+                
+                // Auto-show AI panel on mobile when route is calculated
+                if (isMobile) {
+                    setShowAIPanel(true);
+                }
+                
+                return aiResult;
+            }
+        } catch (error) {
+            console.error('AI route analysis failed:', error);
+        }
+        return null;
+    };
+
+    // Analyze traffic conditions based on route data
+    const analyzeTrafficConditions = (route) => {
+        const duration = route.duration / 60; // minutes
+        const distance = route.distance / 1000; // km
+        
+        // Calculate average speed (km/h)
+        const avgSpeed = distance / (duration / 60);
+        
+        let conditions = 'good';
+        let congestionLevel = 'low';
+        
+        if (avgSpeed < 20) {
+            conditions = 'heavy';
+            congestionLevel = 'high';
+        } else if (avgSpeed < 40) {
+            conditions = 'moderate';
+            congestionLevel = 'medium';
+        }
+        
+        return {
+            conditions,
+            congestionLevel,
+            averageSpeed: avgSpeed.toFixed(1),
+            estimatedDelay: avgSpeed < 40 ? '5-15 minutes' : '0-5 minutes'
+        };
+    };
+
+    // Generate AI recommendations
+    const generateRecommendation = (route, nearestSite) => {
+        const duration = route.duration / 60;
+        const traffic = analyzeTrafficConditions(route);
+        
+        let recommendation = '';
+        let urgency = 'low';
+        
+        if (duration < 10) {
+            recommendation = `🚗 Very close! You'll reach ${nearestSite.site_name} in ${duration} minutes.`;
+            urgency = 'low';
+        } else if (duration < 30) {
+            recommendation = `📍 Head to ${nearestSite.site_name} - ${duration} minutes away. ${traffic.conditions === 'heavy' ? 'Heavy traffic expected.' : 'Good road conditions.'}`;
+            urgency = 'medium';
+        } else {
+            recommendation = `⏰ Long route to ${nearestSite.site_name} (${duration} minutes). Consider taking breaks. ${traffic.conditions === 'heavy' ? 'Significant delays expected.' : ''}`;
+            urgency = 'high';
+        }
+        
+        return {
+            text: recommendation,
+            urgency,
+            suggestedAction: getSuggestedAction(duration, traffic.conditions)
+        };
+    };
+
+    const getSuggestedAction = (duration, traffic) => {
+        if (duration > 45) return 'Consider alternative routes';
+        if (traffic === 'heavy') return 'Leave early to avoid peak hours';
+        if (duration < 15) return 'Proceed directly';
+        return 'Normal driving conditions';
+    };
 
     const calculateOptimalRoute = async (sites, barangayId) => {
         if (!mapboxKey || sites.length < 2) return;
@@ -351,6 +472,111 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
         }
     };
 
+    // Enhanced getCurrentLocation with AI analysis
+    const getCurrentLocation = () => {
+        if (navigator.geolocation) {
+            setLoading(true);
+            
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude, accuracy } = position.coords;
+                    const currentPos = [longitude, latitude];
+                    
+                    console.log('📍 Driver location obtained:', {
+                        latitude,
+                        longitude,
+                        accuracy: accuracy + ' meters'
+                    });
+                    
+                    setCurrentLocation(currentPos);
+                    
+                    // Clear existing markers
+                    const existingMarker = document.querySelector('.current-location-marker');
+                    if (existingMarker) existingMarker.remove();
+                    
+                    addCurrentLocationMarker(currentPos);
+
+                    if (siteLocations.length > 0) {
+                        // AI-powered route analysis
+                        const aiResult = await analyzeAndOptimizeRoute(currentPos, siteLocations);
+                        
+                        if (aiResult) {
+                            // Display AI-optimized route
+                            setRouteCoordinates(aiResult.route);
+                            setRouteInfo({
+                                duration: aiResult.duration,
+                                distance: aiResult.distance
+                            });
+                            
+                            // Update the route layer
+                            setTimeout(() => {
+                                if (map.current && aiResult.route.length > 0) {
+                                    addRouteLayer();
+                                }
+                            }, 500);
+                        }
+                    }
+                    
+                    if (map.current) {
+                        map.current.flyTo({
+                            center: currentPos,
+                            zoom: isMobile ? 15 : 14,
+                            essential: true,
+                            duration: 1500
+                        });
+                    }
+                    
+                    setLoading(false);
+                },
+                (error) => {
+                    console.error('Error getting location:', error);
+                    setLoading(false);
+                    
+                    let errorMessage = 'Unable to get your location. ';
+                    
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += 'Please allow location access in your browser settings.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += 'Location information is unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += 'Location request timed out. Try moving to an area with better signal.';
+                            break;
+                        default:
+                            errorMessage += 'An unknown error occurred.';
+                            break;
+                    }
+                    
+                    alert(errorMessage);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 30000,
+                    maximumAge: 0
+                }
+            );
+        } else {
+            alert('Geolocation is not supported by your browser.');
+        }
+    };
+
+    // AI Smart Route button
+    const getAIOptimizedRoute = () => {
+        if (!currentLocation) {
+            alert('Please get your current location first.');
+            return;
+        }
+        
+        if (siteLocations.length === 0) {
+            alert('No sites available for optimization.');
+            return;
+        }
+        
+        analyzeAndOptimizeRoute(currentLocation, siteLocations);
+    };
+
     const addRouteLayer = () => {
         if (!map.current || routeCoordinates.length === 0) {
             console.log('Cannot add route: missing map or coordinates');
@@ -393,9 +619,8 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
             const barangayName = activeSchedule?.barangay_name || 'San Francisco';
             const routeColor = barangayColors[barangayName] || barangayColors['_default'];
 
-            const isMobile = window.innerWidth < 768;
-            const lineWidth = isMobile ? 5 : 6;
-            const glowWidth = isMobile ? 10 : 12;
+            const lineWidth = isMobile ? 6 : 5;
+            const glowWidth = isMobile ? 14 : 12;
 
             map.current.addLayer({
                 id: 'route-glow',
@@ -458,15 +683,14 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
             bounds.extend(coord);
         });
 
-        const isMobile = window.innerWidth < 768;
-        const padding = isMobile ? 30 : 50;
+        const padding = isMobile ? 20 : 50;
 
         try {
             map.current.fitBounds(bounds, {
                 padding: padding,
                 duration: 1000,
                 essential: true,
-                maxZoom: 15
+                maxZoom: isMobile ? 16 : 15
             });
         } catch (error) {
             console.error('Error fitting map to bounds:', error);
@@ -543,31 +767,44 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
         siteMarkersRef.current = [];
     };
 
+    // Update the marker creation to highlight nearest site
     const createImageMarker = (siteData, sequence) => {
         const barangayName = siteData?.purok?.baranggay?.baranggay_name;
         const borderColor = barangayColors[barangayName] || barangayColors['_default'];
+        
+        // Check if this is the nearest site
+        const isNearest = nearestSite && nearestSite.id === siteData.id;
+        const highlightStyle = isNearest ? 'animate-pulse ring-4 ring-green-400' : '';
+        const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
+        const imageSize = isMobile ? 'w-10 h-10' : 'w-8 h-8';
 
         const markerElement = document.createElement('div');
         markerElement.className = 'custom-image-marker';
         
         let sequenceBadge = '';
         if (activeSchedule) {
+            const badgeSize = isMobile ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
             sequenceBadge = `
-                <div class="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg border-2 border-white">
+                <div class="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full ${badgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white">
                     ${sequence + 1}
                 </div>
             `;
         }
 
         markerElement.innerHTML = `
-            <div class="relative">
+            <div class="relative ${highlightStyle}">
                 ${sequenceBadge}
-                <div class="w-10 h-10 rounded-full border-3 flex items-center justify-center overflow-hidden shadow-lg" 
-                     style="border-color: ${borderColor}; background-color: ${borderColor}20;">
+                ${isNearest ? `
+                    <div class="absolute -top-3 -left-3 bg-green-500 text-white rounded-full ${isMobile ? 'w-10 h-10' : 'w-8 h-8'} flex items-center justify-center text-sm font-bold shadow-lg border-2 border-white animate-bounce">
+                        🏁
+                    </div>
+                ` : ''}
+                <div class="${markerSize} rounded-full border-3 flex items-center justify-center overflow-hidden shadow-lg bg-white" 
+                     style="border-color: ${borderColor};">
                     <img src="${can}" 
                          alt="${siteData.site_name}" 
-                         class="w-8 h-8 object-cover rounded-full"
-                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold\\' style=\\'background-color: ${borderColor}\\'>${siteData.site_name?.charAt(0) || 'S'}</div>'">
+                         class="${imageSize} object-cover rounded-full"
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'${imageSize} rounded-full flex items-center justify-center text-white text-xs font-bold bg-white\\' style=\\'border: 2px solid ${borderColor}; color: ${borderColor}\\'>${siteData.site_name?.charAt(0) || 'S'}</div>'">
                 </div>
             </div>
         `;
@@ -581,8 +818,9 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
         
         let sequenceBadge = '';
         if (activeSchedule) {
+            const badgeSize = isMobile ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
             sequenceBadge = `
-                <div class="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg">
+                <div class="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full ${badgeSize} flex items-center justify-center font-bold shadow-lg">
                     ${sequence + 1}
                 </div>
             `;
@@ -590,7 +828,7 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
 
         el.innerHTML = sequenceBadge;
         const root = createRoot(el);
-        root.render(<GiControlTower size={30} color={'#4F262A'} />);
+        root.render(<GiControlTower size={isMobile ? 36 : 30} color={'#4F262A'} />);
         return { element: el, root };
     };
 
@@ -622,81 +860,10 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
 
         return marker;
     };
+
     const refreshRouteLayer = () => {
         if (map.current && routeCoordinates.length > 0) {
             addRouteLayer();
-        }
-    };
-
-    const getCurrentLocation = () => {
-        if (navigator.geolocation) {
-            setLoading(true);
-            
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const { latitude, longitude, accuracy } = position.coords;
-                    const currentPos = [longitude, latitude];
-                    
-                    console.log('Location obtained:', {
-                        latitude,
-                        longitude,
-                        accuracy: accuracy + ' meters',
-                        url: `https://www.google.com/maps?q=${latitude},${longitude}`
-                    });
-                    
-                    setCurrentLocation(currentPos);
-                    
-                    const existingMarker = document.querySelector('.current-location-marker');
-                    if (existingMarker) existingMarker.remove();
-                    
-                    addCurrentLocationMarker(currentPos);
-    
-                    if (siteLocations.length > 0) {
-                        await calculateRouteFromCurrentLocation(currentPos, siteLocations);
-                    }
-                    
-                    if (map.current) {
-                        map.current.flyTo({
-                            center: currentPos,
-                            zoom: 14,
-                            essential: true,
-                            duration: 1500
-                        });
-                    }
-                    
-                    setLoading(false);
-                },
-                (error) => {
-                    console.error('Error getting location:', error);
-                    setLoading(false);
-                    
-                    let errorMessage = 'Unable to get your location. ';
-                    
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage += 'Please allow location access in your browser settings.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage += 'Location information is unavailable.';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage += 'Location request timed out. Try moving to an area with better signal.';
-                            break;
-                        default:
-                            errorMessage += 'An unknown error occurred.';
-                            break;
-                    }
-                    
-                    alert(errorMessage);
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 30000,
-                    maximumAge: 0
-                }
-            );
-        } else {
-            alert('Geolocation is not supported by your browser.');
         }
     };
 
@@ -706,9 +873,10 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
 
         const markerElement = document.createElement('div');
         markerElement.className = 'current-location-marker';
+        const markerSize = isMobile ? 'w-8 h-8' : 'w-6 h-6';
         markerElement.innerHTML = `
             <div class="relative">
-                <div class="w-6 h-6 bg-blue-600 border-2 border-white rounded-full shadow-lg"></div>
+                <div class="${markerSize} bg-blue-600 border-2 border-white rounded-full shadow-lg"></div>
                 <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
             </div>
         `;
@@ -724,22 +892,23 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
     return (
         <div className="relative w-full h-full bg-white">
             {loading && (
-                <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-20">
+                <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
                     <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                        <p className="text-sm text-gray-600">Loading route...</p>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                        <p className="text-sm text-gray-600 font-medium">AI analyzing optimal route...</p>
+                        <p className="text-xs text-gray-500 mt-1">Finding fastest path to nearest site</p>
                     </div>
                 </div>
             )}
 
             {mapError && (
-                <div className="absolute inset-0 bg-white flex items-center justify-center z-30">
-                    <div className="text-center p-4">
-                        <div className="text-red-500 text-lg mb-2">Map Error</div>
-                        <div className="text-gray-600 mb-4">{mapError}</div>
+                <div className="absolute inset-0 bg-white flex items-center justify-center z-50 p-4">
+                    <div className="text-center p-6 bg-white rounded-lg shadow-xl max-w-sm">
+                        <div className="text-red-500 text-lg font-semibold mb-2">Map Error</div>
+                        <div className="text-gray-600 mb-4 text-sm">{mapError}</div>
                         <button 
                             onClick={() => window.location.reload()}
-                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+                            className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors font-medium text-sm"
                         >
                             Retry
                         </button>
@@ -748,70 +917,220 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
             )}
 
             {!cssLoaded && !mapError && (
-                <div className="absolute inset-0 bg-white flex items-center justify-center z-10">
+                <div className="absolute inset-0 bg-white flex items-center justify-center z-40">
                     <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                        <p className="text-sm text-gray-600">Loading map...</p>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                        <p className="text-sm text-gray-600 font-medium">Loading map...</p>
                     </div>
                 </div>
             )}
 
-            {/* {process.env.NODE_ENV === 'development' && (
-                <div className="absolute top-4 left-4 z-30 bg-black/80 text-white p-2 rounded text-xs max-w-xs">
-                    <div>CSS: {cssLoaded ? '✅' : '❌'}</div>
-                    <div>Map: {mapInitialized ? '✅' : '❌'}</div>
-                    <div>Style: {customStyleLoaded ? '✅' : '❌'}</div>
-                    <div>Sites: {siteLocations.length}</div>
-                    <div>Route: {routeCoordinates.length > 0 ? '✅' : '❌'}</div>
-                    <div>Mobile: {window.innerWidth < 768 ? '✅' : '❌'}</div>
-                </div>
-            )} */}
-
-<div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
-    <div className="flex flex-col items-center">
-        <button
-            onClick={getCurrentLocation}
-            className="bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-gray-50"
-            title="Current Location & Route"
-        >
-            <IoNavigate className="w-6 h-6 text-blue-600" />
-        </button>
-        {currentLocation && (
-            <div className="w-2 h-2 bg-green-500 rounded-full mt-1 animate-pulse"></div>
-        )}
-    </div>
-
-    <button
-        onClick={() => onTaskComplete && onTaskComplete({ scheduleId })}
-        className="bg-green-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-green-600 flex items-center justify-center"
-        title="Complete Task"
-    >
-        <IoCheckmark className="w-6 h-6" />
-    </button>
-
-    <button
-        onClick={onTaskCancel}
-        className="bg-red-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-red-600 flex items-center justify-center"
-        title="Cancel Task"
-    >
-        <IoClose className="w-6 h-6" />
-    </button>
-</div>
-    
-            {activeSchedule && (
-                <div className="absolute bottom-4 left-4 z-10 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg">
-                    <div className="text-sm font-medium text-gray-900">
-                        <span className="text-blue-600 font-bold">{siteLocations.length}</span> sites to collect
-                    </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                        Barangay: <span className="font-medium">{activeSchedule.baranggay_name}</span>
-                    </div>
-                    {routeInfo && (
-                        <div className="text-xs text-gray-600 mt-1">
-                            Est: <span className="font-medium">{routeInfo.duration} min</span> • 
-                            <span className="font-medium"> {routeInfo.distance} km</span>
+            {/* Mobile Header Bar */}
+            {isMobile && (
+                <div className="absolute top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setShowControls(!showControls)}
+                                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                            >
+                                {showControls ? <IoChevronUp className="w-5 h-5" /> : <IoChevronDown className="w-5 h-5" />}
+                            </button>
+                            <div>
+                                <h1 className="font-semibold text-gray-900 text-sm">Collection Route</h1>
+                                <p className="text-xs text-gray-600">{siteLocations.length} sites to collect</p>
+                            </div>
                         </div>
+                        {currentLocation && (
+                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* AI Optimization Panel - Mobile Bottom Sheet */}
+            {isMobile && aiOptimizedRoute && (
+                <div className={`absolute bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 rounded-t-2xl shadow-2xl transition-transform duration-300 ${
+                    showAIPanel ? 'transform translate-y-0' : 'transform translate-y-full'
+                }`}>
+                    {/* Drag Handle */}
+                    <div className="flex justify-center pt-3 pb-2">
+                        <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+                    </div>
+                    
+                    {/* Close Button */}
+                    <button
+                        onClick={() => setShowAIPanel(false)}
+                        className="absolute top-3 right-4 p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                    >
+                        <IoClose className="w-4 h-4 text-gray-600" />
+                    </button>
+
+                    <div className="p-4 max-h-64 overflow-y-auto">
+                        <div className="flex items-center gap-2 mb-4">
+                            <IoSparkles className="w-5 h-5 text-green-600" />
+                            <h3 className="font-semibold text-green-800 text-base">AI Route Optimized</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="bg-gray-50 rounded-lg p-3">
+                                <p className="text-xs text-gray-600 mb-1">Nearest Site</p>
+                                <p className="font-semibold text-sm truncate">{aiOptimizedRoute.nearestSite.site_name}</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                                <p className="text-xs text-gray-600 mb-1">Distance</p>
+                                <p className="font-semibold text-sm">{aiOptimizedRoute.distance} km</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                                <p className="text-xs text-gray-600 mb-1">Est. Time</p>
+                                <p className="font-semibold text-sm">{aiOptimizedRoute.duration} min</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                                <p className="text-xs text-gray-600 mb-1">Traffic</p>
+                                <p className={`font-semibold text-sm ${
+                                    aiOptimizedRoute.trafficConditions.conditions === 'heavy' ? 'text-red-600' :
+                                    aiOptimizedRoute.trafficConditions.conditions === 'moderate' ? 'text-yellow-600' : 'text-green-600'
+                                }`}>
+                                    {aiOptimizedRoute.trafficConditions.conditions}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                            <p className="text-xs text-gray-700 mb-2">
+                                {aiOptimizedRoute.recommendation.text}
+                            </p>
+                            <p className="text-xs text-blue-600 font-medium">
+                                💡 {aiOptimizedRoute.recommendation.suggestedAction}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* AI Optimization Panel - Desktop */}
+            {!isMobile && aiOptimizedRoute && (
+                <div className="absolute top-4 left-4 z-20 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg max-w-sm">
+                    <div className="flex items-center gap-2 mb-3">
+                        <IoSparkles className="w-5 h-5 text-green-600" />
+                        <h3 className="font-semibold text-green-800">AI Route Optimized</h3>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-gray-600">Nearest Site:</span>
+                            <span className="font-semibold">{aiOptimizedRoute.nearestSite.site_name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-600">Distance:</span>
+                            <span className="font-semibold">{aiOptimizedRoute.distance} km</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-600">Est. Time:</span>
+                            <span className="font-semibold">{aiOptimizedRoute.duration} min</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-600">Traffic:</span>
+                            <span className={`font-semibold ${
+                                aiOptimizedRoute.trafficConditions.conditions === 'heavy' ? 'text-red-600' :
+                                aiOptimizedRoute.trafficConditions.conditions === 'moderate' ? 'text-yellow-600' : 'text-green-600'
+                            }`}>
+                                {aiOptimizedRoute.trafficConditions.conditions}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-3 p-2 bg-white rounded border">
+                        <p className="text-xs text-gray-700">
+                            {aiOptimizedRoute.recommendation.text}
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                            💡 {aiOptimizedRoute.recommendation.suggestedAction}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Control Buttons */}
+            <div className={`absolute ${isMobile ? 'top-16' : 'top-4'} right-4 z-10 flex flex-col gap-3 transition-all duration-300 ${
+                isMobile && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}>
+                {/* AI Smart Route Button */}
+                <div className="flex flex-col items-center">
+                    <button
+                        onClick={getAIOptimizedRoute}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:from-purple-600 hover:to-pink-600"
+                        title="AI Smart Route Optimization"
+                    >
+                        <IoSparkles className="w-6 h-6" />
+                    </button>
+                    {!isMobile && <span className="text-xs text-gray-600 mt-1">AI Route</span>}
+                </div>
+
+                {/* Current Location Button */}
+                <div className="flex flex-col items-center">
+                    <button
+                        onClick={getCurrentLocation}
+                        className="bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-gray-50"
+                        title="Current Location & Route"
+                    >
+                        <IoNavigate className="w-6 h-6 text-blue-600" />
+                    </button>
+                    {!isMobile && currentLocation && (
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-1 animate-pulse"></div>
                     )}
+                </div>
+
+                {/* Complete Task Button */}
+                <button
+                    onClick={() => onTaskComplete && onTaskComplete({ scheduleId })}
+                    className="bg-green-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-green-600 flex items-center justify-center"
+                    title="Complete Task"
+                >
+                    <IoCheckmark className="w-6 h-6" />
+                </button>
+
+                {/* Cancel Task Button */}
+                <button
+                    onClick={onTaskCancel}
+                    className="bg-red-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-red-600 flex items-center justify-center"
+                    title="Cancel Task"
+                >
+                    <IoClose className="w-6 h-6" />
+                </button>
+            </div>
+    
+            {/* Schedule Info Panel */}
+            {activeSchedule && (
+                <div className={`absolute ${isMobile ? 'bottom-20 left-4 right-4' : 'bottom-4 left-4'} z-10 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-lg ${
+                    isMobile ? 'max-w-full' : 'max-w-xs'
+                }`}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="text-sm font-medium text-gray-900">
+                                <span className="text-blue-600 font-bold">{siteLocations.length}</span> sites to collect
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1">
+                                Barangay: <span className="font-medium">{activeSchedule.baranggay_name}</span>
+                            </div>
+                        </div>
+                        {routeInfo && (
+                            <div className="text-right">
+                                <div className="text-xs text-gray-600">
+                                    <span className="font-medium">{routeInfo.duration} min</span> • 
+                                    <span className="font-medium"> {routeInfo.distance} km</span>
+                                </div>
+                                {isMobile && aiOptimizedRoute && (
+                                    <button
+                                        onClick={() => setShowAIPanel(true)}
+                                        className="text-xs text-blue-600 font-medium mt-1"
+                                    >
+                                        View AI Route
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
             
