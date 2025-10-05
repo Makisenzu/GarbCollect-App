@@ -328,8 +328,7 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
             
             if (data.routes && data.routes.length > 0) {
                 const route = data.routes[0];
-                
-                // Update the route coordinates which will trigger the useEffect
+
                 setRouteCoordinates(route.geometry.coordinates);
                 setRouteInfo({
                     duration: Math.round(route.duration / 60),
@@ -340,8 +339,7 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
                     duration: Math.round(route.duration / 60) + 'min',
                     distance: (route.distance / 1000).toFixed(1) + 'km'
                 });
-                
-                // Force update the route layer after a short delay
+
                 setTimeout(() => {
                     if (map.current && route.geometry.coordinates.length > 0) {
                         addRouteLayer();
@@ -634,9 +632,6 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
         if (navigator.geolocation) {
             setLoading(true);
             
-            // Add accuracy debugging
-            console.log('Requesting high accuracy location...');
-            
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     const { latitude, longitude, accuracy } = position.coords;
@@ -651,7 +646,6 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
                     
                     setCurrentLocation(currentPos);
                     
-                    // Clear existing current location marker first
                     const existingMarker = document.querySelector('.current-location-marker');
                     if (existingMarker) existingMarker.remove();
                     
@@ -696,9 +690,9 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
                     alert(errorMessage);
                 },
                 {
-                    enableHighAccuracy: true,    // Use GPS if available
-                    timeout: 30000,              // Increased timeout to 30 seconds
-                    maximumAge: 0                // Don't use cached position
+                    enableHighAccuracy: true,
+                    timeout: 30000,
+                    maximumAge: 0
                 }
             );
         } else {
@@ -782,7 +776,6 @@ export default function TaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskC
         >
             <IoNavigate className="w-6 h-6 text-blue-600" />
         </button>
-        {/* Optional: Add a small refresh indicator */}
         {currentLocation && (
             <div className="w-2 h-2 bg-green-500 rounded-full mt-1 animate-pulse"></div>
         )}
