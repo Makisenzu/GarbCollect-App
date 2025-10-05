@@ -355,9 +355,9 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Barangay
-                          </th>
+                          </th> */}
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Date
                           </th>
@@ -381,9 +381,9 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                       <tbody className="bg-white divide-y divide-gray-200">
                         {paginatedSchedules.map((schedule) => (
                           <tr key={schedule.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {schedule.barangay?.baranggay_name || schedule.baranggay_name || 'N/A'}
-                            </td>
+                            </td> */}
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {formatDate(schedule.collection_date)}
                             </td>
