@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import TaskMap from './TaskMap'; // Import the TaskMap component
+import TaskMap from './TaskMap';
 
 const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => {
   const [timePeriod, setTimePeriod] = useState('today');
@@ -7,9 +7,72 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
   const [loading, setLoading] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [showTaskMap, setShowTaskMap] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const assignedBarangay = drivers.length > 0 ? drivers[0]?.barangay : null;
   const assignedBarangayId = assignedBarangay?.id || (schedules.length > 0 ? schedules[0]?.barangay_id : null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const isScheduleToday = (schedule) => {
+    if (!schedule.collection_date) {
+      return false;
+    }
+
+    try {
+      const scheduleDate = new Date(schedule.collection_date);
+      const today = new Date();
+      
+      return scheduleDate.toDateString() === today.toDateString();
+    } catch (error) {
+      console.error('Error checking schedule date:', error);
+      return false;
+    }
+  };
+
+  const getTimeDifference = (schedule) => {
+    if (!schedule.collection_date || !schedule.collection_time) {
+      return 'Invalid schedule';
+    }
+
+    try {
+      const scheduleDate = new Date(schedule.collection_date);
+      const [hours, minutes] = schedule.collection_time.split(':').map(Number);
+      scheduleDate.setHours(hours, minutes, 0, 0);
+      
+      const now = new Date();
+      const diffMs = scheduleDate.getTime() - now.getTime();
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMinutes / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      
+      if (diffMinutes < 0) {
+        if (isScheduleToday(schedule)) {
+          return 'Today';
+        }
+        return 'Past due';
+      } else if (diffMinutes === 0) {
+        return 'Now';
+      } else if (diffMinutes < 60) {
+        return `in ${diffMinutes} min`;
+      } else if (diffHours < 24) {
+        const remainingMinutes = diffMinutes % 60;
+        return `in ${diffHours}h ${remainingMinutes}m`;
+      } else if (diffDays === 1) {
+        return 'Tomorrow';
+      } else {
+        return scheduleDate.toLocaleDateString('en-US', { weekday: 'long' });
+      }
+    } catch (error) {
+      return 'Error';
+    }
+  };
 
   useEffect(() => {
     if (!assignedBarangayId) {
@@ -62,9 +125,14 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
 
     setFilteredSchedules(filtered);
     setLoading(false);
-  }, [assignedBarangayId, timePeriod, schedules]);
+  }, [assignedBarangayId, timePeriod, schedules, currentTime]);
 
   const handleStartCollection = (schedule) => {
+    if (!isScheduleToday(schedule)) {
+      console.log('Schedule is not for today:', schedule);
+      return;
+    }
+    
     console.log('Starting collection for:', schedule);
     setSelectedSchedule(schedule);
     setShowTaskMap(true);
@@ -85,16 +153,10 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
     setSelectedSchedule(null);
   };
 
-  const handleLocationSelect = (location) => {
-    console.log('Location selected:', location);
-  };
-
-  const handleEditSite = (site) => {
-    console.log('Edit site:', site);
-  };
-
-  const handleDeleteSite = (site) => {
-    console.log('Delete site:', site);
+  const handleTaskCancel = () => {
+    console.log('Task cancelled');
+    setShowTaskMap(false);
+    setSelectedSchedule(null);
   };
 
   const formatDate = (dateString) => {
@@ -146,26 +208,39 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
   };
 
   const getStartButtonProps = (schedule) => {
-    if (schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'progress') {
-        return {
-            disabled: false,
-            className: 'bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors w-full',
-            text: 'Start Task'
-        };
+    const isToday = isScheduleToday(schedule);
+    const timeDiff = getTimeDifference(schedule);
+    
+    if (isToday && (schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'progress')) {
+      return {
+        disabled: false,
+        className: 'bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors w-full',
+        text: 'Start Task',
+        tooltip: 'Click to start collection task'
+      };
     } else {
-        return {
-            disabled: true,
-            className: 'bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium cursor-not-allowed w-full',
-            text: 'Start Task'
-        };
+      let disabledText = 'Start Task';
+      if (!isToday) {
+        disabledText = timeDiff;
+      } else if (schedule.status !== 'active' && schedule.status !== 'pending' && schedule.status !== 'progress') {
+        disabledText = 'Not Available';
+      }
+      
+      return {
+        disabled: true,
+        className: 'bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium cursor-not-allowed w-full',
+        text: disabledText,
+        tooltip: !isToday ? `Available on ${formatDate(schedule.collection_date)}` : 'Not available'
+      };
     }
   };
 
   const ScheduleCard = ({ schedule }) => {
     const startButtonProps = getStartButtonProps(schedule);
+    const isToday = isScheduleToday(schedule);
     
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+      <div className={`bg-white border rounded-lg p-4 mb-4 ${isToday ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
@@ -173,12 +248,20 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span className="text-sm font-medium text-gray-900">{formatDate(schedule.collection_date)}</span>
+              {isToday && (
+                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Today</span>
+              )}
             </div>
             <div className="flex items-center gap-2 mb-2">
               <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-sm text-gray-600">{formatTime(schedule.collection_time)}</span>
+              {!isToday && (
+                <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">
+                  {getTimeDifference(schedule)}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex-shrink-0">
@@ -188,9 +271,10 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
         
         <div className="flex gap-2">
           <button
-            onClick={() => !startButtonProps.disabled && handleStartCollection(schedule)}
+            onClick={() => handleStartCollection(schedule)}
             disabled={startButtonProps.disabled}
             className={startButtonProps.className}
+            title={startButtonProps.tooltip}
           >
             {startButtonProps.text}
           </button>
@@ -205,64 +289,47 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
     );
   };
 
-
-if (showTaskMap && selectedSchedule) {
-  return (
-    <div className="bg-white rounded-lg p-4 sm:p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-          Collection Task - {formatDate(selectedSchedule.collection_date)}
-        </h2>
-        <button
-          onClick={handleCloseTaskMap}
-          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-        >
-          Back to Schedules
-        </button>
-      </div>
-      
-      <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div>
-            <strong>Date:</strong> {formatDate(selectedSchedule.collection_date)}
-          </div>
-          <div>
-            <strong>Time:</strong> {formatTime(selectedSchedule.collection_time)}
-          </div>
-          <div>
-            <strong>Driver:</strong> {selectedSchedule.driver?.user?.name || 'N/A'}
+  if (showTaskMap && selectedSchedule) {
+    return (
+      <div className="bg-white rounded-lg p-4 sm:p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+            Collection Task - {formatDate(selectedSchedule.collection_date)}
+          </h2>
+          <button
+            onClick={handleCloseTaskMap}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+          >
+            Back to Schedules
+          </button>
+        </div>
+        
+        <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <strong>Date:</strong> {formatDate(selectedSchedule.collection_date)}
+            </div>
+            <div>
+              <strong>Time:</strong> {formatTime(selectedSchedule.collection_time)}
+            </div>
+            <div>
+              <strong>Driver:</strong> {selectedSchedule.driver?.user?.name || 'N/A'}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="h-96 rounded-lg overflow-hidden">
-        <TaskMap
-          mapboxKey={mapboxKey}
-          onLocationSelect={handleLocationSelect}
-          refreshTrigger={selectedSchedule.id}
-          onEditSite={handleEditSite}
-          onDeleteSite={handleDeleteSite}
-          scheduleId={selectedSchedule.id}
-        />
+        <div className="h-96 rounded-lg overflow-hidden">
+          {/* ✅ Only pass the props that TaskMap actually uses */}
+          <TaskMap
+            mapboxKey={mapboxKey}
+            scheduleId={selectedSchedule.id}
+            onTaskComplete={handleTaskComplete}
+            onTaskCancel={handleTaskCancel}
+          />
+        </div>
       </div>
-
-      <div className="mt-4 flex justify-end gap-2">
-        <button
-          onClick={handleCloseTaskMap}
-          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={() => handleTaskComplete({ scheduleId: selectedSchedule.id })}
-          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-        >
-          Complete Task
-        </button>
-      </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg p-4 sm:p-6">
@@ -365,14 +432,27 @@ if (showTaskMap && selectedSchedule) {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredSchedules.map((schedule) => {
                     const startButtonProps = getStartButtonProps(schedule);
+                    const isToday = isScheduleToday(schedule);
                     
                     return (
-                      <tr key={schedule.id} className="hover:bg-gray-50">
+                      <tr key={schedule.id} className={`hover:bg-gray-50 ${isToday ? 'bg-green-50' : ''}`}>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(schedule.collection_date)}
+                          <div className="flex items-center gap-2">
+                            {formatDate(schedule.collection_date)}
+                            {isToday && (
+                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Today</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                          {formatTime(schedule.collection_time)}
+                          <div className="flex items-center gap-2">
+                            {formatTime(schedule.collection_time)}
+                            {!isToday && (
+                              <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">
+                                {getTimeDifference(schedule)}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {getStatusBadge(schedule.status)}
@@ -380,9 +460,10 @@ if (showTaskMap && selectedSchedule) {
                         <td className="px-4 py-3 text-sm text-gray-900">
                           <div className="flex space-x-2">
                             <button
-                              onClick={() => !startButtonProps.disabled && handleStartCollection(schedule)}
+                              onClick={() => handleStartCollection(schedule)}
                               disabled={startButtonProps.disabled}
                               className={startButtonProps.className}
+                              title={startButtonProps.tooltip}
                             >
                               {startButtonProps.text}
                             </button>
@@ -406,8 +487,9 @@ if (showTaskMap && selectedSchedule) {
             <div>
               Showing {filteredSchedules.length} schedule{filteredSchedules.length !== 1 ? 's' : ''}
             </div>
-            <div>
-              Updated: {new Date().toLocaleTimeString()}
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>Today's schedule</span>
             </div>
           </div>
         </>
