@@ -5,12 +5,10 @@ import axios from 'axios';
 import can from "@/images/can.png";
 
 export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel }) => {
-  // Refs
   const mapContainer = useRef(null);
   const map = useRef(null);
   const siteMarkersRef = useRef([]);
   
-  // State
   const [cssLoaded, setCssLoaded] = useState(false);
   const [siteLocations, setSiteLocations] = useState([]);
   const [mapInitialized, setMapInitialized] = useState(false);
@@ -59,7 +57,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     '_default': '#4F262A'
   };
 
-  // Utility Functions
   const formatDuration = (minutes) => {
     if (minutes < 60) {
       return `${minutes} min`;
@@ -88,7 +85,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     }
   };
 
-  // Effects
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
@@ -232,7 +228,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     }
   }, [mapInitialized, customStyleLoaded, siteLocations, routeCoordinates]);
 
-  // Map Functions
   const analyzeAndOptimizeRoute = async (driverLocation, sites) => {
     if (!driverLocation || sites.length === 0) return null;
 
@@ -325,13 +320,13 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     let urgency = 'low';
     
     if (durationMinutes < 10) {
-      recommendation = `🚗 Very close! You'll reach ${nearestSite.site_name} in ${formattedDuration}.`;
+      recommendation = `Very close! You'll reach ${nearestSite.site_name} in ${formattedDuration}.`;
       urgency = 'low';
     } else if (durationMinutes < 60) {
-      recommendation = `📍 Head to ${nearestSite.site_name} - ${formattedDuration} away. ${traffic.conditions === 'heavy' ? 'Heavy traffic expected.' : 'Good road conditions.'}`;
+      recommendation = `Head to ${nearestSite.site_name} - ${formattedDuration} away. ${traffic.conditions === 'heavy' ? 'Heavy traffic expected.' : 'Good road conditions.'}`;
       urgency = 'medium';
     } else {
-      recommendation = `⏰ Long route to ${nearestSite.site_name} (${formattedDuration}). Consider taking breaks. ${traffic.conditions === 'heavy' ? 'Significant delays expected.' : ''}`;
+      recommendation = `Long route to ${nearestSite.site_name} (${formattedDuration}). Consider taking breaks. ${traffic.conditions === 'heavy' ? 'Significant delays expected.' : ''}`;
       urgency = 'high';
     }
     
@@ -802,13 +797,10 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     .addTo(map.current);
   };
 
-  // Return all the state and functions needed by the component
   return {
-    // Refs
     mapContainer,
     siteMarkersRef,
     
-    // State
     cssLoaded,
     siteLocations,
     mapInitialized,
@@ -824,8 +816,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     isMobile,
     showAIPanel,
     showControls,
-    
-    // Functions
+
     formatDuration,
     getCurrentLocation,
     getAIOptimizedRoute,

@@ -331,9 +331,6 @@ const ScheduleInfoPanel = ({ activeSchedule, siteLocations, routeInfo, isMobile,
         <div className="text-sm font-medium text-gray-900">
           <span className="text-blue-600 font-bold">{siteLocations.length}</span> sites to collect
         </div>
-        <div className="text-xs text-gray-600 mt-1">
-          Barangay: <span className="font-medium">{activeSchedule.baranggay_name}</span>
-        </div>
       </div>
       {routeInfo && (
         <div className="text-right">

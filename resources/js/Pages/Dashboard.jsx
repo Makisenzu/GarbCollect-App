@@ -90,7 +90,7 @@ export default function Dashboard() {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    {isTaskActive ? 'Active Collection Task' : 'Driver Dashboard'}
+                    {isTaskActive ? 'Site Routes' : 'Driver Dashboard'}
                 </h2>
             }
         >
