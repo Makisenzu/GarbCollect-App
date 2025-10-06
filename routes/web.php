@@ -37,15 +37,21 @@ Route::get('/employee/login', function () {
     ]);
 })->name('loginPage');
 
+//Public route
 Route::post('/reviews', [ReviewController::class, 'store']);
+
 Route::middleware(['auth', 'verified'])->group(function () {
     
+
+    //Employee routes
     Route::middleware('roles:employee')->group(function () {
         Route::get('/dashboard', [EmployeeController::class, 'index'])->name('dashboard');
         Route::get('/schedules/{id}', [EmployeeController::class, 'show']);
         Route::get('/barangay/{barangayId}/sites', [EmployeeController::class, 'getActiveSites']);
     });
     
+
+    //Admin Routes
     Route::middleware('roles:admin')->group(function () {
         Route::get('Admin/adminDashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 

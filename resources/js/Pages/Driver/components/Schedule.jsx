@@ -534,10 +534,6 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
             <div>
               Showing {filteredSchedules.length} schedule{filteredSchedules.length !== 1 ? 's' : ''}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>Today's schedule</span>
-            </div>
           </div>
         </>
       )}
