@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TaskMap from './TaskMap';
 
 const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => {
@@ -8,6 +8,7 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [showTaskMap, setShowTaskMap] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const taskMapRef = useRef(null);
 
   const assignedBarangay = drivers.length > 0 ? drivers[0]?.barangay : null;
   const assignedBarangayId = assignedBarangay?.id || (schedules.length > 0 ? schedules[0]?.barangay_id : null);
@@ -140,6 +141,14 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
     if (onStartTask) {
       onStartTask(schedule);
     }
+
+    // Auto-get location after a short delay to ensure map is loaded
+    setTimeout(() => {
+      if (taskMapRef.current) {
+        console.log('Auto-getting location via ref');
+        taskMapRef.current.getCurrentLocation();
+      }
+    }, 1000);
   };
 
   const handleCloseTaskMap = () => {
@@ -319,8 +328,9 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
         </div>
 
         <div className="h-96 rounded-lg overflow-hidden">
-          {/* ✅ Only pass the props that TaskMap actually uses */}
+          {/* ✅ Pass ref to TaskMap to call getCurrentLocation automatically */}
           <TaskMap
+            ref={taskMapRef}
             mapboxKey={mapboxKey}
             scheduleId={selectedSchedule.id}
             onTaskComplete={handleTaskComplete}
