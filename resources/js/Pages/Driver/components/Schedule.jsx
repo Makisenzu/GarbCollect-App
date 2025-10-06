@@ -37,7 +37,6 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
     }
   };
 
-  // NEW FUNCTION: Check if current time matches schedule time
   const isTimeToStart = (schedule) => {
     if (!schedule.collection_date || !schedule.collection_time) {
       return false;
@@ -48,11 +47,9 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
       const scheduleDate = new Date(schedule.collection_date);
       const [hours, minutes] = schedule.collection_time.split(':').map(Number);
       
-      // Set the schedule time
       const scheduleDateTime = new Date(scheduleDate);
       scheduleDateTime.setHours(hours, minutes, 0, 0);
       
-      // Allow starting from scheduled time onwards
       return now >= scheduleDateTime;
     } catch (error) {
       console.error('Error checking schedule time:', error);
@@ -165,7 +162,6 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
       onStartTask(schedule);
     }
 
-    // Auto-get location after a short delay to ensure map is loaded
     setTimeout(() => {
       if (taskMapRef.current) {
         console.log('Auto-getting location via ref');
@@ -174,7 +170,6 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
     }, 1000);
   };
 
-  // NEW FUNCTION: Check if schedule can be started
   const canStartSchedule = (schedule) => {
     const isToday = isScheduleToday(schedule);
     const isTimeValid = isTimeToStart(schedule);
@@ -371,7 +366,6 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
         </div>
 
         <div className="h-96 rounded-lg overflow-hidden">
-          {/* ✅ Pass ref to TaskMap to call getCurrentLocation automatically */}
           <TaskMap
             ref={taskMapRef}
             mapboxKey={mapboxKey}
