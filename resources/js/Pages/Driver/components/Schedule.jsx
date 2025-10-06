@@ -37,6 +37,29 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
     }
   };
 
+  // NEW FUNCTION: Check if current time matches schedule time
+  const isTimeToStart = (schedule) => {
+    if (!schedule.collection_date || !schedule.collection_time) {
+      return false;
+    }
+
+    try {
+      const now = currentTime;
+      const scheduleDate = new Date(schedule.collection_date);
+      const [hours, minutes] = schedule.collection_time.split(':').map(Number);
+      
+      // Set the schedule time
+      const scheduleDateTime = new Date(scheduleDate);
+      scheduleDateTime.setHours(hours, minutes, 0, 0);
+      
+      // Allow starting from scheduled time onwards
+      return now >= scheduleDateTime;
+    } catch (error) {
+      console.error('Error checking schedule time:', error);
+      return false;
+    }
+  };
+
   const getTimeDifference = (schedule) => {
     if (!schedule.collection_date || !schedule.collection_time) {
       return 'Invalid schedule';
@@ -47,7 +70,7 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
       const [hours, minutes] = schedule.collection_time.split(':').map(Number);
       scheduleDate.setHours(hours, minutes, 0, 0);
       
-      const now = new Date();
+      const now = currentTime;
       const diffMs = scheduleDate.getTime() - now.getTime();
       const diffMinutes = Math.floor(diffMs / (1000 * 60));
       const diffHours = Math.floor(diffMinutes / 60);
@@ -87,7 +110,7 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
       schedule.barangay_id == assignedBarangayId
     );
 
-    const now = new Date();
+    const now = currentTime;
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
     switch (timePeriod) {
@@ -129,8 +152,8 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
   }, [assignedBarangayId, timePeriod, schedules, currentTime]);
 
   const handleStartCollection = (schedule) => {
-    if (!isScheduleToday(schedule)) {
-      console.log('Schedule is not for today:', schedule);
+    if (!canStartSchedule(schedule)) {
+      console.log('Cannot start schedule - time condition not met:', schedule);
       return;
     }
     
@@ -149,6 +172,15 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
         taskMapRef.current.getCurrentLocation();
       }
     }, 1000);
+  };
+
+  // NEW FUNCTION: Check if schedule can be started
+  const canStartSchedule = (schedule) => {
+    const isToday = isScheduleToday(schedule);
+    const isTimeValid = isTimeToStart(schedule);
+    const isStatusValid = schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'progress';
+    
+    return isToday && isTimeValid && isStatusValid;
   };
 
   const handleCloseTaskMap = () => {
@@ -217,10 +249,11 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
   };
 
   const getStartButtonProps = (schedule) => {
+    const canStart = canStartSchedule(schedule);
     const isToday = isScheduleToday(schedule);
     const timeDiff = getTimeDifference(schedule);
     
-    if (isToday && (schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'progress')) {
+    if (canStart) {
       return {
         disabled: false,
         className: 'bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors w-full',
@@ -229,17 +262,27 @@ const Schedule = ({ drivers, barangays, schedules, onStartTask, mapboxKey }) => 
       };
     } else {
       let disabledText = 'Start Task';
+      let tooltipText = '';
+      
       if (!isToday) {
         disabledText = timeDiff;
+        tooltipText = `Available on ${formatDate(schedule.collection_date)}`;
+      } else if (!isTimeToStart(schedule)) {
+        disabledText = timeDiff;
+        tooltipText = `Available at ${formatTime(schedule.collection_time)}`;
       } else if (schedule.status !== 'active' && schedule.status !== 'pending' && schedule.status !== 'progress') {
         disabledText = 'Not Available';
+        tooltipText = 'Schedule status does not allow starting';
+      } else {
+        disabledText = 'Not Available';
+        tooltipText = 'Cannot start at this time';
       }
       
       return {
         disabled: true,
         className: 'bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium cursor-not-allowed w-full',
         text: disabledText,
-        tooltip: !isToday ? `Available on ${formatDate(schedule.collection_date)}` : 'Not available'
+        tooltip: tooltipText
       };
     }
   };
