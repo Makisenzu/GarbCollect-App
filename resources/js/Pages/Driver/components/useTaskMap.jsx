@@ -144,7 +144,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           if (sitesResponse.data.success) {
             const activeSites = sitesResponse.data.data;
             
-            // Separate station from regular sites
             const station = activeSites.find(site => site.type === 'station');
             const regularSites = activeSites.filter(site => site.type !== 'station');
             
@@ -154,7 +153,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
                 coordinates: [parseFloat(station.longitude), parseFloat(station.latitude)]
               });
               
-              // AUTO-OPTIMIZE: Immediately optimize site order when station is available
               if (regularSites.length > 0) {
                 const optimizedOrder = optimizeSiteOrderFromStation(station, regularSites);
                 setOptimizedSiteOrder(optimizedOrder);
@@ -245,7 +243,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       clearSiteMarkers();
       addSiteMarkers();
       
-      // Only add route layer if we have coordinates
       if (routeCoordinates.length > 0) {
         setTimeout(() => {
           addRouteLayer();
@@ -254,17 +251,12 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     }
   }, [mapInitialized, customStyleLoaded, siteLocations, routeCoordinates, optimizedSiteOrder]);
 
-  // UPDATED FUNCTION: Optimize site order based on station location
   const optimizeSiteOrderFromStation = (station, sites) => {
     if (!station || sites.length === 0) return sites;
 
-    console.log('🚀 Optimizing site order from station...');
-    
-    // Create a copy of sites to avoid mutation
     const remainingSites = [...sites];
     const optimizedOrder = [];
     
-    // Calculate distances from station to all sites
     const sitesWithDistances = remainingSites.map(site => {
       const distance = calculateDistance(
         parseFloat(station.latitude), parseFloat(station.longitude),
@@ -277,24 +269,19 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       };
     });
 
-    // Sort by distance from station
     sitesWithDistances.sort((a, b) => a.distance - b.distance);
-    
-    // The nearest site becomes the first stop
+
     const nearestSite = sitesWithDistances[0];
     optimizedOrder.push(nearestSite);
     
-    // Remove the nearest site from remaining sites
     const remaining = sitesWithDistances.slice(1);
     
-    // Use nearest neighbor algorithm for the rest
     let currentSite = nearestSite;
     
     while (remaining.length > 0) {
       let nearestIndex = -1;
       let minDistance = Infinity;
 
-      // Find the nearest unvisited site
       for (let i = 0; i < remaining.length; i++) {
         const distance = calculateDistance(
           parseFloat(currentSite.latitude), parseFloat(currentSite.longitude),
@@ -321,21 +308,18 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     return optimizedOrder;
   };
 
-  // UPDATED FUNCTION: Analyze and optimize route from station
   const analyzeAndOptimizeRouteFromStation = async (station, sites) => {
     if (!station || sites.length === 0) return null;
 
     try {
       console.log('🤖 AI analyzing optimal route from station...');
       
-      // First optimize the site order based on station location
       const optimizedOrder = optimizeSiteOrderFromStation(station, sites);
       setOptimizedSiteOrder(optimizedOrder);
       
       const nearest = optimizedOrder[0];
       setNearestSite(nearest);
 
-      // Build coordinates for the complete route: station -> site1 -> site2 -> ...
       const allCoordinates = [
         [parseFloat(station.longitude), parseFloat(station.latitude)],
         ...optimizedOrder.map(site => [parseFloat(site.longitude), parseFloat(site.latitude)])
@@ -438,23 +422,19 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     return 'Normal driving conditions';
   };
 
-  // UPDATED FUNCTION: Calculate optimal route from station
   const calculateOptimalRoute = async (sites, barangayId, station) => {
     if (!mapboxKey || sites.length < 1) return;
 
     try {
-      // Use station-based optimization
       const optimizedSites = station 
         ? optimizeSiteOrderFromStation(station, sites)
         : optimizeSiteOrder(sites);
-      
-      // Set the optimized order immediately
+
       setOptimizedSiteOrder(optimizedSites);
       if (optimizedSites.length > 0) {
         setNearestSite(optimizedSites[0]);
       }
       
-      // Include station in coordinates if available
       const coordinates = station 
         ? [
             `${station.longitude},${station.latitude}`,
@@ -568,7 +548,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           
           addCurrentLocationMarker(currentPos);
 
-          // Auto-optimize route from station when location is obtained
           if (stationLocation && siteLocations.length > 0) {
             const aiResult = await analyzeAndOptimizeRouteFromStation(stationLocation, siteLocations);
             
@@ -632,7 +611,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     }
   };
 
-  // UPDATED FUNCTION: Get AI optimized route from station
   const getAIOptimizedRoute = () => {
     if (!stationLocation) {
       alert('No station found. Please check site configuration.');
@@ -743,7 +721,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
     const bounds = new mapboxgl.LngLatBounds();
     
-    // Include station in bounds if available
     if (stationLocation) {
       bounds.extend([parseFloat(stationLocation.longitude), parseFloat(stationLocation.latitude)]);
     }
@@ -774,20 +751,18 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
   const addSiteMarkers = () => {
     clearSiteMarkers();
-    
-    // Add station marker first
+
     if (stationLocation) {
       const stationMarker = addMarker(
         [parseFloat(stationLocation.longitude), parseFloat(stationLocation.latitude)],
         'station',
         stationLocation.site_name,
         stationLocation,
-        0 // Station is always sequence 0
+        0 
       );
       siteMarkersRef.current.push(stationMarker);
     }
     
-    // Use optimized order if available, otherwise use original order
     const sitesToDisplay = optimizedSiteOrder.length > 0 ? optimizedSiteOrder : siteLocations;
     
     console.log('📍 Displaying sites in order:', sitesToDisplay.map((site, index) => 
@@ -801,7 +776,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           'site',
           site.site_name,
           site,
-          index + 1 // Regular sites start from sequence 1
+          index + 1
         );
         siteMarkersRef.current.push(marker);
       }
@@ -824,10 +799,9 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     
     const isNearest = nearestSite && nearestSite.id === siteData.id;
     const isStation = siteData.type === 'station';
-    const highlightStyle = isNearest ? 'animate-pulse ring-4 ring-green-400' : '';
     const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
     const imageSize = isMobile ? 'w-10 h-10' : 'w-8 h-8';
-
+  
     const markerElement = document.createElement('div');
     markerElement.className = 'custom-image-marker';
     
@@ -836,30 +810,28 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       const badgeSize = isMobile ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
       const badgeColor = isStation ? 'bg-red-500' : 'bg-blue-500';
       sequenceBadge = `
-        <div class="absolute -top-2 -right-2 ${badgeColor} text-white rounded-full ${badgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white">
+        <div class="absolute -top-2 -right-2 ${badgeColor} text-white rounded-full ${badgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white z-20">
           ${isStation ? '🏠' : sequence}
         </div>
       `;
     }
-
+  
     markerElement.innerHTML = `
-      <div class="relative ${highlightStyle}">
+      <div class="relative">
         ${sequenceBadge}
-        ${isNearest && !isStation ? `
-          <div class="absolute -top-3 -left-3 bg-green-500 text-white rounded-full ${isMobile ? 'w-10 h-10' : 'w-8 h-8'} flex items-center justify-center text-sm font-bold shadow-lg border-2 border-white animate-bounce">
-            🏁
-          </div>
-        ` : ''}
-        <div class="${markerSize} rounded-full border-3 flex items-center justify-center overflow-hidden shadow-lg bg-white" 
+        <div class="${markerSize} rounded-full border-3 flex items-center justify-center overflow-hidden shadow-lg bg-white relative ${isNearest && !isStation ? 'ring-4 ring-green-500 ring-opacity-70' : ''}" 
              style="border-color: ${borderColor};">
+          ${isNearest && !isStation ? `
+            <div class="absolute -inset-3 rounded-full border-4 border-green-500 border-opacity-70 animate-pulse pointer-events-none z-10"></div>
+          ` : ''}
           <img src="${can}" 
                alt="${siteData.site_name}" 
-               class="${imageSize} object-cover rounded-full"
+               class="${imageSize} object-cover rounded-full z-0"
                onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'${imageSize} rounded-full flex items-center justify-center text-white text-xs font-bold bg-white\\' style=\\'border: 2px solid ${borderColor}; color: ${borderColor}\\'>${siteData.site_name?.charAt(0) || 'S'}</div>'">
         </div>
       </div>
     `;
-
+  
     return markerElement;
   };
 
