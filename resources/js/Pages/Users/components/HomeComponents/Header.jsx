@@ -16,6 +16,8 @@ import { FaCalendarAlt } from "react-icons/fa";
 import { MdOutlineReviews } from "react-icons/md";
 import { IoCallOutline } from "react-icons/io5";
 import { TiThMenu } from "react-icons/ti";
+import { CiTrash } from "react-icons/ci";
+import { BsFillTrash3Fill } from "react-icons/bs";
 
 export default function Header({ header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
@@ -31,36 +33,6 @@ export default function Header({ header, children }) {
                                     <ApplicationLogo className="block h-10 w-auto fill-current text-gray-800" />
                                 </Link>
                             </div>
-
-                            <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                {/* <NavLink
-                                    href="/"
-                                    active={route().current('home')}
-                                >
-                                    <IoHome className="mr-3" size={20} />Home
-                                </NavLink>
-
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    <FaTruckMoving className="mr-3" size={20}/>Routes
-                                </NavLink>
-
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    <FaCalendarAlt className="mr-3" size={20}/>Schedule
-                                </NavLink> */}
-
-                                {/* <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    <FaPeopleGroup className="mr-3" size={20} />Locations
-                                </NavLink> */}
-                            </div>
                         </div>
 
                         <div className="hidden sm:ms-6 sm:flex sm:items-center">
@@ -74,18 +46,6 @@ export default function Header({ header, children }) {
                                             >
                                                 <div className="flex items-center">
                                                     <TiThMenu className="mr-2" size={17} />
-                                                    {/* <svg
-                                                        className="ml-2 h-4 w-4"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 20 20"
-                                                        fill="currentColor"
-                                                    >
-                                                        <path
-                                                            fillRule="evenodd"
-                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                            clipRule="evenodd"
-                                                        />
-                                                    </svg> */}
                                                 </div>
                                             </button>
                                         </span>
@@ -96,15 +56,18 @@ export default function Header({ header, children }) {
                                         <FaCalendarAlt className="mr-2" size={16}/>
                                         Schedule
                                         </Dropdown.Link>
-                                            {/* <Dropdown.Link href={route('register')} className="flex items-center hover:text-green-600">
-                                                <FaUser className="mr-2" size={16} />
-                                                Register
-                                            </Dropdown.Link> */}
                                         <Dropdown.Link className="flex items-center hover:text-green-600"
                                             href={route('dashboard')}
                                         >
                                             <FaTruckMoving className="mr-2" size={16}/>
                                             Routes
+                                        </Dropdown.Link>
+
+                                        <Dropdown.Link className="flex items-center hover:text-pink-600"
+                                            href={route('dashboard')}
+                                        >
+                                            <CiTrash className="mr-2" size={16}/>
+                                            Throw Garbage
                                         </Dropdown.Link>
 
                                         <Dropdown.Link className="flex items-center hover:text-yellow-600"
@@ -180,21 +143,18 @@ export default function Header({ header, children }) {
                             <FaCalendarAlt className="mr-3" size={20}/>Schedule
                         </ResponsiveNavLink>
 
-                        {/* <ResponsiveNavLink
+                        <ResponsiveNavLink
                             href={route('dashboard')}
                             active={route().current('dashboard')}
                         >
-                            <FaPeopleGroup className="mr-3" size={20} />Locations
-                        </ResponsiveNavLink> */}
+                            <BsFillTrash3Fill className="mr-3" size={20} />Garbage Site
+                        </ResponsiveNavLink>
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">
                         <div className="mt-3 space-y-1">
                             <ResponsiveNavLink href={route('login')}>
                                 <MdOutlineReviews className="mr-3" size={20}/> Reviews
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink href={route('register')}>
-                                <FaUser className="mr-3" size={20}/> Register
                             </ResponsiveNavLink>
                             <ResponsiveNavLink href={route('dashboard')}>
                                 <IoCallOutline className="mr-3" size={20}/> Contact Us
