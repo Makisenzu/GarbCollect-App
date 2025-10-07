@@ -41,6 +41,7 @@ Route::get('/employee/login', function () {
 //Public route
 Route::post('/reviews', [ReviewController::class, 'store']);
 Route::get('/barangay/routes', [UserController::class, 'showBarangayRoutes'])->name('barangay.routes');
+Route::get('/getBarangay', [UserController::class, 'getBarangay']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\Baranggay;
+use Exception;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -20,6 +22,22 @@ class UserController extends Controller
         return Inertia::render('Users/components/SitesComponents/BarangayRoutes', [
             'mapboxToken' => env('MAPBOX_ACCESS_TOKEN'),
         ]);
+    }
+
+    public function getBarangay() {
+        try {
+            $barangayData = Baranggay::all();
+            return response()->json([
+                'success' => true,
+                'barangay_data' => $barangayData
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch barangay',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
     public function index()
     {
