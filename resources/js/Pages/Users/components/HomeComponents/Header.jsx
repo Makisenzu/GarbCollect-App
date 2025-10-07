@@ -57,7 +57,7 @@ export default function Header({ header, children }) {
                                         Schedule
                                         </Dropdown.Link>
                                         <Dropdown.Link className="flex items-center hover:text-green-600"
-                                            href={route('dashboard')}
+                                            href={route('barangay.routes')}
                                         >
                                             <FaTruckMoving className="mr-2" size={16}/>
                                             Routes
@@ -130,8 +130,8 @@ export default function Header({ header, children }) {
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
+                            href={route('barangay.routes')}
+                            active={route().current('barangay.routes')}
                         >
                             <FaTruckMoving className="mr-3" size={20}/>Track Collection
                         </ResponsiveNavLink>

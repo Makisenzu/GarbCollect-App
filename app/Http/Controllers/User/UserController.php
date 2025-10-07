@@ -15,6 +15,12 @@ class UserController extends Controller
     public function applicantIndex() {
         return Inertia::render('Users/Applicant');
     }
+
+    public function showBarangayRoutes(){
+        return Inertia::render('Users/components/SitesComponents/BarangayRoutes', [
+            'mapboxToken' => env('MAPBOX_ACCESS_TOKEN'),
+        ]);
+    }
     public function index()
     {
         //

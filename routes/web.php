@@ -17,6 +17,7 @@ use App\Http\Controllers\admin\truck\ScheduleController;
 use App\Http\Controllers\admin\dashboard\DashboardController;
 use App\Http\Controllers\admin\LocationRoute\RouteController;
 use App\Http\Controllers\truck\EmployeeController;
+use App\Http\Controllers\User\UserController;
 
 Route::get('/', function () {
     return Inertia::render('Users/Home');
@@ -26,7 +27,7 @@ Route::get('/', function () {
     //     'laravelVersion' => Application::VERSION,
     //     'phpVersion' => PHP_VERSION,
     // ]);
-});
+})->name('user.dashboard');
 
 Route::get('/employee/login', function () {
     return Inertia::render('Auth/Login', [
@@ -39,6 +40,7 @@ Route::get('/employee/login', function () {
 
 //Public route
 Route::post('/reviews', [ReviewController::class, 'store']);
+Route::get('/barangay/routes', [UserController::class, 'showBarangayRoutes'])->name('barangay.routes');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     
