@@ -109,7 +109,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css';
       link.rel = 'stylesheet';
       link.onload = () => {
-        console.log('Mapbox CSS loaded successfully');
         setCssLoaded(true);
       };
       link.onerror = () => {
@@ -157,7 +156,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
                 const optimizedOrder = optimizeSiteOrderFromStation(station, regularSites);
                 setOptimizedSiteOrder(optimizedOrder);
                 setNearestSite(optimizedOrder[0]);
-                console.log('🎯 Auto-optimized site order on load');
               }
             }
             
@@ -183,7 +181,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       return;
     }
 
-    console.log('Initializing map...');
     
     try {
       mapboxgl.accessToken = mapboxKey;
@@ -206,7 +203,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       });
 
       map.current.on('load', () => {
-        console.log('Map loaded successfully');
         setMapInitialized(true);
         setCustomStyleLoaded(true);
       });
@@ -217,7 +213,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       });
 
       map.current.on('idle', () => {
-        console.log('Map is fully loaded and rendered');
       });
 
     } catch (error) {
@@ -227,7 +222,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
     return () => {
       if (map.current) {
-        console.log('Cleaning up map');
         map.current.remove();
         map.current = null;
         setMapInitialized(false);
@@ -238,7 +232,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
   useEffect(() => {
     if (mapInitialized && customStyleLoaded && siteLocations.length > 0) {
-      console.log('All conditions met for adding route and markers');
       
       clearSiteMarkers();
       addSiteMarkers();
@@ -301,9 +294,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       }
     }
 
-    console.log('✅ Optimized site order from station:', optimizedOrder.map((site, index) => 
-      `${index + 1}. ${site.site_name} (${site.distance.toFixed(2)}km from ${index === 0 ? 'station' : 'previous'})`
-    ));
 
     return optimizedOrder;
   };
@@ -312,7 +302,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     if (!station || sites.length === 0) return null;
 
     try {
-      console.log('🤖 AI analyzing optimal route from station...');
       
       const optimizedOrder = optimizeSiteOrderFromStation(station, sites);
       setOptimizedSiteOrder(optimizedOrder);
@@ -351,7 +340,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           recommendation: generateRecommendation(optimalRoute, nearest, durationMinutes, optimizedOrder.length)
         };
 
-        console.log('🚀 AI Route Analysis from Station:', aiResult);
         setAiOptimizedRoute(aiResult);
         
         if (isMobile) {
@@ -535,11 +523,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           const { latitude, longitude, accuracy } = position.coords;
           const currentPos = [longitude, latitude];
           
-          console.log('📍 Driver location obtained:', {
-            latitude,
-            longitude,
-            accuracy: accuracy + ' meters'
-          });
           
           setCurrentLocation(currentPos);
           
@@ -627,19 +610,16 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
   const addRouteLayer = () => {
     if (!map.current || routeCoordinates.length === 0) {
-      console.log('Cannot add route: missing map or coordinates');
       return;
     }
 
     if (!map.current.isStyleLoaded()) {
-      console.log('Map style not loaded yet, waiting...');
       map.current.once('styledata', () => {
         setTimeout(addRouteLayer, 100);
       });
       return;
     }
 
-    console.log('Adding route layer with', routeCoordinates.length, 'coordinates');
 
     ['route', 'route-glow', 'route-direction'].forEach(layerId => {
       if (map.current.getLayer(layerId)) {
@@ -701,7 +681,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         }
       });
 
-      console.log('Route layers added successfully');
 
       setTimeout(() => {
         fitMapToRoute();
@@ -765,9 +744,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     
     const sitesToDisplay = optimizedSiteOrder.length > 0 ? optimizedSiteOrder : siteLocations;
     
-    console.log('📍 Displaying sites in order:', sitesToDisplay.map((site, index) => 
-      `${index + 1}. ${site.site_name}`
-    ));
     
     sitesToDisplay.forEach((site, index) => {
       if (site.longitude && site.latitude) {
