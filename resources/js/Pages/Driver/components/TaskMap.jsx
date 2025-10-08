@@ -9,11 +9,9 @@ import { useTaskMap } from './useTaskMap';
 
 const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel, autoGetLocation = false }, ref) => {
   const {
-    // Refs
     mapContainer,
     siteMarkersRef,
-    
-    // State
+
     cssLoaded,
     siteLocations,
     mapInitialized,
@@ -30,7 +28,6 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     showAIPanel,
     showControls,
     
-    // Functions
     formatDuration,
     getCurrentLocation,
     getAIOptimizedRoute,
@@ -38,18 +35,15 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     setShowControls
   } = useTaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel });
 
-  // Expose functions via ref
   useImperativeHandle(ref, () => ({
     getCurrentLocation: () => {
       getCurrentLocation();
     },
     fitMapToRoute: () => {
-      // You can add this function to useTaskMap if needed
       console.log('Fit map to route function called');
     }
   }));
 
-  // Auto-get location when component mounts if prop is true
   useEffect(() => {
     if (autoGetLocation && !currentLocation && !loading && mapInitialized) {
       console.log('Auto-getting location on component mount');
@@ -72,7 +66,6 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
         />
       )}
 
-      {/* AI Optimization Panel */}
       {aiOptimizedRoute && (
         <AIOptimizationPanel 
           aiOptimizedRoute={aiOptimizedRoute}
@@ -82,7 +75,6 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
         />
       )}
 
-      {/* Control Buttons */}
       <ControlButtons 
         isMobile={isMobile}
         showControls={showControls}
@@ -94,7 +86,6 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
         currentLocation={currentLocation}
       />
 
-      {/* Schedule Info Panel */}
       {activeSchedule && (
         <ScheduleInfoPanel 
           activeSchedule={activeSchedule}
@@ -119,7 +110,6 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
   );
 });
 
-// Sub-components
 const LoadingOverlay = () => (
   <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
     <div className="text-center">
