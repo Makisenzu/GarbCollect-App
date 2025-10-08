@@ -220,7 +220,7 @@ const BarangayRoutes = ({ mapboxToken }) => {
             )}
           </>
         )}
-
+ 
         {!isMobile && (
             <div className="absolute top-36 right-2 z-30 flex flex-col space-y-2 magnifying-dropdown">
 <button
