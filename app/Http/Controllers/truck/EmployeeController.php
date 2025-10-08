@@ -84,8 +84,7 @@ public function getActiveSites($barangayId)
     ]);
 }
 
-public function index()
-{
+public function index(){
     $this->updateScheduleStatuses();
 
     $user = Auth::user();

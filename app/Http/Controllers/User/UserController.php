@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Models\Baranggay;
-use App\Models\Schedule;
 use Exception;
-use Illuminate\Http\Request;
+use App\Models\Site;
 use Inertia\Inertia;
+use App\Models\Schedule;
+use App\Models\Baranggay;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class UserController extends Controller
 {
@@ -36,6 +37,29 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch barangay',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getActiveSite($barangayId) {
+        try {
+            $sites = Site::whereHas('purok.baranggay', function($query) use ($barangayId) {
+                $query->where('id', $barangayId);
+            })
+            ->where('status', 'active')
+            ->with(['purok.baranggay'])
+            ->get();
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully get site data',
+                'data' => $sites
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get site for this barangay',
                 'error' => $e->getMessage()
             ]);
         }
