@@ -42,6 +42,7 @@ Route::get('/employee/login', function () {
 Route::post('/reviews', [ReviewController::class, 'store']);
 Route::get('/barangay/routes', [UserController::class, 'showBarangayRoutes'])->name('barangay.routes');
 Route::get('/getBarangay', [UserController::class, 'getBarangay']);
+Route::get('/barangay/schedule/{id}', [UserController::class, 'getBarangaySchedule'])->name('getschedule.barangay');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     

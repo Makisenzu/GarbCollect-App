@@ -20,6 +20,10 @@ class Baranggay extends Model
     public function puroks() {
         return $this->hasMany(Purok::class);
     }
+
+    public function schedules() {
+        return $this->hasMany(Schedule::class);
+    }
     
     public function municipality() {
         return $this->belongsTo(Municipality::class);
@@ -27,9 +31,5 @@ class Baranggay extends Model
 
     public function driver() {
         return $this->hasMany(Driver::class);
-    }
-
-    public function schedules() {
-        return $this->hasMany(Schedule::class);
     }
 }

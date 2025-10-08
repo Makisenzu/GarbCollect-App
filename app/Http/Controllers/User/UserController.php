@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Baranggay;
+use App\Models\Schedule;
 use Exception;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -39,6 +40,28 @@ class UserController extends Controller
             ]);
         }
     }
+
+    public function getBarangaySchedule($id) {
+        try {
+            $barangaySchedule = Schedule::with(['barangay', 'driver'])
+            ->where('barangay_id', $id)
+            ->whereDate('collection_date', today())
+            ->get();
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully fetch barangay schedule',
+                'barangaySchedule' => $barangaySchedule
+            ]); 
+        }catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get schedule for that barangay',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
     public function index()
     {
         //
