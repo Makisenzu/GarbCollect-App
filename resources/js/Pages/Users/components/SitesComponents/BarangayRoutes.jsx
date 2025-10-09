@@ -37,7 +37,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
     await handleBarangayChange(barangayId);
   };
 
-  // Close panels when clicking outside (desktop)
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showControls && !event.target.closest('.controls-container')) {
@@ -49,7 +48,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showControls]);
 
-  // Minimal Header Info
   const renderHeaderInfo = () => {
     if (!selectedBarangay) return null;
 
@@ -101,7 +99,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
     );
   };
 
-  // Minimal AI Panel
   const renderAIPanel = () => {
     if (!aiOptimizedRoute || !showAIPanel) return null;
 
@@ -168,13 +165,11 @@ const BarangayRoutes = ({ mapboxToken }) => {
     );
   };
 
-  // Desktop Controls - Minimal
   const renderDesktopControls = () => {
     if (isMobile) return null;
 
     return (
       <div className="absolute top-4 right-4 z-30 controls-container">
-        {/* Main Control Button */}
         <button
           onClick={() => setShowControls(!showControls)}
           className="bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-xl shadow-lg border border-gray-200 transition-all duration-200"
@@ -182,7 +177,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
           <IoMenu className="w-5 h-5" />
         </button>
 
-        {/* Controls Panel */}
         {showControls && (
           <div className="absolute top-14 right-0 bg-white rounded-xl shadow-xl border border-gray-200 w-64">
             <div className="p-4 border-b border-gray-200">
@@ -230,13 +224,11 @@ const BarangayRoutes = ({ mapboxToken }) => {
     );
   };
 
-  // Mobile Controls - Minimal
   const renderMobileControls = () => {
     if (!isMobile) return null;
 
     return (
       <div className="absolute bottom-4 right-4 z-40 flex flex-col space-y-3">
-        {/* Barangay Selector */}
         <button
           onClick={() => setShowBarangayModal(true)}
           className="bg-white hover:bg-gray-50 text-gray-700 p-4 rounded-full shadow-lg border border-gray-200 transition-all duration-200"
@@ -244,7 +236,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
           <IoSearch className="w-5 h-5" />
         </button>
 
-        {/* Location Button */}
         <button
           onClick={getCurrentLocation}
           className="bg-white hover:bg-gray-50 text-gray-700 p-4 rounded-full shadow-lg border border-gray-200 transition-all duration-200"
@@ -255,7 +246,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
     );
   };
 
-  // Mobile Modal - Minimal
   const renderBarangayModal = () => {
     if (!isMobile || !showBarangayModal) return null;
 
@@ -330,7 +320,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
     );
   };
 
-  // Error State - Minimal
   if (error) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-gray-50">
@@ -356,7 +345,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
       <Head title="Waste Collection Routes" />
 
       <div className="w-full h-screen relative bg-gray-50">
-        {/* Loading Overlay - Only shows when loading, doesn't block map container */}
         {loading && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="text-center">
@@ -366,7 +354,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
           </div>
         )}
 
-        {/* Back Button */}
         <Link
           href="/"
           className={`absolute z-40 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg shadow-lg border border-gray-200 flex items-center space-x-2 transition-colors ${
@@ -385,7 +372,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
         {renderMobileControls()}
         {renderBarangayModal()}
 
-        {/* Map Container - ALWAYS VISIBLE */}
         <div 
           ref={mapContainer} 
           className="w-full h-full absolute inset-0"
