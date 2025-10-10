@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { IoClose, IoSearch, IoNavigate, IoSparkles, IoLocation, IoTime, IoStatsChart, IoMenu } from "react-icons/io5";
+import { IoClose, IoSearch, IoNavigate, IoSparkles, IoLocation, IoTime, IoStatsChart, IoMenu, IoCalendar } from "react-icons/io5";
 import { useBarangayMap } from './useBarangayMap';
 
 const BarangayRoutes = ({ mapboxToken }) => {
@@ -15,6 +15,7 @@ const BarangayRoutes = ({ mapboxToken }) => {
     selectedBarangay,
     isMobile,
     activeSchedule,
+    upcomingSchedules,
     sites,
     routeInfo,
     aiOptimizedRoute,
@@ -28,13 +29,20 @@ const BarangayRoutes = ({ mapboxToken }) => {
   const [showBarangayModal, setShowBarangayModal] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
 
   const handleBarangayChangeWithUI = async (barangayId) => {
     setShowAIPanel(false);
+    setSelectedSchedule(null);
     if (isMobile) {
       setShowBarangayModal(false);
     }
     await handleBarangayChange(barangayId);
+  };
+
+  const handleScheduleSelect = async (schedule) => {
+    setSelectedSchedule(schedule);
+    await handleBarangayChange(selectedBarangay, schedule.id);
   };
 
   useEffect(() => {
@@ -48,10 +56,36 @@ const BarangayRoutes = ({ mapboxToken }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showControls]);
 
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
+  // Format schedule date for display
+  const formatScheduleDate = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow';
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+  };
+
   const renderHeaderInfo = () => {
     if (!selectedBarangay) return null;
 
     const selectedBarangayData = barangays.find(b => b.id == selectedBarangay);
+    const todaySchedule = activeSchedule.find(s => s.collection_date === getTodayDate());
     
     return (
       <div className={`absolute top-4 left-4 right-4 z-40 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200 ${
@@ -86,14 +120,71 @@ const BarangayRoutes = ({ mapboxToken }) => {
             )}
           </div>
           
-          {activeSchedule.length > 0 && (
+          {todaySchedule && (
             <div className="mt-2 pt-2 border-t border-gray-200">
               <p className="text-sm text-gray-600 flex items-center gap-1">
                 <IoTime className="w-3 h-3" />
-                Collection: {activeSchedule[0]?.collection_time || 'No schedule'}
+                Today's Collection: {todaySchedule.collection_time || 'No schedule'}
               </p>
             </div>
           )}
+
+          {selectedSchedule && selectedSchedule.collection_date !== getTodayDate() && (
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <p className="text-sm text-blue-600 flex items-center gap-1">
+                <IoCalendar className="w-3 h-3" />
+                Viewing: {formatScheduleDate(selectedSchedule.collection_date)} - {selectedSchedule.collection_time}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderScheduleSelector = () => {
+    if (!selectedBarangay || (activeSchedule.length === 0 && upcomingSchedules.length === 0)) return null;
+
+    const allSchedules = [...activeSchedule, ...upcomingSchedules];
+    
+    return (
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Schedule Date
+        </label>
+        <div className="space-y-2 max-h-40 overflow-y-auto">
+          {allSchedules.map((schedule, index) => (
+            <button
+              key={schedule.id || index}
+              onClick={() => handleScheduleSelect(schedule)}
+              className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                selectedSchedule?.id === schedule.id || 
+                (!selectedSchedule && schedule.collection_date === getTodayDate())
+                  ? 'bg-blue-50 border-blue-500 text-blue-700'
+                  : 'bg-white border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">
+                    {formatScheduleDate(schedule.collection_date)}
+                    {schedule.collection_date === getTodayDate() && (
+                      <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                        Today
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {schedule.collection_time}
+                  </p>
+                </div>
+                {selectedSchedule?.id === schedule.id || 
+                 (!selectedSchedule && schedule.collection_date === getTodayDate()) ? (
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                ) : null}
+              </div>
+            </button>
+          ))}
         </div>
       </div>
     );
@@ -178,12 +269,12 @@ const BarangayRoutes = ({ mapboxToken }) => {
         </button>
 
         {showControls && (
-          <div className="absolute top-14 right-0 bg-white rounded-xl shadow-xl border border-gray-200 w-64">
+          <div className="absolute top-14 right-0 bg-white rounded-xl shadow-xl border border-gray-200 w-80">
             <div className="p-4 border-b border-gray-200">
               <h3 className="font-semibold text-gray-900">Barangay Routes</h3>
             </div>
             
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Barangay
@@ -202,6 +293,8 @@ const BarangayRoutes = ({ mapboxToken }) => {
                   ))}
                 </select>
               </div>
+
+              {renderScheduleSelector()}
 
               <button
                 onClick={getCurrentLocation}
@@ -256,7 +349,7 @@ const BarangayRoutes = ({ mapboxToken }) => {
           onClick={() => setShowBarangayModal(false)}
         />
         
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[70vh] overflow-hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-hidden">
           <div className="flex justify-center pt-3 pb-2">
             <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
           </div>
@@ -289,6 +382,8 @@ const BarangayRoutes = ({ mapboxToken }) => {
                 ))}
               </select>
             </div>
+
+            {renderScheduleSelector()}
 
             {selectedBarangay && (
               <div className="bg-gray-50 rounded-xl p-4 mb-4">

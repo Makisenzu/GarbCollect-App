@@ -15,6 +15,7 @@ export const useBarangayMap = (mapboxToken) => {
   const [selectedBarangay, setSelectedBarangay] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [activeSchedule, setActiveSchedule] = useState([]);
+  const [upcomingSchedules, setUpcomingSchedules] = useState([]);
   const [sites, setSites] = useState([]);
   const [markers, setMarkers] = useState([]);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
@@ -102,31 +103,14 @@ export const useBarangayMap = (mapboxToken) => {
 
   // Clear all map data
   const clearMapData = () => {
-    // Clear markers
     clearMarkers();
-    
-    // Clear route layers
-    if (map.current) {
-      ['route', 'route-glow'].forEach(layerId => {
-        if (map.current.getLayer(layerId)) {
-          map.current.removeLayer(layerId);
-        }
-      });
-      
-      if (map.current.getSource('route')) {
-        map.current.removeSource('route');
-      }
-    }
-    
-    // Clear state
-    setRouteCoordinates([]);
-    setRouteInfo(null);
-    setAiOptimizedRoute(null);
+    clearRouteLayers();
     setNearestSite(null);
     setOptimizedSiteOrder([]);
     setStationLocation(null);
     setSites([]);
     setActiveSchedule([]);
+    setUpcomingSchedules([]);
   };
 
   // Optimize site order using nearest neighbor algorithm
@@ -383,13 +367,49 @@ export const useBarangayMap = (mapboxToken) => {
     return 'Normal driving conditions';
   };
 
-  // Fetch sites with route optimization
-  const fetchSites = async (barangayId) => {
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
+  // Fetch schedules for a barangay
+  const fetchSchedules = async (barangayId) => {
+    try {
+      const response = await axios.get(`/barangay/schedule/${barangayId}`);
+      if (response.data.success) {
+        const allSchedules = response.data.barangaySchedule || [];
+        
+        // Separate today's schedule and upcoming schedules
+        const today = getTodayDate();
+        const todaySchedule = allSchedules.filter(schedule => schedule.collection_date === today);
+        const upcoming = allSchedules.filter(schedule => schedule.collection_date > today);
+        
+        setActiveSchedule(todaySchedule);
+        setUpcomingSchedules(upcoming);
+        
+        return { todaySchedule, upcomingSchedules: upcoming };
+      }
+      return { todaySchedule: [], upcomingSchedules: [] };
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
+      return { todaySchedule: [], upcomingSchedules: [] };
+    }
+  };
+
+  // Fetch sites for a specific schedule
+  const fetchSitesForSchedule = async (barangayId, scheduleId = null) => {
     try {
       setSitesLoading(true);
-      const response = await axios.get(`/barangay/getSites/${barangayId}`);
-      if (response.data.success) {
-        const sitesData = response.data.data;
+      
+      let url = `/barangay/getSites/${barangayId}`;
+      if (scheduleId) {
+        url += `?schedule_id=${scheduleId}`;
+      }
+      
+      const sitesResponse = await axios.get(url);
+      
+      if (sitesResponse.data.success) {
+        const sitesData = sitesResponse.data.data;
         setSites(sitesData);
         
         // Separate station from regular sites
@@ -400,7 +420,7 @@ export const useBarangayMap = (mapboxToken) => {
           setStationLocation(station);
         }
         
-        // Calculate optimal route - don't await this to make it faster
+        // Calculate optimal route only if there are regular sites
         if (regularSites.length > 0) {
           calculateOptimalRoute(regularSites, barangayId, station)
             .then(() => {
@@ -414,18 +434,59 @@ export const useBarangayMap = (mapboxToken) => {
         // Display sites immediately
         displaySitesOnMap(sitesData);
       } else {
-        console.error('Failed to fetch sites:', response.data.message);
+        console.error('Failed to fetch sites:', sitesResponse.data.message);
         setSites([]);
         clearMarkers();
       }
     } catch (error) {
       console.error('Error fetching sites:', error);
-      setError('Failed to load site data');
+      setError('Failed to load sites data');
       setSites([]);
       clearMarkers();
     } finally {
       setSitesLoading(false);
     }
+  };
+
+  // Fetch sites with schedule check
+  const fetchSites = async (barangayId, scheduleId = null) => {
+    // First fetch schedules to know what's available
+    const { todaySchedule } = await fetchSchedules(barangayId);
+    
+    // If no schedule specified and there's a schedule today, use today's schedule
+    if (!scheduleId && todaySchedule.length > 0) {
+      // Use the first schedule for today (you might want to handle multiple schedules differently)
+      await fetchSitesForSchedule(barangayId, todaySchedule[0]?.id);
+    } else if (scheduleId) {
+      // Use the specified schedule
+      await fetchSitesForSchedule(barangayId, scheduleId);
+    } else {
+      // No schedule for today and no specific schedule requested
+      console.log('No schedule found for today');
+      setSites([]);
+      setActiveSchedule([]);
+      clearMarkers();
+      clearRouteLayers();
+    }
+  };
+
+  // Helper function to clear route layers
+  const clearRouteLayers = () => {
+    if (!map.current) return;
+    
+    ['route', 'route-glow', 'route-direction'].forEach(layerId => {
+      if (map.current.getLayer(layerId)) {
+        map.current.removeLayer(layerId);
+      }
+    });
+    
+    if (map.current.getSource('route')) {
+      map.current.removeSource('route');
+    }
+    
+    setRouteCoordinates([]);
+    setRouteInfo(null);
+    setAiOptimizedRoute(null);
   };
 
   // Display sites on map with optimized order
@@ -1047,8 +1108,8 @@ export const useBarangayMap = (mapboxToken) => {
   }, [mapboxToken]);
 
   // Handle barangay change
-  const handleBarangayChange = async (barangayId) => {
-    console.log('Changing barangay to:', barangayId);
+  const handleBarangayChange = async (barangayId, scheduleId = null) => {
+    console.log('Changing barangay to:', barangayId, 'with schedule:', scheduleId);
     
     // Clear all previous data first
     clearMapData();
@@ -1060,12 +1121,9 @@ export const useBarangayMap = (mapboxToken) => {
       // Reset loading states
       setSitesLoading(true);
       
-      // Fetch sites and schedule for the new barangay
+      // Fetch sites with optional schedule
       try {
-        await Promise.all([
-          fetchSites(barangayId),
-          fetchScheduleAndSites(barangayId)
-        ]);
+        await fetchSites(barangayId, scheduleId);
       } catch (error) {
         console.error('Error loading barangay data:', error);
         setError('Failed to load barangay data');
@@ -1076,19 +1134,9 @@ export const useBarangayMap = (mapboxToken) => {
       // If no barangay selected, clear everything
       setSites([]);
       setActiveSchedule([]);
+      setUpcomingSchedules([]);
       setRouteInfo(null);
       setAiOptimizedRoute(null);
-    }
-  };
-
-  const fetchScheduleAndSites = async (barangayId) => {
-    try {
-      const response = await axios.get(`/getBarangaySchedule/${barangayId}`);
-      if (response.data.success) {
-        setActiveSchedule(response.data.barangaySchedule);
-      }
-    } catch (error) {
-      console.error('Error fetching schedule:', error);
     }
   };
 
@@ -1106,6 +1154,7 @@ export const useBarangayMap = (mapboxToken) => {
     selectedBarangay,
     isMobile,
     activeSchedule,
+    upcomingSchedules,
     sites,
     routeInfo,
     aiOptimizedRoute,
