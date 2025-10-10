@@ -180,7 +180,7 @@ const BarangayRoutes = ({ mapboxToken }) => {
         {showControls && (
           <div className="absolute top-14 right-0 bg-white rounded-xl shadow-xl border border-gray-200 w-64">
             <div className="p-4 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900">Route Controls</h3>
+              <h3 className="font-semibold text-gray-900">Barangay Routes</h3>
             </div>
             
             <div className="p-4 space-y-3">
