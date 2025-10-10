@@ -343,8 +343,8 @@ const BarangayRoutes = ({ mapboxToken }) => {
   return (
     <>
       <Head title="Waste Collection Routes" />
-
-      <div className="w-full h-screen relative bg-gray-50">
+  
+      <div className="w-full h-screen relative bg-gray-50 overflow-hidden">
         {loading && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="text-center">
@@ -353,7 +353,7 @@ const BarangayRoutes = ({ mapboxToken }) => {
             </div>
           </div>
         )}
-
+  
         <Link
           href="/"
           className={`absolute z-40 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg shadow-lg border border-gray-200 flex items-center space-x-2 transition-colors ${
@@ -365,16 +365,21 @@ const BarangayRoutes = ({ mapboxToken }) => {
           </svg>
           <span className="text-sm font-medium">Back</span>
         </Link>
-
+  
         {renderHeaderInfo()}
         {renderAIPanel()}
         {renderDesktopControls()}
         {renderMobileControls()}
         {renderBarangayModal()}
-
+  
         <div 
           ref={mapContainer} 
           className="w-full h-full absolute inset-0"
+          style={{ 
+            width: '100%', 
+            height: '100%',
+            minHeight: '400px'
+          }}
         />
       </div>
     </>
