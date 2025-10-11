@@ -268,16 +268,19 @@ const useBarangayMap = (mapboxToken) => {
     if (!map.current || routeCoordinates.length === 0) {
       return;
     }
-
+  
     if (!map.current.isStyleLoaded()) {
       map.current.once('styledata', () => {
         setTimeout(addRouteLayer, 100);
       });
       return;
     }
-
-    // Remove existing route layers
-    ['route', 'route-glow', 'route-direction', 'route-start', 'route-end'].forEach(layerId => {
+  
+    // Remove existing route layers and markers
+    [
+      'route', 'route-glow', 'route-direction', 
+      'route-start', 'route-end', 'route-waypoints'
+    ].forEach(layerId => {
       if (map.current.getLayer(layerId)) {
         map.current.removeLayer(layerId);
       }
@@ -286,14 +289,16 @@ const useBarangayMap = (mapboxToken) => {
     if (map.current.getSource('route')) {
       map.current.removeSource('route');
     }
-
+  
     // Remove marker sources if they exist
-    ['route-start-marker', 'route-end-marker'].forEach(sourceId => {
+    [
+      'route-start-marker', 'route-end-marker', 'route-waypoints-marker'
+    ].forEach(sourceId => {
       if (map.current.getSource(sourceId)) {
         map.current.removeSource(sourceId);
       }
     });
-
+  
     try {
       map.current.addSource('route', {
         type: 'geojson',
@@ -306,15 +311,15 @@ const useBarangayMap = (mapboxToken) => {
           }
         }
       });
-
+  
       const barangayName = selectedBarangay ? 
         barangays.find(b => b.id === selectedBarangay)?.baranggay_name || 'San Francisco' : 
         'San Francisco';
       const routeColor = barangayColors[barangayName] || barangayColors['_default'];
-
+  
       const lineWidth = isMobile ? 6 : 5;
       const glowWidth = isMobile ? 14 : 12;
-
+  
       // Add glow effect
       map.current.addLayer({
         id: 'route-glow',
@@ -331,7 +336,7 @@ const useBarangayMap = (mapboxToken) => {
           'line-blur': 10
         }
       });
-
+  
       // Main route line
       map.current.addLayer({
         id: 'route',
@@ -347,7 +352,7 @@ const useBarangayMap = (mapboxToken) => {
           'line-opacity': 0.9
         }
       });
-
+  
       // Add direction arrows for better visualization
       map.current.addLayer({
         id: 'route-direction',
@@ -363,8 +368,96 @@ const useBarangayMap = (mapboxToken) => {
           'text-color': routeColor
         }
       });
-
-      // Add start and end markers
+  
+      // Create waypoints for all sites including station and optimized sites
+      const waypoints = [];
+      
+      // Add station as first waypoint if exists
+      if (stationLocation && stationLocation.latitude && stationLocation.longitude) {
+        waypoints.push({
+          coordinates: [parseFloat(stationLocation.longitude), parseFloat(stationLocation.latitude)],
+          type: 'station',
+          sequence: 0
+        });
+      }
+      
+      // Add all optimized sites as waypoints
+      optimizedSiteOrder.forEach((site, index) => {
+        if (site.latitude && site.longitude) {
+          waypoints.push({
+            coordinates: [parseFloat(site.longitude), parseFloat(site.latitude)],
+            type: 'site',
+            sequence: index + 1
+          });
+        }
+      });
+  
+      // Add waypoints source
+      if (waypoints.length > 0) {
+        map.current.addSource('route-waypoints-marker', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: waypoints.map((waypoint, index) => ({
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: waypoint.coordinates
+              },
+              properties: {
+                description: waypoint.type === 'station' ? 'Station' : `Site ${waypoint.sequence}`,
+                type: waypoint.type,
+                sequence: waypoint.sequence
+              }
+            }))
+          }
+        });
+  
+        // Add waypoints layer with different colors based on type
+        map.current.addLayer({
+          id: 'route-waypoints',
+          type: 'circle',
+          source: 'route-waypoints-marker',
+          paint: {
+            'circle-radius': [
+              'case',
+              ['==', ['get', 'type'], 'station'], isMobile ? 10 : 8, // Larger for station
+              isMobile ? 8 : 6 // Smaller for regular sites
+            ],
+            'circle-color': [
+              'case',
+              ['==', ['get', 'type'], 'station'], '#dc2626', // Red for station
+              '#3b82f6' // Blue for regular sites
+            ],
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+  
+        // Add numbers to waypoints
+        // map.current.addLayer({
+        //   id: 'route-waypoints-labels',
+        //   type: 'symbol',
+        //   source: 'route-waypoints-marker',
+        //   layout: {
+        //     'text-field': [
+        //       'case',
+        //       ['==', ['get', 'type'], 'station'], '🏠',
+        //       ['get', 'sequence']
+        //     ],
+        //     'text-size': isMobile ? 12 : 10,
+        //     'text-offset': [0, 0],
+        //     'text-anchor': 'center'
+        //   },
+        //   paint: {
+        //     'text-color': '#ffffff',
+        //     'text-halo-color': '#000000',
+        //     'text-halo-width': 1
+        //   }
+        // });
+      }
+  
+      // Add start and end markers (optional - you can remove these if you prefer only the waypoints)
       if (routeCoordinates.length >= 2) {
         // Start marker
         map.current.addSource('route-start-marker', {
@@ -380,7 +473,7 @@ const useBarangayMap = (mapboxToken) => {
             }
           }
         });
-
+  
         // End marker
         map.current.addSource('route-end-marker', {
           type: 'geojson',
@@ -395,7 +488,7 @@ const useBarangayMap = (mapboxToken) => {
             }
           }
         });
-
+  
         map.current.addLayer({
           id: 'route-start',
           type: 'circle',
@@ -407,7 +500,7 @@ const useBarangayMap = (mapboxToken) => {
             'circle-stroke-color': '#ffffff'
           }
         });
-
+  
         map.current.addLayer({
           id: 'route-end',
           type: 'circle',
@@ -420,11 +513,11 @@ const useBarangayMap = (mapboxToken) => {
           }
         });
       }
-
+  
       setTimeout(() => {
         fitMapToRoute();
       }, 200);
-
+  
     } catch (error) {
       console.error('Error adding route layer:', error);
       
