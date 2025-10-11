@@ -52,7 +52,7 @@ export default function Header({ header, children }) {
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content>
-                                        <Dropdown.Link href={route('login')} className="flex items-center hover:text-blue-600">
+                                        <Dropdown.Link href={route('barangay.schedule')} className="flex items-center hover:text-blue-600">
                                         <FaCalendarAlt className="mr-2" size={16}/>
                                         Schedule
                                         </Dropdown.Link>
@@ -137,8 +137,8 @@ export default function Header({ header, children }) {
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
+                            href={route('barangay.schedule')}
+                            active={route().current('barangay.schedule')}
                         >
                             <FaCalendarAlt className="mr-3" size={20}/>Schedule
                         </ResponsiveNavLink>

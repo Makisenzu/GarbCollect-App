@@ -17,6 +17,8 @@ use App\Http\Controllers\admin\truck\ScheduleController;
 use App\Http\Controllers\admin\dashboard\DashboardController;
 use App\Http\Controllers\admin\LocationRoute\RouteController;
 use App\Http\Controllers\truck\EmployeeController;
+use App\Http\Controllers\User\PublicSchedule;
+use App\Http\Controllers\User\PublicScheduleController;
 use App\Http\Controllers\User\UserController;
 
 Route::get('/', function () {
@@ -40,6 +42,10 @@ Route::get('/employee/login', function () {
 
 //Public route
 Route::post('/reviews', [ReviewController::class, 'store']);
+
+
+Route::get('/getBarangay/schedule/{id}', [PublicScheduleController::class, 'displaySchedule']);
+Route::get('/barangay/schedule/show', [PublicScheduleController::class, 'showPublicSchedule'])->name('barangay.schedule');
 Route::get('/barangay/routes', [UserController::class, 'showBarangayRoutes'])->name('barangay.routes');
 Route::get('/getBarangay', [UserController::class, 'getBarangay']);
 Route::get('/barangay/schedule/{id}', [UserController::class, 'getBarangaySchedule'])->name('getschedule.barangay');
