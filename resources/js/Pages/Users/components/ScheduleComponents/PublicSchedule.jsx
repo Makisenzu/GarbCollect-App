@@ -136,18 +136,49 @@ const PublicSchedule = () => {
     return '8:00 AM';
   };
 
+  const getTimeRemaining = (schedule) => {
+    const now = new Date();
+    const collectionDate = new Date(schedule.collection_date);
+
+    if (schedule.collection_time) {
+      const [hours, minutes] = schedule.collection_time.split(':');
+      collectionDate.setHours(parseInt(hours), parseInt(minutes), 0);
+    } else {
+      collectionDate.setHours(8, 0, 0);
+    }
+
+    const timeDiff = collectionDate.getTime() - now.getTime();
+    
+    if (timeDiff <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, isActive: true };
+    }
+
+    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+    return { days, hours, minutes, seconds, isActive: false };
+  };
+
   const transformScheduleData = () => {
-    if (!schedules.length) return [];
+    if (!schedules.length) {
+      console.log('No schedules available for transformation');
+      return [];
+    }
+    
     
     return schedules.map(schedule => {
       const status = getScheduleStatus(schedule);
       const formattedDate = formatScheduleDate(schedule.collection_date);
       const formattedTime = formatTime(schedule.collection_time);
+      const timeRemaining = getTimeRemaining(schedule);
 
       return {
         formattedDate,
         time: formattedTime,
         status,
+        timeRemaining,
         collection_date: schedule.collection_date,
         collection_time: schedule.collection_time,
         originalData: schedule
@@ -186,12 +217,19 @@ const PublicSchedule = () => {
   };
 
   const getMonthSchedule = () => {
-    if (!selectedBarangay) return [];
+    if (!selectedBarangay) {
+      console.log('No barangay selected');
+      return [];
+    }
     
-    return transformScheduleData()
+    const transformedData = transformScheduleData();
+    
+    const currentMonthSchedules = transformedData
       .filter(schedule => {
         const scheduleDate = new Date(schedule.collection_date);
-        return scheduleDate.getMonth() === viewMonth && scheduleDate.getFullYear() === viewYear;
+        const isInCurrentMonth = scheduleDate.getMonth() === viewMonth && scheduleDate.getFullYear() === viewYear;
+        
+        return isInCurrentMonth;
       })
       .map(schedule => {
         const scheduleDate = new Date(schedule.collection_date);
@@ -201,6 +239,8 @@ const PublicSchedule = () => {
           dayName: scheduleDate.toLocaleDateString('en-US', { weekday: 'long' })
         };
       });
+
+    return currentMonthSchedules;
   };
 
   const previousMonth = () => {
@@ -218,17 +258,25 @@ const PublicSchedule = () => {
     const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
     const monthSchedule = getMonthSchedule();
     
+    
     const calendarDays = [];
     
-    // Empty days
     for (let i = 0; i < firstDay; i++) {
-      calendarDays.push(<div key={`empty-${i}`} className="min-h-20 bg-gray-100/30 rounded-lg" />);
+      calendarDays.push(
+        <div key={`empty-${i}`} className="min-h-20 bg-gray-100/30 rounded-lg opacity-50">
+          <div className="text-sm text-gray-400 p-2">
+            {getDaysInMonth(viewMonth === 0 ? viewYear - 1 : viewYear, viewMonth === 0 ? 11 : viewMonth - 1) - firstDay + i + 1}
+          </div>
+        </div>
+      );
     }
-    
-    // Calendar days
+
     for (let date = 1; date <= daysInMonth; date++) {
       const daySchedules = monthSchedule.filter(s => s.date === date);
-      const isToday = date === currentDate.getDate() && viewMonth === currentDate.getMonth() && viewYear === currentDate.getFullYear();
+      const isToday = date === currentDate.getDate() && 
+                      viewMonth === currentDate.getMonth() && 
+                      viewYear === currentDate.getFullYear();
+
       
       calendarDays.push(
         <div
@@ -252,13 +300,21 @@ const PublicSchedule = () => {
         </div>
       );
     }
+
+    const totalCells = 42;
+    const remainingCells = totalCells - (firstDay + daysInMonth);
+    
+    for (let i = 0; i < remainingCells; i++) {
+      calendarDays.push(
+        <div key={`next-${i}`} className="min-h-20 bg-gray-100/30 rounded-lg opacity-50">
+          <div className="text-sm text-gray-400 p-2">
+            {i + 1}
+          </div>
+        </div>
+      );
+    }
     
     return calendarDays;
-  };
-
-  const getMonthlyListView = () => {
-    if (!selectedBarangay) return [];
-    return getMonthSchedule().sort((a, b) => a.date - b.date);
   };
 
   const customStyles = {
@@ -278,6 +334,16 @@ const PublicSchedule = () => {
     })
   };
 
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   if (loadingBarangays) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-blue-50 flex items-center justify-center">
@@ -294,7 +360,6 @@ const PublicSchedule = () => {
       <ScheduleHero/>
 
       <main className="container mx-auto px-4 py-12 -mt-12">
-        {/* Barangay Selector */}
         <div className="max-w-2xl mx-auto mb-12">
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <div className="text-center mb-6">
@@ -314,7 +379,6 @@ const PublicSchedule = () => {
           </div>
         </div>
 
-        {/* Schedule Content */}
         {selectedBarangay && (
           <div className="max-w-6xl mx-auto">
             {loadingSchedules && (
@@ -326,7 +390,6 @@ const PublicSchedule = () => {
 
             {!loadingSchedules && (
               <>
-                {/* Tabs */}
                 <div className="flex justify-center mb-8">
                   <div className="bg-white rounded-xl shadow-md p-1">
                     {["today", "week", "month"].map((tab) => (
@@ -345,7 +408,6 @@ const PublicSchedule = () => {
                   </div>
                 </div>
 
-                {/* Today View */}
                 {activeTab === "today" && (
                   <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                     <div className="p-6 border-b border-gray-100">
@@ -368,9 +430,36 @@ const PublicSchedule = () => {
                                       Start - {schedule.time}
                                     </p>
                                   </div>
-                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusStyles(schedule.status)}`}>
-                                    {schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
-                                  </span>
+                                  <div className="text-right">
+                                    {schedule.timeRemaining.isActive ? (
+                                      <a 
+                                        href={route('barangay.routes')}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                                      >
+                                        Track Route Now
+                                      </a>
+                                    ) : (
+                                      <div className="text-sm text-gray-700">
+                                        <div className="font-semibold mb-1">Time remaining:</div>
+                                        <div className="flex gap-2">
+                                          {schedule.timeRemaining.days > 0 && (
+                                            <span className="bg-gray-100 px-2 py-1 rounded">
+                                              {schedule.timeRemaining.days}d
+                                            </span>
+                                          )}
+                                          <span className="bg-gray-100 px-2 py-1 rounded">
+                                            {schedule.timeRemaining.hours}h
+                                          </span>
+                                          <span className="bg-gray-100 px-2 py-1 rounded">
+                                            {schedule.timeRemaining.minutes}m
+                                          </span>
+                                          <span className="bg-gray-100 px-2 py-1 rounded">
+                                            {schedule.timeRemaining.seconds}s
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -391,7 +480,6 @@ const PublicSchedule = () => {
                   </div>
                 )}
 
-                {/* Week View */}
                 {activeTab === "week" && (
                   <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                     <div className="p-6 border-b border-gray-100">
@@ -412,9 +500,36 @@ const PublicSchedule = () => {
                                       Start - {schedule.time}
                                     </p>
                                   </div>
-                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusStyles(schedule.status)}`}>
-                                    {schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
-                                  </span>
+                                  <div className="text-right">
+                                    {schedule.timeRemaining.isActive ? (
+                                      <a 
+                                        href={route('barangay.routes')}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                                      >
+                                        Track Route Now
+                                      </a>
+                                    ) : (
+                                      <div className="text-sm text-gray-700">
+                                        <div className="font-semibold mb-1">Time remaining:</div>
+                                        <div className="flex gap-2">
+                                          {schedule.timeRemaining.days > 0 && (
+                                            <span className="bg-gray-100 px-2 py-1 rounded">
+                                              {schedule.timeRemaining.days}d
+                                            </span>
+                                          )}
+                                          <span className="bg-gray-100 px-2 py-1 rounded">
+                                            {schedule.timeRemaining.hours}h
+                                          </span>
+                                          <span className="bg-gray-100 px-2 py-1 rounded">
+                                            {schedule.timeRemaining.minutes}m
+                                          </span>
+                                          <span className="bg-gray-100 px-2 py-1 rounded">
+                                            {schedule.timeRemaining.seconds}s
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -434,7 +549,6 @@ const PublicSchedule = () => {
                   </div>
                 )}
 
-                {/* Month View */}
                 {activeTab === "month" && (
                   <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                     <div className="p-6 border-b border-gray-100">
@@ -464,6 +578,62 @@ const PublicSchedule = () => {
                       <div className="grid grid-cols-7 gap-2">
                         {renderMonthCalendar()}
                       </div>
+                      
+                      <div className="mt-8">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Schedule Details for {monthNames[viewMonth]} {viewYear}</h3>
+                        {getMonthSchedule().length > 0 ? (
+                          <div className="space-y-4">
+                            {getMonthSchedule().map((schedule, index) => (
+                              <div key={index} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">{schedule.formattedDate}</h3>
+                                    <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                      <Clock className="h-4 w-4" />
+                                      Start - {schedule.time}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    {schedule.timeRemaining.isActive ? (
+                                      <a 
+                                        href={route('barangay.routes')}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                                      >
+                                        View Route Now
+                                      </a>
+                                    ) : (
+                                      <div className="text-sm text-gray-700">
+                                        <div className="font-semibold mb-1">Time remaining:</div>
+                                        <div className="flex gap-2">
+                                          {schedule.timeRemaining.days > 0 && (
+                                            <span className="bg-gray-100 px-2 py-1 rounded">
+                                              {schedule.timeRemaining.days}d
+                                            </span>
+                                          )}
+                                          <span className="bg-gray-100 px-2 py-1 rounded">
+                                            {schedule.timeRemaining.hours}h
+                                          </span>
+                                          <span className="bg-gray-100 px-2 py-1 rounded">
+                                            {schedule.timeRemaining.minutes}m
+                                          </span>
+                                          <span className="bg-gray-100 px-2 py-1 rounded">
+                                            {schedule.timeRemaining.seconds}s
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                            <p className="text-lg font-semibold text-gray-600">No collection scheduled for {monthNames[viewMonth]} {viewYear}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -472,7 +642,6 @@ const PublicSchedule = () => {
           </div>
         )}
 
-        {/* Empty State */}
         {!selectedBarangay && (
           <div className="max-w-2xl mx-auto text-center py-16">
             <div className="bg-gradient-to-br from-green-100 to-blue-100 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6">
