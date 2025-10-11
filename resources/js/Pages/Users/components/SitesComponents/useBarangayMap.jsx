@@ -51,6 +51,13 @@ const useBarangayMap = (mapboxToken) => {
   const [loadingSites, setLoadingSites] = useState(false);
   const markersRef = useRef([]);
 
+  // Route-related states from useTaskMap
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [optimizedSiteOrder, setOptimizedSiteOrder] = useState([]);
+  const [nearestSite, setNearestSite] = useState(null);
+  const [stationLocation, setStationLocation] = useState(null);
+
   const [barangays, setBarangays] = useState([]);
   const [loadingBarangays, setLoadingBarangays] = useState(false);
 
@@ -58,6 +65,261 @@ const useBarangayMap = (mapboxToken) => {
     value: barangay.id,
     label: barangay.baranggay_name
   }));
+
+  // Route calculation functions from useTaskMap
+  const formatDuration = (minutes) => {
+    if (minutes < 60) {
+      return `${minutes} min`;
+    } else {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      if (mins === 0) {
+        return `${hours}h`;
+      } else {
+        return `${hours}h ${mins}min`;
+      }
+    }
+  };
+
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  const optimizeSiteOrderFromStation = (station, sites) => {
+    if (!station || sites.length === 0) return sites;
+
+    const remainingSites = [...sites];
+    const optimizedOrder = [];
+    
+    const sitesWithDistances = remainingSites.map(site => {
+      const distance = calculateDistance(
+        parseFloat(station.latitude), parseFloat(station.longitude),
+        parseFloat(site.latitude), parseFloat(site.longitude)
+      );
+      return {
+        ...site,
+        distance,
+        coordinates: [parseFloat(site.longitude), parseFloat(site.latitude)]
+      };
+    });
+
+    sitesWithDistances.sort((a, b) => a.distance - b.distance);
+
+    const nearestSite = sitesWithDistances[0];
+    optimizedOrder.push(nearestSite);
+    
+    const remaining = sitesWithDistances.slice(1);
+    
+    let currentSite = nearestSite;
+    
+    while (remaining.length > 0) {
+      let nearestIndex = -1;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const distance = calculateDistance(
+          parseFloat(currentSite.latitude), parseFloat(currentSite.longitude),
+          parseFloat(remaining[i].latitude), parseFloat(remaining[i].longitude)
+        );
+        
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestIndex = i;
+        }
+      }
+
+      if (nearestIndex !== -1) {
+        currentSite = remaining[nearestIndex];
+        optimizedOrder.push(currentSite);
+        remaining.splice(nearestIndex, 1);
+      }
+    }
+
+    return optimizedOrder;
+  };
+
+  const calculateOptimalRoute = async (sites, barangayId, station) => {
+    if (!mapboxToken || sites.length < 1) return;
+
+    try {
+      const optimizedSites = station 
+        ? optimizeSiteOrderFromStation(station, sites)
+        : sites;
+
+      setOptimizedSiteOrder(optimizedSites);
+      if (optimizedSites.length > 0) {
+        setNearestSite(optimizedSites[0]);
+      }
+      
+      const coordinates = station 
+        ? [
+            `${station.longitude},${station.latitude}`,
+            ...optimizedSites.map(site => `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`)
+          ].join(';')
+        : optimizedSites.map(site => `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`).join(';');
+
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?` +
+        `access_token=${mapboxToken}` +
+        `&geometries=geojson` +
+        `&overview=full` +
+        `&steps=true` +
+        `&alternatives=false` +
+        `&continue_straight=false`
+      );
+
+      const data = await response.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const fastestRoute = data.routes.reduce((fastest, current) => 
+          current.duration < fastest.duration ? current : fastest
+        );
+        const durationMinutes = Math.round(fastestRoute.duration / 60);
+        
+        setRouteCoordinates(fastestRoute.geometry.coordinates);
+        setRouteInfo({
+          duration: durationMinutes,
+          formattedDuration: formatDuration(durationMinutes),
+          distance: (fastestRoute.distance / 1000).toFixed(1)
+        });
+      }
+    } catch (error) {
+      console.error('Error calculating route:', error);
+      const fallbackRoute = sites.map(site => 
+        [parseFloat(site.longitude), parseFloat(site.latitude)]
+      );
+      setRouteCoordinates(fallbackRoute);
+    }
+  };
+
+  const addRouteLayer = () => {
+    if (!map.current || routeCoordinates.length === 0) {
+      return;
+    }
+
+    if (!map.current.isStyleLoaded()) {
+      map.current.once('styledata', () => {
+        setTimeout(addRouteLayer, 100);
+      });
+      return;
+    }
+
+    // Remove existing route layers
+    ['route', 'route-glow', 'route-direction'].forEach(layerId => {
+      if (map.current.getLayer(layerId)) {
+        map.current.removeLayer(layerId);
+      }
+    });
+    
+    if (map.current.getSource('route')) {
+      map.current.removeSource('route');
+    }
+
+    try {
+      map.current.addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: routeCoordinates
+          }
+        }
+      });
+
+      const barangayName = selectedBarangay ? 
+        barangays.find(b => b.id === selectedBarangay)?.baranggay_name || 'San Francisco' : 
+        'San Francisco';
+      const routeColor = barangayColors[barangayName] || barangayColors['_default'];
+
+      const lineWidth = isMobile ? 6 : 5;
+      const glowWidth = isMobile ? 14 : 12;
+
+      map.current.addLayer({
+        id: 'route-glow',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': routeColor,
+          'line-width': glowWidth,
+          'line-opacity': 0.4,
+          'line-blur': 8
+        }
+      });
+
+      map.current.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': routeColor,
+          'line-width': lineWidth,
+          'line-opacity': 0.9
+        }
+      });
+
+      setTimeout(() => {
+        fitMapToRoute();
+      }, 200);
+
+    } catch (error) {
+      console.error('Error adding route layer:', error);
+      
+      setTimeout(() => {
+        addRouteLayer();
+      }, 500);
+    }
+  };
+
+  const fitMapToRoute = () => {
+    if (!map.current || routeCoordinates.length === 0 || activeSites.length === 0) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+    
+    if (stationLocation) {
+      bounds.extend([parseFloat(stationLocation.longitude), parseFloat(stationLocation.latitude)]);
+    }
+    
+    activeSites.forEach(site => {
+      if (site.longitude && site.latitude) {
+        bounds.extend([parseFloat(site.longitude), parseFloat(site.latitude)]);
+      }
+    });
+
+    routeCoordinates.forEach(coord => {
+      bounds.extend(coord);
+    });
+
+    const padding = isMobile ? 20 : 50;
+
+    try {
+      map.current.fitBounds(bounds, {
+        padding: padding,
+        duration: 1000,
+        essential: true,
+        maxZoom: isMobile ? 16 : 15
+      });
+    } catch (error) {
+      console.error('Error fitting map to bounds:', error);
+    }
+  };
 
   //mobile responsiveness
   useEffect(() => {
@@ -115,28 +377,6 @@ const useBarangayMap = (mapboxToken) => {
           anchor: 'bottom'
         })
           .setLngLat([parseFloat(site.longitude), parseFloat(site.latitude)])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 })
-              .setHTML(`
-                <div class="p-3 max-w-xs">
-                  <h3 class="font-bold text-lg text-gray-800">${site.site_name}</h3>
-                  <div class="mt-2 space-y-1 text-sm">
-                    <p class="text-gray-600"><strong>Barangay:</strong> ${site.purok?.baranggay?.baranggay_name || 'N/A'}</p>
-                    <p class="text-gray-600"><strong>Purok:</strong> ${site.purok?.purok_name || 'N/A'}</p>
-                    <p class="text-gray-600"><strong>Type:</strong> ${site.type || 'N/A'}</p>
-                    <p class="text-gray-600"><strong>Status:</strong> 
-                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-1">
-                        ${site.status || 'Active'}
-                      </span>
-                    </p>
-                    ${site.additional_notes ? `
-                      <p class="text-gray-600"><strong>Notes:</strong> ${site.additional_notes}</p>
-                    ` : ''}
-                    <p class="text-gray-600"><strong>Coordinates:</strong> ${site.latitude}, ${site.longitude}</p>
-                  </div>
-                </div>
-              `)
-          )
           .addTo(map.current);
 
         markersRef.current.push(marker);
@@ -170,6 +410,8 @@ const useBarangayMap = (mapboxToken) => {
     if (!barangayId) {
       setActiveSites([]);
       clearMarkers();
+      setRouteCoordinates([]);
+      setRouteInfo(null);
       return;
     }
 
@@ -180,20 +422,44 @@ const useBarangayMap = (mapboxToken) => {
         const sites = response.data.data || [];
         setActiveSites(sites);
         console.log('Active sites:', sites);
+        
+        // Find station if exists
+        const station = sites.find(site => site.type === 'station');
+        if (station) {
+          setStationLocation(station);
+        }
+        
+        // Add markers to map
         addMarkersToMap(sites);
+        
+        // Calculate optimal route
+        if (sites.length >= 1) {
+          await calculateOptimalRoute(sites, barangayId, station);
+        }
       } else {
         console.error('Failed to fetch sites:', response.data.message);
         setActiveSites([]);
         clearMarkers();
+        setRouteCoordinates([]);
+        setRouteInfo(null);
       }
     } catch (error) {
       console.error('Error fetching active sites:', error);
       setActiveSites([]);
       clearMarkers();
+      setRouteCoordinates([]);
+      setRouteInfo(null);
     } finally {
       setLoadingSites(false);
     }
   };
+
+  // Add route layer when route coordinates change
+  useEffect(() => {
+    if (map.current && routeCoordinates.length > 0) {
+      addRouteLayer();
+    }
+  }, [routeCoordinates]);
 
   //mapbox 
   useEffect(() => {
@@ -270,9 +536,113 @@ const useBarangayMap = (mapboxToken) => {
     } else {
       setActiveSites([]);
       clearMarkers();
+      setRouteCoordinates([]);
+      setRouteInfo(null);
     }
   };
 
+  // Render sites info panel
+  const renderSitesInfo = () => {
+    if (!selectedBarangay) return null;
+
+    return (
+      <div className={`
+        absolute z-40 bg-white rounded-lg shadow-xl border border-gray-200
+        max-h-64 overflow-y-auto
+        ${isMobile ? 
+          'bottom-4 left-4 right-4' : 
+          'top-20 right-4 w-80'
+        }
+      `}>
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Active Sites {activeSites.length > 0 && `(${activeSites.length})`}
+            </h3>
+            {loadingSites && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            )}
+          </div>
+          
+          {/* Route Information */}
+          {routeInfo && (
+            <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="text-xs text-blue-800">
+                <div><strong>Route:</strong> {routeInfo.formattedDuration} • {routeInfo.distance} km</div>
+                {nearestSite && (
+                  <div><strong>Nearest:</strong> {nearestSite.site_name}</div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {loadingSites ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-sm text-gray-600">Loading sites...</p>
+            </div>
+          ) : activeSites.length > 0 ? (
+            <div className="space-y-2">
+              {activeSites.map((site) => (
+                <div 
+                  key={site.id}
+                  className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (site.latitude && site.longitude) {
+                      map.current.flyTo({
+                        center: [parseFloat(site.longitude), parseFloat(site.latitude)],
+                        zoom: 15,
+                        essential: true
+                      });
+                      
+                      const marker = markersRef.current.find(m => 
+                        m.getLngLat().lng === parseFloat(site.longitude) && 
+                        m.getLngLat().lat === parseFloat(site.latitude)
+                      );
+                      if (marker) {
+                        marker.togglePopup();
+                      }
+                    }
+                  }}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900 text-sm">
+                        {site.site_name}
+                      </h4>
+                      <div className="text-xs text-gray-600 mt-1">
+                        Barangay: {site.purok?.baranggay?.baranggay_name || 'N/A'}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Purok: {site.purok?.purok_name || 'N/A'}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Type: <span className="capitalize">{site.type}</span>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Active
+                    </span>
+                  </div>
+                  {site.latitude && site.longitude && (
+                    <div className="text-xs text-gray-500 mt-2">
+                      📍 {site.latitude}, {site.longitude}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <div className="text-gray-400 text-4xl mb-2">🏢</div>
+              <p className="text-gray-500 text-sm">No active sites found</p>
+              <p className="text-gray-400 text-xs mt-1">for this barangay</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   //display select modal
   const renderBarangaySelect = (data, setData) => (
@@ -317,7 +687,15 @@ const useBarangayMap = (mapboxToken) => {
     selectedBarangay,
     options,
     renderBarangaySelect,
-    fetchActiveSites
+    renderSitesInfo,
+    fetchActiveSites,
+    // Route-related exports
+    routeCoordinates,
+    routeInfo,
+    optimizedSiteOrder,
+    nearestSite,
+    stationLocation,
+    formatDuration
   };
 };
 

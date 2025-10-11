@@ -8,9 +8,12 @@ const BarangayRoutes = ({ mapboxToken }) => {
     loading, 
     error, 
     renderBarangaySelect,
+    renderSitesInfo,
     selectedBarangay,
     activeSites,
-    loadingSites
+    loadingSites,
+    routeInfo,
+    nearestSite
   } = useBarangayMap(mapboxToken);
   
   const [formData, setFormData] = useState({
@@ -76,22 +79,37 @@ const BarangayRoutes = ({ mapboxToken }) => {
           
           {/* Selection Info */}
           {selectedBarangay && (
-            <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
-              <div className="text-xs text-blue-800">
-                {loadingSites ? (
-                  <span className="flex items-center">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
-                    Loading sites...
-                  </span>
-                ) : (
-                  `${activeSites.length} site${activeSites.length !== 1 ? 's' : ''}`
-                )}
+            <div className="mt-3 space-y-2">
+              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                <div className="text-xs text-blue-800">
+                  {loadingSites ? (
+                    <span className="flex items-center">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
+                      Loading sites...
+                    </span>
+                  ) : (
+                    `${activeSites.length} site${activeSites.length !== 1 ? 's' : ''}`
+                  )}
+                </div>
               </div>
+              
+              {/* Route Information */}
+              {routeInfo && (
+                <div className="p-2 bg-green-50 rounded border border-green-200">
+                  <div className="text-xs text-green-800 space-y-1">
+                    <div className="font-semibold">Route Information:</div>
+                    <div><strong>Duration:</strong> {routeInfo.formattedDuration}</div>
+                    <div><strong>Distance:</strong> {routeInfo.distance} km</div>
+                    {nearestSite && (
+                      <div><strong>Nearest Site:</strong> {nearestSite.site_name}</div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Map Container */}
         <div 
           ref={mapContainer} 
           className="w-full h-full absolute inset-0"
