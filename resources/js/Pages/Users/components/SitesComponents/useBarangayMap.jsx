@@ -86,13 +86,11 @@ const useBarangayMap = (mapboxToken) => {
     fetchBarangays();
   }, []);
 
-  // Function to clear all markers from map
   const clearMarkers = () => {
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
   };
 
-  // Function to add markers to map
   const addMarkersToMap = (sites) => {
     if (!map.current || !sites.length) return;
 
@@ -100,7 +98,6 @@ const useBarangayMap = (mapboxToken) => {
 
     sites.forEach((site) => {
       if (site.latitude && site.longitude) {
-        // Create custom marker element with Tailwind classes
         const el = document.createElement('div');
         el.className = 'animate-pulse';
         el.innerHTML = `
@@ -256,7 +253,8 @@ const useBarangayMap = (mapboxToken) => {
     };
   }, [mapboxToken]);
 
-  // Handle barangay selection
+
+  //selecting barangay
   const handleBarangaySelect = async (selectedOption) => {
     const selectedValue = selectedOption?.value || '';
     const selectedBarangayName = selectedOption?.label || 'None';
@@ -274,7 +272,8 @@ const useBarangayMap = (mapboxToken) => {
     }
   };
 
-  // Render function for the select component
+
+  //display select modal
   const renderBarangaySelect = (data, setData) => (
     <Select
       id="barangay_id"

@@ -56,7 +56,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
           </div>
         )}
         
-        {/* Back Button */}
         <Link
           href="/"
           className="absolute top-4 left-4 z-40 bg-white hover:bg-gray-50 text-gray-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:shadow-xl border border-gray-200"
@@ -67,14 +66,13 @@ const BarangayRoutes = ({ mapboxToken }) => {
           </svg>
         </Link>
 
-        {/* Barangay Select Container */}
+
         <div className="absolute top-4 left-20 z-40 bg-white rounded-lg shadow-lg p-4 min-w-64">
           <label htmlFor="barangay_id" className="block text-sm font-medium text-gray-700 mb-2">
             Select Barangay
           </label>
           {renderBarangaySelect(formData, setData)}
           
-          {/* Selection Info */}
           {selectedBarangay && (
             <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
               <p className="text-xs text-blue-800">
@@ -91,7 +89,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
           )}
         </div>
 
-        {/* Map Container */}
         <div 
           ref={mapContainer} 
           className="w-full h-full absolute inset-0"
