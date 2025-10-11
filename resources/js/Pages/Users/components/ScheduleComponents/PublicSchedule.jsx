@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Calendar, Clock, ChevronLeft, ChevronRight, CalendarDays, Sparkles, Menu, X } from "lucide-react";
+import { Calendar, Clock, ChevronLeft, ChevronRight, CalendarDays, Menu, X, MapPin, Truck } from "lucide-react";
 import Select from 'react-select';
 import axios from 'axios';
+import ClientPagination from "@/Components/ClientPagination";
+import ScheduleHero from "./ScheduleHero";
 
 const monthNames = [
   "January", "February", "March", "April", "May", "June",
@@ -29,6 +31,9 @@ const PublicSchedule = () => {
   const [viewYear, setViewYear] = useState(currentDate.getFullYear());
   const [activeTab, setActiveTab] = useState("week");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
 
   useEffect(() => {
     const fetchBarangays = async () => {
@@ -38,7 +43,6 @@ const PublicSchedule = () => {
         
         if (response.data.success) {
           const barangaysData = response.data.barangay_data;
-          
           const options = barangaysData.map(barangay => ({
             value: barangay.id,
             label: barangay.baranggay_name
@@ -68,6 +72,7 @@ const PublicSchedule = () => {
         
         if (response.data.success) {
           setSchedules(response.data.barangaySchedule || []);
+          setCurrentPage(1);
         }
       } catch (error) {
         console.error('Error fetching schedules:', error);
@@ -79,6 +84,10 @@ const PublicSchedule = () => {
 
     fetchSchedules();
   }, [selectedBarangay]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
   const getScheduleStatus = (schedule) => {
     const now = new Date();
@@ -94,17 +103,11 @@ const PublicSchedule = () => {
     const endTime = new Date(collectionDate);
     endTime.setHours(endTime.getHours() + 4);
     
-    if (now < collectionDate) {
-      return "active";
-    } else if (now >= collectionDate && now <= endTime) {
-      return "progress";
-    } else if (now > endTime && schedule.status === 'completed') {
-      return "completed";
-    } else if (now > endTime && schedule.status !== 'completed') {
-      return "failed";
-    } else {
-      return "active";
-    }
+    if (now < collectionDate) return "active";
+    if (now >= collectionDate && now <= endTime) return "progress";
+    if (now > endTime && schedule.status === 'completed') return "completed";
+    if (now > endTime && schedule.status !== 'completed') return "failed";
+    return "active";
   };
 
   const formatScheduleDate = (collectionDate) => {
@@ -142,9 +145,9 @@ const PublicSchedule = () => {
       const formattedTime = formatTime(schedule.collection_time);
 
       return {
-        formattedDate: formattedDate,
+        formattedDate,
         time: formattedTime,
-        status: status,
+        status,
         collection_date: schedule.collection_date,
         collection_time: schedule.collection_time,
         originalData: schedule
@@ -154,24 +157,25 @@ const PublicSchedule = () => {
 
   const getStatusStyles = (status) => {
     switch (status) {
-      case "active":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "progress":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "completed":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "failed":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+      case "active": return "bg-green-500/20 text-green-700 border-green-400/30";
+      case "progress": return "bg-yellow-500/20 text-yellow-700 border-yellow-400/30";
+      case "completed": return "bg-blue-500/20 text-blue-700 border-blue-400/30";
+      case "failed": return "bg-red-500/20 text-red-700 border-red-400/30";
+      default: return "bg-gray-500/20 text-gray-700 border-gray-400/30";
     }
   };
+
+  const getPaginatedData = (data) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return data.slice(startIndex, startIndex + itemsPerPage);
+  };
+
+  const getTotalPages = (data) => Math.ceil(data.length / itemsPerPage);
 
   const getTodaySchedule = () => {
     if (!selectedBarangay) return [];
     const today = new Date().toDateString();
-    const barangaySchedules = transformScheduleData();
-    return barangaySchedules.filter(s => 
+    return transformScheduleData().filter(s => 
       new Date(s.collection_date).toDateString() === today
     );
   };
@@ -184,41 +188,29 @@ const PublicSchedule = () => {
   const getMonthSchedule = () => {
     if (!selectedBarangay) return [];
     
-    const barangaySchedules = transformScheduleData();
-    const monthSchedule = [];
-    
-    barangaySchedules.forEach(schedule => {
-      const scheduleDate = new Date(schedule.collection_date);
-      
-      if (scheduleDate.getMonth() === viewMonth && scheduleDate.getFullYear() === viewYear) {
-        const date = scheduleDate.getDate();
-        monthSchedule.push({
+    return transformScheduleData()
+      .filter(schedule => {
+        const scheduleDate = new Date(schedule.collection_date);
+        return scheduleDate.getMonth() === viewMonth && scheduleDate.getFullYear() === viewYear;
+      })
+      .map(schedule => {
+        const scheduleDate = new Date(schedule.collection_date);
+        return {
           ...schedule,
-          date: date,
+          date: scheduleDate.getDate(),
           dayName: scheduleDate.toLocaleDateString('en-US', { weekday: 'long' })
-        });
-      }
-    });
-    
-    return monthSchedule;
+        };
+      });
   };
 
   const previousMonth = () => {
-    if (viewMonth === 0) {
-      setViewMonth(11);
-      setViewYear(viewYear - 1);
-    } else {
-      setViewMonth(viewMonth - 1);
-    }
+    setViewMonth(prev => prev === 0 ? 11 : prev - 1);
+    if (viewMonth === 0) setViewYear(prev => prev - 1);
   };
 
   const nextMonth = () => {
-    if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear(viewYear + 1);
-    } else {
-      setViewMonth(viewMonth + 1);
-    }
+    setViewMonth(prev => prev === 11 ? 0 : prev + 1);
+    if (viewMonth === 11) setViewYear(prev => prev + 1);
   };
 
   const renderMonthCalendar = () => {
@@ -228,41 +220,32 @@ const PublicSchedule = () => {
     
     const calendarDays = [];
     
+    // Empty days
     for (let i = 0; i < firstDay; i++) {
-      calendarDays.push(
-        <div key={`empty-${i}`} className="min-h-20 md:min-h-24 bg-gray-100/30 rounded-lg"></div>
-      );
+      calendarDays.push(<div key={`empty-${i}`} className="min-h-20 bg-gray-100/30 rounded-lg" />);
     }
     
+    // Calendar days
     for (let date = 1; date <= daysInMonth; date++) {
       const daySchedules = monthSchedule.filter(s => s.date === date);
-      const isToday = date === currentDate.getDate() && 
-                      viewMonth === currentDate.getMonth() && 
-                      viewYear === currentDate.getFullYear();
+      const isToday = date === currentDate.getDate() && viewMonth === currentDate.getMonth() && viewYear === currentDate.getFullYear();
       
       calendarDays.push(
         <div
           key={date}
-          className={`min-h-20 md:min-h-24 p-1 md:p-2 rounded-lg border transition-all ${
-            isToday 
-              ? "bg-blue-100 border-blue-500" 
-              : "bg-white border-gray-200 hover:border-blue-300"
+          className={`min-h-20 p-2 rounded-lg border transition-all ${
+            isToday ? "bg-green-500/20 border-green-500" : "bg-white border-gray-200 hover:border-green-300"
           }`}
         >
-          <div className={`text-xs md:text-sm font-semibold mb-1 ${isToday ? "text-blue-600" : "text-gray-900"}`}>
+          <div className={`text-sm font-semibold mb-1 ${isToday ? "text-green-700" : "text-gray-900"}`}>
             {date}
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {daySchedules.map((schedule, idx) => (
-              <div key={idx} className="space-y-0.5">
-                <span
-                  className={`text-[10px] md:text-xs px-1 py-0.5 rounded border block truncate ${getStatusStyles(schedule.status)}`}
-                >
+              <div key={idx}>
+                <span className={`text-xs px-2 py-1 rounded border block truncate ${getStatusStyles(schedule.status)}`}>
                   {schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                 </span>
-                <div className="text-[10px] md:text-xs text-gray-600 truncate">
-                  {schedule.time.replace('Start - ', '')}
-                </div>
               </div>
             ))}
           </div>
@@ -275,55 +258,31 @@ const PublicSchedule = () => {
 
   const getMonthlyListView = () => {
     if (!selectedBarangay) return [];
-    const monthSchedule = getMonthSchedule();
-    return monthSchedule.sort((a, b) => a.date - b.date);
+    return getMonthSchedule().sort((a, b) => a.date - b.date);
   };
 
   const customStyles = {
-    control: (base, state) => ({
+    control: (base) => ({
       ...base,
-      height: '48px',
-      border: '2px solid #d1d5db',
-      borderRadius: '0.5rem',
+      height: '52px',
+      border: '2px solid #e5e7eb',
+      borderRadius: '12px',
       fontSize: '1rem',
-      backgroundColor: state.isDisabled ? '#f9fafb' : 'white',
-      '&:hover': {
-        borderColor: '#3b82f6'
-      }
+      boxShadow: '0 2px 10px -3px rgba(0, 0, 0, 0.1)',
+      '&:hover': { borderColor: '#10b981' }
     }),
     option: (base, state) => ({
       ...base,
-      fontSize: '1rem',
-      backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+      backgroundColor: state.isSelected ? '#10b981' : state.isFocused ? '#ecfdf5' : 'white',
       color: state.isSelected ? 'white' : '#374151',
-      cursor: 'pointer',
-      '&:hover': {
-        backgroundColor: state.isSelected ? '#3b82f6' : '#eff6ff'
-      }
-    }),
-    menu: (base) => ({
-      ...base,
-      zIndex: 50,
-      borderRadius: '0.5rem',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-    }),
-    loadingMessage: (base) => ({
-      ...base,
-      color: '#6b7280',
-      fontSize: '0.875rem'
-    }),
-    noOptionsMessage: (base) => ({
-      ...base,
-      color: '#6b7280',
-      fontSize: '0.875rem'
     })
   };
 
   if (loadingBarangays) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading barangays...</p>
         </div>
       </div>
@@ -331,336 +290,183 @@ const PublicSchedule = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Hero Header */}
-      <header className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-500 to-green-500 shadow-xl">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtMy4zMTQgMi42ODYtNiA2LTZoMTJjMy4zMTQgMCA2IDIuNjg2IDYgNnYxMmMwIDMuMzE0LTIuNjg2IDYtNiA2SDQyYy0zLjMxNCAwLTYtMi42ODYtNi02VjE2em0tMTIgMGMwLTMuMzE0IDIuNjg2LTYgNi02aDEyYzMuMzE0IDAgNiAyLjY4NiA2IDZ2MTJjMCAzLjMzMTQtMi42ODYgNi02IDZIMzBjLTMuMzE0IDAtNi0yLjY4Ni02LTZWMTZ6bTAgMGMwLTMuMzE0IDIuNjg2LTYgNi02aDEyYzMuMzE0IDAgNiAyLjY4NiA2IDZ2MTJjMCAzLjMzMTQtMi42ODYgNi02IDZIMzBjLTMuMzE0IDAtNi0yLjY4Ni02LTZWMTZ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
-        
-        <div className="container mx-auto px-4 py-12 md:py-24 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 md:px-4 md:py-2 rounded-full mb-4 md:mb-6">
-              <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-white animate-bounce" />
-              <span className="text-xs md:text-sm text-white font-medium">Smart Waste Management</span>
-            </div>
-            
-            <h1 className="text-2xl md:text-4xl lg:text-6xl font-bold text-white mb-4 md:mb-6 leading-tight">
-              Barangay Collection
-              <br />
-              <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-                Schedule System
-              </span>
-            </h1>
-            
-            <p className="text-sm md:text-lg lg:text-xl text-white/90 mb-6 md:mb-8 max-w-2xl mx-auto px-4">
-              Stay informed about waste collection times in your area. Plan ahead and contribute to a cleaner, greener community.
-            </p>
-            
-            <div className="flex flex-wrap gap-3 md:gap-4 justify-center text-xs md:text-sm text-white/80">
-              <div className="flex items-center gap-1 md:gap-2">
-                <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-white"></div>
-                Real-time Updates
-              </div>
-              <div className="flex items-center gap-1 md:gap-2">
-                <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-white"></div>
-                Multiple View Modes
-              </div>
-              <div className="flex items-center gap-1 md:gap-2">
-                <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-white"></div>
-                Easy to Navigate
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-blue-50">
+      <ScheduleHero/>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-3 sm:px-4 py-6 md:py-12 -mt-6 md:-mt-8 relative z-20">
+      <main className="container mx-auto px-4 py-12 -mt-12">
         {/* Barangay Selector */}
-        <div className="max-w-2xl mx-auto mb-6 md:mb-8">
-          <div className="bg-white border border-gray-200 md:border-2 rounded-lg md:rounded-xl shadow-lg">
-            <div className="p-4 md:p-6 border-b border-gray-200">
-              <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <CalendarDays className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
-                Select Your Barangay
-              </h2>
-              <p className="text-gray-600 mt-1 text-sm md:text-base">Choose your barangay to view the collection schedule</p>
+        <div className="max-w-2xl mx-auto mb-12">
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">Find Your Schedule</h2>
+              <p className="text-gray-600 text-lg">Select your barangay to view collection schedules</p>
             </div>
-            <div className="p-4 md:p-6">
-              <Select
-                value={selectedBarangay}
-                onChange={setSelectedBarangay}
-                options={barangayOptions}
-                placeholder="Choose a barangay..."
-                styles={customStyles}
-                isSearchable
-                isClearable
-                isLoading={loadingBarangays}
-                loadingMessage={() => "Loading barangays..."}
-                noOptionsMessage={() => "No barangays found"}
-              />
-            </div>
+            <Select
+              value={selectedBarangay}
+              onChange={setSelectedBarangay}
+              options={barangayOptions}
+              placeholder="Choose your barangay..."
+              styles={customStyles}
+              isSearchable
+              isClearable
+              isLoading={loadingBarangays}
+            />
           </div>
         </div>
 
-        {/* Schedule Display */}
+        {/* Schedule Content */}
         {selectedBarangay && (
           <div className="max-w-6xl mx-auto">
-            {/* Loading State for Schedules */}
             {loadingSchedules && (
-              <div className="text-center py-6 md:py-8">
-                <div className="animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600 text-sm md:text-base">Loading schedule for {selectedBarangay.label}...</p>
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading schedule for {selectedBarangay.label}...</p>
               </div>
             )}
 
-            {/* Schedule Content */}
             {!loadingSchedules && (
               <>
-                {/* Mobile Tab Menu Button */}
-                <div className="md:hidden mb-4">
-                  <button
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm"
-                  >
-                    <span className="font-medium text-gray-900">
-                      {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} View
-                    </span>
-                    {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-                  </button>
-                  
-                  {isMobileMenuOpen && (
-                    <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg">
-                      {["today", "week", "month"].map((tab) => (
-                        <button
-                          key={tab}
-                          onClick={() => {
-                            setActiveTab(tab);
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className={`w-full px-4 py-3 text-left font-medium transition-colors border-b border-gray-100 last:border-b-0 ${
-                            activeTab === tab
-                              ? "bg-blue-600 text-white"
-                              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                          }`}
-                        >
-                          {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Desktop Tabs */}
-                <div className="hidden md:flex justify-center mb-6">
-                  <div className="bg-white rounded-lg shadow-md p-1">
-                    <div className="flex space-x-1">
-                      {["today", "week", "month"].map((tab) => (
-                        <button
-                          key={tab}
-                          onClick={() => setActiveTab(tab)}
-                          className={`px-4 lg:px-6 py-2 rounded-md font-medium transition-colors text-sm lg:text-base ${
-                            activeTab === tab
-                              ? "bg-blue-600 text-white"
-                              : "text-gray-600 hover:text-gray-900"
-                          }`}
-                        >
-                          {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                      ))}
-                    </div>
+                {/* Tabs */}
+                <div className="flex justify-center mb-8">
+                  <div className="bg-white rounded-xl shadow-md p-1">
+                    {["today", "week", "month"].map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                          activeTab === tab
+                            ? "bg-green-500 text-white shadow-lg"
+                            : "text-gray-700 hover:text-green-600"
+                        }`}
+                      >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
                 {/* Today View */}
                 {activeTab === "today" && (
-                  <div className="space-y-4">
-                    <div className="bg-white border border-gray-200 md:border-2 rounded-lg md:rounded-xl shadow-lg">
-                      <div className="p-4 md:p-6 border-b border-gray-200">
-                        <h2 className="text-xl md:text-2xl font-bold text-gray-900">Today's Schedule</h2>
-                        <p className="text-gray-600 text-sm md:text-base">
-                          {currentDate.toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </p>
-                      </div>
-                      <div className="p-4 md:p-6">
-                        {getTodaySchedule().length > 0 ? (
-                          <div className="space-y-3 md:space-y-4">
-                            {getTodaySchedule().map((schedule, index) => (
-                              <div key={index} className="bg-white border border-gray-200 md:border-2 rounded-lg shadow-sm hover:shadow-lg transition-all p-4 md:p-6">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                      <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-600 flex-shrink-0" />
-                                      <h3 className="text-base md:text-lg font-semibold text-gray-900 break-words">
-                                        {schedule.formattedDate}
-                                      </h3>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                      <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                                      <span className="text-gray-600 text-sm md:text-base">Start - {schedule.time}</span>
-                                    </div>
+                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div className="p-6 border-b border-gray-100">
+                      <h2 className="text-2xl font-bold text-gray-800">Today's Schedule</h2>
+                      <p className="text-gray-600">{currentDate.toLocaleDateString('en-US', { 
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                      })}</p>
+                    </div>
+                    <div className="p-6">
+                      {getTodaySchedule().length > 0 ? (
+                        <>
+                          <div className="space-y-4">
+                            {getPaginatedData(getTodaySchedule()).map((schedule, index) => (
+                              <div key={index} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">{schedule.formattedDate}</h3>
+                                    <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                      <Clock className="h-4 w-4" />
+                                      Start - {schedule.time}
+                                    </p>
                                   </div>
-                                  <span className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium border ${getStatusStyles(schedule.status)} self-start sm:self-auto`}>
+                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusStyles(schedule.status)}`}>
                                     {schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                                   </span>
                                 </div>
                               </div>
                             ))}
                           </div>
-                        ) : (
-                          <div className="text-center py-8 md:py-12">
-                            <Calendar className="h-12 w-12 md:h-16 md:w-16 text-gray-400 mx-auto mb-3 md:mb-4" />
-                            <p className="text-base md:text-lg font-medium text-gray-600">No collection scheduled for today</p>
-                            <p className="text-sm text-gray-500 mt-2">Check the weekly or monthly view for upcoming schedules</p>
-                          </div>
-                        )}
-                      </div>
+                          <ClientPagination
+                            currentPage={currentPage}
+                            totalPages={getTotalPages(getTodaySchedule())}
+                            onPageChange={setCurrentPage}
+                          />
+                        </>
+                      ) : (
+                        <div className="text-center py-12">
+                          <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                          <p className="text-xl font-semibold text-gray-600">No collection scheduled for today</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Week View */}
                 {activeTab === "week" && (
-                  <div className="space-y-4">
-                    <div className="bg-white border border-gray-200 md:border-2 rounded-lg md:rounded-xl shadow-lg">
-                      <div className="p-4 md:p-6 border-b border-gray-200">
-                        <h2 className="text-xl md:text-2xl font-bold text-gray-900">{selectedBarangay.label}</h2>
-                        <p className="text-gray-600 text-sm md:text-base">Weekly collection schedule</p>
-                      </div>
-                      <div className="p-4 md:p-6">
-                        {getWeekSchedule().length > 0 ? (
-                          <div className="space-y-3 md:space-y-4">
-                            {getWeekSchedule().map((schedule, index) => (
-                              <div
-                                key={index}
-                                className="bg-white border border-gray-200 md:border-2 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 p-4 md:p-6"
-                              >
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                      <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-600 flex-shrink-0" />
-                                      <h3 className="text-base md:text-lg font-semibold text-gray-900 break-words">
-                                        {schedule.formattedDate}
-                                      </h3>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                      <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                                      <span className="text-gray-600 text-sm md:text-base">Start - {schedule.time}</span>
-                                    </div>
+                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div className="p-6 border-b border-gray-100">
+                      <h2 className="text-2xl font-bold text-gray-800">{selectedBarangay.label}</h2>
+                      <p className="text-gray-600">Weekly collection schedule</p>
+                    </div>
+                    <div className="p-6">
+                      {getWeekSchedule().length > 0 ? (
+                        <>
+                          <div className="space-y-4">
+                            {getPaginatedData(getWeekSchedule()).map((schedule, index) => (
+                              <div key={index} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">{schedule.formattedDate}</h3>
+                                    <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                      <Clock className="h-4 w-4" />
+                                      Start - {schedule.time}
+                                    </p>
                                   </div>
-                                  <span className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium border ${getStatusStyles(schedule.status)} self-start sm:self-auto`}>
+                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusStyles(schedule.status)}`}>
                                     {schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                                   </span>
                                 </div>
                               </div>
                             ))}
                           </div>
-                        ) : (
-                          <div className="text-center py-8 md:py-12">
-                            <Calendar className="h-12 w-12 md:h-16 md:w-16 text-gray-400 mx-auto mb-3 md:mb-4" />
-                            <p className="text-base md:text-lg font-medium text-gray-600">No schedules found for {selectedBarangay.label}</p>
-                            <p className="text-sm text-gray-500 mt-2">Please check back later for updated schedules</p>
-                          </div>
-                        )}
-                      </div>
+                          <ClientPagination
+                            currentPage={currentPage}
+                            totalPages={getTotalPages(getWeekSchedule())}
+                            onPageChange={setCurrentPage}
+                          />
+                        </>
+                      ) : (
+                        <div className="text-center py-12">
+                          <p className="text-xl font-semibold text-gray-600">No schedules found</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Month View */}
                 {activeTab === "month" && (
-                  <div className="space-y-4">
-                    <div className="bg-white border border-gray-200 md:border-2 rounded-lg md:rounded-xl shadow-lg">
-                      <div className="p-4 md:p-6 border-b border-gray-200">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                          <div>
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-900">{selectedBarangay.label}</h2>
-                            <p className="text-gray-600 text-sm md:text-base">
-                              {monthNames[viewMonth]} {viewYear} - Calendar View
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={previousMonth}
-                              className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                            >
-                              <ChevronLeft className="h-3 w-3 md:h-4 md:w-4" />
-                            </button>
-                            <div className="min-w-[120px] md:min-w-[140px] text-center">
-                              <div className="text-base md:text-lg font-semibold text-gray-900">{monthNames[viewMonth]}</div>
-                              <div className="text-xs md:text-sm text-gray-600">{viewYear}</div>
-                            </div>
-                            <button
-                              onClick={nextMonth}
-                              className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                            >
-                              <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
-                            </button>
-                          </div>
+                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div className="p-6 border-b border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-2xl font-bold text-gray-800">{selectedBarangay.label}</h2>
+                          <p className="text-gray-600">{monthNames[viewMonth]} {viewYear}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={previousMonth} className="p-2 hover:bg-gray-100 rounded-lg">
+                            <ChevronLeft className="h-5 w-5" />
+                          </button>
+                          <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg">
+                            <ChevronRight className="h-5 w-5" />
+                          </button>
                         </div>
                       </div>
-                      <div className="p-3 md:p-6">
-                        {/* Calendar Grid */}
-                        <div className="mb-4">
-                          <div className="grid grid-cols-7 gap-1 md:gap-2 mb-2">
-                            {dayNames.map(day => (
-                              <div key={day} className="text-center text-xs md:text-sm font-semibold text-gray-600 py-1 md:py-2">
-                                {day}
-                              </div>
-                            ))}
+                    </div>
+                    <div className="p-6">
+                      <div className="grid grid-cols-7 gap-2 mb-4">
+                        {dayNames.map(day => (
+                          <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
+                            {day}
                           </div>
-                          <div className="grid grid-cols-7 gap-1 md:gap-2">
-                            {renderMonthCalendar()}
-                          </div>
-                        </div>
-
-                        {/* Monthly List View */}
-                        <div className="mt-6 md:mt-8">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-3 md:mb-4">
-                            {monthNames[viewMonth]} {viewYear} - List View
-                          </h3>
-                          {getMonthlyListView().length > 0 ? (
-                            <div className="space-y-2 md:space-y-3">
-                              {getMonthlyListView().map((schedule, index) => (
-                                <div
-                                  key={index}
-                                  className="bg-gray-50 border border-gray-200 rounded-lg p-3 md:p-4"
-                                >
-                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-3 mb-1">
-                                        <Calendar className="h-3 w-3 md:h-4 md:w-4 text-blue-600 flex-shrink-0" />
-                                        <span className="font-medium text-gray-900 text-sm md:text-base">
-                                          {schedule.formattedDate}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center gap-3">
-                                        <Clock className="h-3 w-3 md:h-4 md:w-4 text-gray-500 flex-shrink-0" />
-                                        <span className="text-gray-600 text-xs md:text-sm">Start - {schedule.time}</span>
-                                      </div>
-                                    </div>
-                                    <span className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs font-medium border ${getStatusStyles(schedule.status)} self-start sm:self-auto`}>
-                                      {schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-6 md:py-8 text-gray-500 text-sm md:text-base">
-                              No schedules found for {monthNames[viewMonth]} {viewYear}
-                            </div>
-                          )}
-                        </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-2">
+                        {renderMonthCalendar()}
                       </div>
                     </div>
                   </div>
                 )}
-
               </>
             )}
           </div>
@@ -668,16 +474,12 @@ const PublicSchedule = () => {
 
         {/* Empty State */}
         {!selectedBarangay && (
-          <div className="max-w-2xl mx-auto text-center py-12 md:py-16">
-            <div className="bg-gradient-to-br from-blue-100 to-green-100 rounded-full h-24 w-24 md:h-32 md:w-32 flex items-center justify-center mx-auto mb-4 md:mb-6">
-              <CalendarDays className="h-12 w-12 md:h-16 md:w-16 text-blue-600" />
+          <div className="max-w-2xl mx-auto text-center py-16">
+            <div className="bg-gradient-to-br from-green-100 to-blue-100 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6">
+              <Truck className="h-12 w-12 text-green-600" />
             </div>
-            <h3 className="text-xl md:text-2xl font-semibold text-gray-900 mb-3">
-              Ready to Get Started?
-            </h3>
-            <p className="text-gray-600 text-base md:text-lg">
-              Select your barangay from the dropdown above to view your personalized waste collection schedule.
-            </p>
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">Ready to Get Started?</h3>
+            <p className="text-gray-600 mb-8">Select your barangay to view collection schedules</p>
           </div>
         )}
       </main>
