@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Select from 'react-select';
 import axios from 'axios';
+import can from "@/images/can.png";
 
 //barangay colors
 const barangayColors = {
@@ -98,13 +99,14 @@ const useBarangayMap = (mapboxToken) => {
 
     sites.forEach((site) => {
       if (site.latitude && site.longitude) {
+        // Create custom marker element with white circle behind can.png
         const el = document.createElement('div');
         el.className = 'animate-pulse';
         el.innerHTML = `
-          <div class="bg-blue-500 text-white p-2 rounded-full shadow-lg border-2 border-white hover:scale-110 transition-transform duration-200 cursor-pointer">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-            </svg>
+          <div class="hover:scale-110 transition-transform duration-200 cursor-pointer">
+            <div class="bg-white rounded-full p-1 shadow-lg">
+              <img src="${can}" alt="Site Location" class="w-6 h-6" />
+            </div>
           </div>
         `;
 
@@ -253,7 +255,6 @@ const useBarangayMap = (mapboxToken) => {
     };
   }, [mapboxToken]);
 
-
   //selecting barangay
   const handleBarangaySelect = async (selectedOption) => {
     const selectedValue = selectedOption?.value || '';
@@ -302,7 +303,6 @@ const useBarangayMap = (mapboxToken) => {
       }}
     />
   );
-
 
   return {
     mapContainer,
