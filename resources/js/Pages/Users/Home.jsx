@@ -23,10 +23,6 @@ const Home = () => {
         <section className="py-16 bg-white/80 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4">
             <div className={`text-center mb-16 transform transition-all duration-1000 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-              <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full mb-4">
-                <Sparkles className="h-4 w-4" />
-                <span className="text-sm font-semibold">Why Choose GarbCollect?</span>
-              </div>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
                 Everything You Need for <span className="text-green-600">Smart Waste Management</span>
               </h2>

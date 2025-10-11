@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import backgroundImage from '@/images/sanfrance.jpg';
 import { Head } from '@inertiajs/react';
-import { Sparkles, Recycle, Truck, MapPin, ArrowRight, Star } from 'lucide-react';
+import { Sparkles, Recycle, Truck, MapPin, ArrowRight } from 'lucide-react';
+
+// Import your PNG images
+import trashCan from '@/images/can.png';
+import plasticBottle from '@/images/bottle.png';
+import paper from '@/images/paper.png';
+import can from '@/images/coke.png';
 
 const Hero = () => {
   const [mounted, setMounted] = useState(false);
@@ -11,7 +17,7 @@ const Hero = () => {
   }, []);
 
   return (
-    <div className="relative text-white py-20 md:py-32 px-4 min-h-[300px] md:min-h-[500px] flex items-center overflow-hidden">
+    <div className="relative text-white py-20 md:py-32 px-4 min-h-[300px] md:min-h-[300px] flex items-center overflow-hidden">
       {/* Background with enhanced overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -45,8 +51,7 @@ const Hero = () => {
             {/* Main Heading with animation */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
               <span className={`block transform transition-all duration-1000 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-                Garb
-                <span className={`text-green-300 transform transition-all duration-1000 delay-300 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                Garb<span className={`text-green-300 transform transition-all duration-1000 delay-300 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                 Collect
               </span>
               </span>
@@ -62,9 +67,9 @@ const Hero = () => {
             <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 transform transition-all duration-1000 delay-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               <div className="flex items-center gap-3 text-white/80">
                 <div className="bg-green-500/20 p-2 rounded-lg">
-                  <Star className="h-5 w-5 text-green-300" />
+                  <Recycle className="h-5 w-5 text-green-300" />
                 </div>
-                <span className="text-sm">Honest Feedback</span>
+                <span className="text-sm">Smart Recycling</span>
               </div>
               <div className="flex items-center gap-3 text-white/80">
                 <div className="bg-blue-500/20 p-2 rounded-lg">
@@ -81,31 +86,47 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Right Content - Garbage Throwing Animation */}
+          {/* Right Content - Garbage Throwing Animation with PNGs */}
           <div className="hidden lg:block relative">
             {/* Animation Container */}
             <div className="relative h-96 flex items-end justify-center">
-              {/* Trash Bin */}
+              {/* Trash Can PNG */}
               <div className="relative z-10">
-                <div className="w-32 h-40 bg-gray-700 rounded-lg relative">
-                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-40 h-6 bg-gray-600 rounded-t-lg"></div>
-                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-36 h-32 bg-gray-800 rounded-lg"></div>
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-28 h-2 bg-green-500 rounded-full"></div>
-                </div>
+                <img 
+                  src={trashCan} 
+                  alt="Trash Can"
+                  className="w-48 h-60 object-contain drop-shadow-2xl"
+                />
               </div>
 
-              {/* Animated Garbage Items - Thrown into the bin */}
-              <div className="absolute top-0 left-1/4 animate-throw1">
-                <div className="w-8 h-8 bg-yellow-500 rounded-full shadow-lg"></div>
+              {/* Animated Garbage Items - All falling to center with instant disappearance */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 animate-fall1">
+                <img 
+                  src={plasticBottle} 
+                  alt="Plastic Bottle"
+                  className="w-20 h-20 object-contain drop-shadow-lg"
+                />
               </div>
-              <div className="absolute top-4 right-1/3 animate-throw2">
-                <div className="w-6 h-6 bg-blue-500 rounded-lg shadow-lg"></div>
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 animate-fall2">
+                <img 
+                  src={paper} 
+                  alt="Paper"
+                  className="w-16 h-16 object-contain drop-shadow-lg"
+                />
               </div>
-              <div className="absolute top-8 left-1/3 animate-throw3">
-                <div className="w-7 h-7 bg-green-500 rounded-lg shadow-lg"></div>
+              <div className="absolute top-8 left-1/2 -translate-x-1/2 animate-fall3">
+                <img 
+                  src={can} 
+                  alt="Can"
+                  className="w-14 h-14 object-contain drop-shadow-lg"
+                />
               </div>
-              <div className="absolute top-12 right-1/4 animate-throw4">
-                <div className="w-5 h-5 bg-red-500 rounded-full shadow-lg"></div>
+              <div className="absolute top-12 left-1/2 -translate-x-1/2 animate-fall4">
+                <img 
+                  src={plasticBottle} 
+                  alt="Plastic Bottle"
+                  className="w-20 h-20 object-contain drop-shadow-lg rotate-45"
+                />
               </div>
             </div>
 
@@ -155,29 +176,33 @@ const Hero = () => {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-10px) rotate(90deg); }
         }
-        @keyframes throw1 {
-          0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0; }
+        @keyframes fall1 {
+          0% { transform: translate(-50%, 0) rotate(0deg) scale(1); opacity: 0; }
           10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translate(60px, 320px) rotate(360deg) scale(0.8); opacity: 0; }
+          85% { opacity: 1; transform: translate(-50%, 280px) rotate(360deg) scale(1); }
+          86% { opacity: 0; transform: translate(-50%, 280px) rotate(360deg) scale(0); }
+          100% { opacity: 0; transform: translate(-50%, 280px) rotate(360deg) scale(0); }
         }
-        @keyframes throw2 {
-          0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0; }
+        @keyframes fall2 {
+          0% { transform: translate(-50%, 0) rotate(0deg) scale(1); opacity: 0; }
           10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translate(-40px, 300px) rotate(-270deg) scale(0.8); opacity: 0; }
+          85% { opacity: 1; transform: translate(-50%, 260px) rotate(-180deg) scale(1); }
+          86% { opacity: 0; transform: translate(-50%, 260px) rotate(-180deg) scale(0); }
+          100% { opacity: 0; transform: translate(-50%, 260px) rotate(-180deg) scale(0); }
         }
-        @keyframes throw3 {
-          0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0; }
+        @keyframes fall3 {
+          0% { transform: translate(-50%, 0) rotate(0deg) scale(1); opacity: 0; }
           10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translate(20px, 280px) rotate(180deg) scale(0.8); opacity: 0; }
+          85% { opacity: 1; transform: translate(-50%, 240px) rotate(90deg) scale(1); }
+          86% { opacity: 0; transform: translate(-50%, 240px) rotate(90deg) scale(0); }
+          100% { opacity: 0; transform: translate(-50%, 240px) rotate(90deg) scale(0); }
         }
-        @keyframes throw4 {
-          0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0; }
+        @keyframes fall4 {
+          0% { transform: translate(-50%, 0) rotate(45deg) scale(1); opacity: 0; }
           10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translate(-30px, 340px) rotate(-180deg) scale(0.8); opacity: 0; }
+          85% { opacity: 1; transform: translate(-50%, 300px) rotate(-90deg) scale(1); }
+          86% { opacity: 0; transform: translate(-50%, 300px) rotate(-90deg) scale(0); }
+          100% { opacity: 0; transform: translate(-50%, 300px) rotate(-90deg) scale(0); }
         }
         @keyframes pulseSlow {
           0%, 100% { opacity: 0.5; }
@@ -187,10 +212,10 @@ const Hero = () => {
         .animate-float2 { animation: float2 8s ease-in-out infinite; }
         .animate-float3 { animation: float3 10s ease-in-out infinite; }
         .animate-float4 { animation: float4 7s ease-in-out infinite; }
-        .animate-throw1 { animation: throw1 3s ease-in infinite; }
-        .animate-throw2 { animation: throw2 4s ease-in infinite 1s; }
-        .animate-throw3 { animation: throw3 3.5s ease-in infinite 0.5s; }
-        .animate-throw4 { animation: throw4 4.5s ease-in infinite 1.5s; }
+        .animate-fall1 { animation: fall1 3s ease-in infinite; }
+        .animate-fall2 { animation: fall2 4s ease-in infinite 1s; }
+        .animate-fall3 { animation: fall3 3.5s ease-in infinite 0.5s; }
+        .animate-fall4 { animation: fall4 4.5s ease-in infinite 1.5s; }
         .animate-pulseSlow { animation: pulseSlow 4s ease-in-out infinite; }
       `}</style>
     </div>
