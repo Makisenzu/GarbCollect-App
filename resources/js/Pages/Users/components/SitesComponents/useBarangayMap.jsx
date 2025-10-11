@@ -359,15 +359,75 @@ const useBarangayMap = (mapboxToken) => {
 
     clearMarkers();
 
-    sites.forEach((site) => {
+    // Find station and separate it from regular sites
+    const station = sites.find(site => site.type === 'station');
+    const regularSites = sites.filter(site => site.type !== 'station');
+    
+    // Optimize site order for sequencing
+    const optimizedSites = station ? optimizeSiteOrderFromStation(station, regularSites) : regularSites;
+    setOptimizedSiteOrder(optimizedSites);
+
+    // Add station marker first (sequence 0)
+    if (station && station.latitude && station.longitude) {
+      const stationEl = document.createElement('div');
+      stationEl.className = 'custom-marker animate-pulse';
+      const stationBadgeSize = isMobile ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
+      stationEl.innerHTML = `
+        <div class="hover:scale-110 transition-transform duration-200 cursor-pointer relative">
+          <div class="bg-white rounded-full p-2 shadow-lg border-2 border-red-500">
+            <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+              <span class="text-white text-xs font-bold">🏠</span>
+            </div>
+          </div>
+          <div class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full ${stationBadgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white">
+            0
+          </div>
+        </div>
+      `;
+
+      const stationMarker = new mapboxgl.Marker({
+        element: stationEl,
+        anchor: 'bottom'
+      })
+        .setLngLat([parseFloat(station.longitude), parseFloat(station.latitude)])
+        .addTo(map.current);
+
+      markersRef.current.push(stationMarker);
+
+      stationEl.addEventListener('click', () => {
+        stationMarker.togglePopup();
+      });
+    }
+
+    // Add regular site markers with sequence numbers
+    optimizedSites.forEach((site, index) => {
       if (site.latitude && site.longitude) {
-        // Create custom marker element with white circle behind can.png
+        const sequenceNumber = index + 1;
+        const isNearest = nearestSite && nearestSite.id === site.id;
+        const barangayName = site.purok?.baranggay?.baranggay_name;
+        const borderColor = barangayColors[barangayName] || barangayColors['_default'];
+        
+        const badgeSize = isMobile ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
+        const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
+        const imageSize = isMobile ? 'w-10 h-10' : 'w-8 h-8';
+
         const el = document.createElement('div');
-        el.className = 'animate-pulse';
+        el.className = 'custom-marker animate-pulse';
         el.innerHTML = `
-          <div class="hover:scale-110 transition-transform duration-200 cursor-pointer">
-            <div class="bg-white rounded-full p-1 shadow-lg">
-              <img src="${can}" alt="Site Location" class="w-6 h-6" />
+          <div class="hover:scale-110 transition-transform duration-200 cursor-pointer relative">
+            <div class="${markerSize} rounded-full border-3 flex items-center justify-center overflow-hidden shadow-lg bg-white relative ${
+              isNearest ? 'ring-4 ring-green-500 ring-opacity-70' : ''
+            }" style="border-color: ${borderColor};">
+              ${isNearest ? `
+                <div class="absolute -inset-3 rounded-full border-4 border-green-500 border-opacity-70 animate-pulse pointer-events-none z-10"></div>
+              ` : ''}
+              <img src="${can}" 
+                   alt="${site.site_name}" 
+                   class="${imageSize} object-cover rounded-full z-0"
+                   onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'${imageSize} rounded-full flex items-center justify-center text-white text-xs font-bold bg-white\\' style=\\'border: 2px solid ${borderColor}; color: ${borderColor}\\'>${site.site_name?.charAt(0) || 'S'}</div>'">
+            </div>
+            <div class="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full ${badgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white">
+              ${sequenceNumber}
             </div>
           </div>
         `;
