@@ -433,28 +433,7 @@ const useBarangayMap = (mapboxToken) => {
             'circle-stroke-color': '#ffffff'
           }
         });
-  
-        // Add numbers to waypoints
-        // map.current.addLayer({
-        //   id: 'route-waypoints-labels',
-        //   type: 'symbol',
-        //   source: 'route-waypoints-marker',
-        //   layout: {
-        //     'text-field': [
-        //       'case',
-        //       ['==', ['get', 'type'], 'station'], '🏠',
-        //       ['get', 'sequence']
-        //     ],
-        //     'text-size': isMobile ? 12 : 10,
-        //     'text-offset': [0, 0],
-        //     'text-anchor': 'center'
-        //   },
-        //   paint: {
-        //     'text-color': '#ffffff',
-        //     'text-halo-color': '#000000',
-        //     'text-halo-width': 1
-        //   }
-        // });
+
       }
   
       // Add start and end markers (optional - you can remove these if you prefer only the waypoints)
