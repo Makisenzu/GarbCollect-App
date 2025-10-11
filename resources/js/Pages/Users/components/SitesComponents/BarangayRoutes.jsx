@@ -101,7 +101,7 @@ const BarangayRoutes = ({ mapboxToken }) => {
                     <div><strong>Duration:</strong> {routeInfo.formattedDuration}</div>
                     <div><strong>Distance:</strong> {routeInfo.distance} km</div>
                     {nearestSite && (
-                      <div><strong>Nearest Site:</strong> {nearestSite.site_name}</div>
+                      <div><strong>Nearest Site:</strong> {nearestSite.purok?.purok_name}</div>
                     )}
                   </div>
                 </div>

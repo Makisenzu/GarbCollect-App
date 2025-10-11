@@ -150,54 +150,118 @@ const useBarangayMap = (mapboxToken) => {
     if (!mapboxToken || sites.length < 1) return;
 
     try {
+      // Filter out sites without proper coordinates
+      const validSites = sites.filter(site => 
+        site.latitude && site.longitude && 
+        !isNaN(parseFloat(site.latitude)) && !isNaN(parseFloat(site.longitude))
+      );
+
+      if (validSites.length < 1) {
+        console.warn('No valid sites with coordinates found');
+        return;
+      }
+
       const optimizedSites = station 
-        ? optimizeSiteOrderFromStation(station, sites)
-        : sites;
+        ? optimizeSiteOrderFromStation(station, validSites.filter(site => site.type !== 'station'))
+        : validSites;
 
       setOptimizedSiteOrder(optimizedSites);
       if (optimizedSites.length > 0) {
         setNearestSite(optimizedSites[0]);
       }
       
-      const coordinates = station 
-        ? [
-            `${station.longitude},${station.latitude}`,
-            ...optimizedSites.map(site => `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`)
-          ].join(';')
-        : optimizedSites.map(site => `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`).join(';');
+      // Build coordinates array for Mapbox API
+      let coordinates = [];
+      
+      if (station) {
+        // Start from station and visit all optimized sites
+        coordinates = [
+          `${parseFloat(station.longitude).toFixed(6)},${parseFloat(station.latitude).toFixed(6)}`,
+          ...optimizedSites.map(site => 
+            `${parseFloat(site.longitude).toFixed(6)},${parseFloat(site.latitude).toFixed(6)}`
+          )
+        ];
+      } else {
+        // No station, just route between sites
+        coordinates = optimizedSites.map(site => 
+          `${parseFloat(site.longitude).toFixed(6)},${parseFloat(site.latitude).toFixed(6)}`
+        );
+      }
 
+      // For routes with multiple waypoints, use optimized=true for better routing
+      const isMultiWaypoint = coordinates.length > 2;
+      
       const response = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?` +
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates.join(';')}?` +
         `access_token=${mapboxToken}` +
         `&geometries=geojson` +
         `&overview=full` +
         `&steps=true` +
         `&alternatives=false` +
-        `&continue_straight=false`
+        `&continue_straight=false` +
+        (isMultiWaypoint ? `&roundabout_exits=true` : '')
       );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
 
       if (data.routes && data.routes.length > 0) {
-        const fastestRoute = data.routes.reduce((fastest, current) => 
-          current.duration < fastest.duration ? current : fastest
-        );
-        const durationMinutes = Math.round(fastestRoute.duration / 60);
+        const route = data.routes[0];
         
-        setRouteCoordinates(fastestRoute.geometry.coordinates);
-        setRouteInfo({
-          duration: durationMinutes,
-          formattedDuration: formatDuration(durationMinutes),
-          distance: (fastestRoute.distance / 1000).toFixed(1)
-        });
+        if (route.geometry && route.geometry.coordinates) {
+          const durationMinutes = Math.round(route.duration / 60);
+          const distanceKm = (route.distance / 1000).toFixed(1);
+          
+          setRouteCoordinates(route.geometry.coordinates);
+          setRouteInfo({
+            duration: durationMinutes,
+            formattedDuration: formatDuration(durationMinutes),
+            distance: distanceKm,
+            rawData: route // Store raw data for debugging
+          });
+          
+          console.log(`Route calculated: ${durationMinutes}min, ${distanceKm}km, ${route.geometry.coordinates.length} points`);
+        } else {
+          throw new Error('Invalid route geometry received');
+        }
+      } else {
+        throw new Error(data.message || 'No routes found');
       }
     } catch (error) {
       console.error('Error calculating route:', error);
-      const fallbackRoute = sites.map(site => 
-        [parseFloat(site.longitude), parseFloat(site.latitude)]
+      // Fallback: create straight line between points
+      const validSites = sites.filter(site => 
+        site.latitude && site.longitude && 
+        !isNaN(parseFloat(site.latitude)) && !isNaN(parseFloat(site.longitude))
       );
-      setRouteCoordinates(fallbackRoute);
+      
+      if (validSites.length > 0) {
+        const fallbackRoute = validSites.map(site => 
+          [parseFloat(site.longitude), parseFloat(site.latitude)]
+        );
+        setRouteCoordinates(fallbackRoute);
+        setRouteInfo({
+          duration: Math.round(calculateRouteDistance(fallbackRoute) * 2), // Estimate 30km/h average
+          formattedDuration: 'Estimated',
+          distance: calculateRouteDistance(fallbackRoute).toFixed(1),
+          isFallback: true
+        });
+      }
     }
+  };
+
+  // Helper function to calculate approximate distance for fallback route
+  const calculateRouteDistance = (coordinates) => {
+    let totalDistance = 0;
+    for (let i = 1; i < coordinates.length; i++) {
+      const [lon1, lat1] = coordinates[i-1];
+      const [lon2, lat2] = coordinates[i];
+      totalDistance += calculateDistance(lat1, lon1, lat2, lon2);
+    }
+    return totalDistance;
   };
 
   const addRouteLayer = () => {
@@ -213,7 +277,7 @@ const useBarangayMap = (mapboxToken) => {
     }
 
     // Remove existing route layers
-    ['route', 'route-glow', 'route-direction'].forEach(layerId => {
+    ['route', 'route-glow', 'route-direction', 'route-start', 'route-end'].forEach(layerId => {
       if (map.current.getLayer(layerId)) {
         map.current.removeLayer(layerId);
       }
@@ -222,6 +286,13 @@ const useBarangayMap = (mapboxToken) => {
     if (map.current.getSource('route')) {
       map.current.removeSource('route');
     }
+
+    // Remove marker sources if they exist
+    ['route-start-marker', 'route-end-marker'].forEach(sourceId => {
+      if (map.current.getSource(sourceId)) {
+        map.current.removeSource(sourceId);
+      }
+    });
 
     try {
       map.current.addSource('route', {
@@ -244,6 +315,7 @@ const useBarangayMap = (mapboxToken) => {
       const lineWidth = isMobile ? 6 : 5;
       const glowWidth = isMobile ? 14 : 12;
 
+      // Add glow effect
       map.current.addLayer({
         id: 'route-glow',
         type: 'line',
@@ -255,11 +327,12 @@ const useBarangayMap = (mapboxToken) => {
         paint: {
           'line-color': routeColor,
           'line-width': glowWidth,
-          'line-opacity': 0.4,
-          'line-blur': 8
+          'line-opacity': 0.3,
+          'line-blur': 10
         }
       });
 
+      // Main route line
       map.current.addLayer({
         id: 'route',
         type: 'line',
@@ -275,6 +348,79 @@ const useBarangayMap = (mapboxToken) => {
         }
       });
 
+      // Add direction arrows for better visualization
+      map.current.addLayer({
+        id: 'route-direction',
+        type: 'symbol',
+        source: 'route',
+        layout: {
+          'symbol-placement': 'line',
+          'text-field': '▶',
+          'text-size': isMobile ? 14 : 12,
+          'symbol-spacing': 100
+        },
+        paint: {
+          'text-color': routeColor
+        }
+      });
+
+      // Add start and end markers
+      if (routeCoordinates.length >= 2) {
+        // Start marker
+        map.current.addSource('route-start-marker', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: routeCoordinates[0]
+            },
+            properties: {
+              description: 'Start'
+            }
+          }
+        });
+
+        // End marker
+        map.current.addSource('route-end-marker', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: routeCoordinates[routeCoordinates.length - 1]
+            },
+            properties: {
+              description: 'End'
+            }
+          }
+        });
+
+        map.current.addLayer({
+          id: 'route-start',
+          type: 'circle',
+          source: 'route-start-marker',
+          paint: {
+            'circle-radius': isMobile ? 8 : 6,
+            'circle-color': '#22c55e',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+
+        map.current.addLayer({
+          id: 'route-end',
+          type: 'circle',
+          source: 'route-end-marker',
+          paint: {
+            'circle-radius': isMobile ? 8 : 6,
+            'circle-color': '#ef4444',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+      }
+
       setTimeout(() => {
         fitMapToRoute();
       }, 200);
@@ -282,6 +428,7 @@ const useBarangayMap = (mapboxToken) => {
     } catch (error) {
       console.error('Error adding route layer:', error);
       
+      // Retry with delay
       setTimeout(() => {
         addRouteLayer();
       }, 500);
@@ -293,6 +440,12 @@ const useBarangayMap = (mapboxToken) => {
 
     const bounds = new mapboxgl.LngLatBounds();
     
+    // Extend bounds to include all route coordinates
+    routeCoordinates.forEach(coord => {
+      bounds.extend(coord);
+    });
+
+    // Also include all site markers
     if (stationLocation) {
       bounds.extend([parseFloat(stationLocation.longitude), parseFloat(stationLocation.latitude)]);
     }
@@ -303,18 +456,15 @@ const useBarangayMap = (mapboxToken) => {
       }
     });
 
-    routeCoordinates.forEach(coord => {
-      bounds.extend(coord);
-    });
-
-    const padding = isMobile ? 20 : 50;
+    const padding = isMobile ? 40 : 80;
 
     try {
       map.current.fitBounds(bounds, {
         padding: padding,
-        duration: 1000,
+        duration: 1500,
         essential: true,
-        maxZoom: isMobile ? 16 : 15
+        maxZoom: isMobile ? 16 : 15,
+        offset: [0, isMobile ? -50 : 0] // Adjust for mobile controls
       });
     } catch (error) {
       console.error('Error fitting map to bounds:', error);
@@ -367,7 +517,7 @@ const useBarangayMap = (mapboxToken) => {
     const optimizedSites = station ? optimizeSiteOrderFromStation(station, regularSites) : regularSites;
     setOptimizedSiteOrder(optimizedSites);
 
-    // Add station marker first (sequence 0)
+    // station marker
     if (station && station.latitude && station.longitude) {
       const stationEl = document.createElement('div');
       stationEl.className = 'custom-marker animate-pulse';
@@ -378,9 +528,6 @@ const useBarangayMap = (mapboxToken) => {
             <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
               <span class="text-white text-xs font-bold">🏠</span>
             </div>
-          </div>
-          <div class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full ${stationBadgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white">
-            0
           </div>
         </div>
       `;
@@ -399,7 +546,7 @@ const useBarangayMap = (mapboxToken) => {
       });
     }
 
-    // Add regular site markers with sequence numbers
+    // sequence marker
     optimizedSites.forEach((site, index) => {
       if (site.latitude && site.longitude) {
         const sequenceNumber = index + 1;
@@ -447,7 +594,7 @@ const useBarangayMap = (mapboxToken) => {
       }
     });
 
-    // Fit map bounds to show all markers
+    // show all markers
     if (sites.length > 0 && sites.some(site => site.latitude && site.longitude)) {
       const bounds = new mapboxgl.LngLatBounds();
       
@@ -465,7 +612,7 @@ const useBarangayMap = (mapboxToken) => {
     }
   };
 
-  // Function to fetch active sites for selected barangay
+  // fetch active site for selected barangay
   const fetchActiveSites = async (barangayId) => {
     if (!barangayId) {
       setActiveSites([]);
@@ -483,16 +630,15 @@ const useBarangayMap = (mapboxToken) => {
         setActiveSites(sites);
         console.log('Active sites:', sites);
         
-        // Find station if exists
+        //get station
         const station = sites.find(site => site.type === 'station');
         if (station) {
           setStationLocation(station);
         }
         
-        // Add markers to map
         addMarkersToMap(sites);
         
-        // Calculate optimal route
+        // calculate route
         if (sites.length >= 1) {
           await calculateOptimalRoute(sites, barangayId, station);
         }
@@ -514,7 +660,6 @@ const useBarangayMap = (mapboxToken) => {
     }
   };
 
-  // Add route layer when route coordinates change
   useEffect(() => {
     if (map.current && routeCoordinates.length > 0) {
       addRouteLayer();
@@ -601,7 +746,7 @@ const useBarangayMap = (mapboxToken) => {
     }
   };
 
-  // Render sites info panel
+  //info panel
   const renderSitesInfo = () => {
     if (!selectedBarangay) return null;
 
@@ -624,13 +769,18 @@ const useBarangayMap = (mapboxToken) => {
             )}
           </div>
           
-          {/* Route Information */}
+          {/* route info */}
           {routeInfo && (
             <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
               <div className="text-xs text-blue-800">
                 <div><strong>Route:</strong> {routeInfo.formattedDuration} • {routeInfo.distance} km</div>
                 {nearestSite && (
                   <div><strong>Nearest:</strong> {nearestSite.site_name}</div>
+                )}
+                {routeInfo.isFallback && (
+                  <div className="text-orange-600 mt-1">
+                    <strong>Note:</strong> Using estimated route
+                  </div>
                 )}
               </div>
             </div>
@@ -704,7 +854,7 @@ const useBarangayMap = (mapboxToken) => {
     );
   };
 
-  //display select modal
+
   const renderBarangaySelect = (data, setData) => (
     <Select
       id="barangay_id"
@@ -749,7 +899,9 @@ const useBarangayMap = (mapboxToken) => {
     renderBarangaySelect,
     renderSitesInfo,
     fetchActiveSites,
-    // Route-related exports
+
+
+    //routes
     routeCoordinates,
     routeInfo,
     optimizedSiteOrder,
