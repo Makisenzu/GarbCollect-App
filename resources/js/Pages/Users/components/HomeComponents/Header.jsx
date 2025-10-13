@@ -67,7 +67,7 @@ export default function Header({ header, children }) {
                                             href={route('site.location')}
                                         >
                                             <CiTrash className="mr-2" size={16}/>
-                                            Throw Garbage
+                                            Near Site
                                         </Dropdown.Link>
 
                                         <Dropdown.Link className="flex items-center hover:text-yellow-600"
@@ -133,7 +133,7 @@ export default function Header({ header, children }) {
                             href={route('barangay.routes')}
                             active={route().current('barangay.routes')}
                         >
-                            <FaTruckMoving className="mr-3" size={20}/>Track Collection
+                            <FaTruckMoving className="mr-3" size={20}/>Collection Route
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink
@@ -147,7 +147,7 @@ export default function Header({ header, children }) {
                             href={route('site.location')}
                             active={route().current('site.location')}
                         >
-                            <BsFillTrash3Fill className="mr-3" size={20} />Garbage Site
+                            <BsFillTrash3Fill className="mr-3" size={20} /> Near Site
                         </ResponsiveNavLink>
                     </div>
 
