@@ -17,7 +17,8 @@ const MyLocation = ({ mapboxToken, sites }) => {
     const map = useRef(null);
     const markersRef = useRef([]);
 
-    // Check mobile device
+
+    //mobile responsiveness
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
@@ -27,7 +28,7 @@ const MyLocation = ({ mapboxToken, sites }) => {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Format duration for display
+    // format duration
     const formatDuration = (minutes) => {
         if (minutes < 60) {
             return `${minutes} min`;
@@ -42,7 +43,8 @@ const MyLocation = ({ mapboxToken, sites }) => {
         }
     };
 
-    // Initialize map
+
+    //map
     useEffect(() => {
         if (!mapboxToken) {
             setError('Mapbox API key is missing');
@@ -100,13 +102,11 @@ const MyLocation = ({ mapboxToken, sites }) => {
         };
     }, [mapboxToken]);
 
-    // Clear markers
     const clearMarkers = () => {
         markersRef.current.forEach(marker => marker.remove());
         markersRef.current = [];
     };
 
-    // Clear route from map
     const clearRoute = () => {
         if (!map.current) return;
 
@@ -123,7 +123,7 @@ const MyLocation = ({ mapboxToken, sites }) => {
         });
     };
 
-    // Add route to map
+    // route layer
     const addRouteLayer = (routeCoordinates) => {
         if (!map.current || routeCoordinates.length === 0) return;
 
@@ -253,7 +253,8 @@ const MyLocation = ({ mapboxToken, sites }) => {
         }
     };
 
-    // Calculate fastest route
+
+    //fastest route
     const calculateFastestRoute = async (userLat, userLng, siteLat, siteLng) => {
         if (!mapboxToken) return;
 
@@ -283,7 +284,6 @@ const MyLocation = ({ mapboxToken, sites }) => {
                     const durationMinutes = Math.round(route.duration / 60);
                     const distanceKm = (route.distance / 1000).toFixed(1);
                     
-                    // Add route to map immediately
                     addRouteLayer(route.geometry.coordinates);
                     
                     setRouteInfo({
@@ -292,10 +292,8 @@ const MyLocation = ({ mapboxToken, sites }) => {
                         distance: distanceKm
                     });
                     
-                    // Update the site marker popup with route info
                     updateSitePopupWithRouteInfo(durationMinutes, distanceKm);
                     
-                    // Fit map to show the route
                     fitMapToRoute(userLng, userLat, parseFloat(siteLng), parseFloat(siteLat));
                 }
             }
@@ -310,15 +308,12 @@ const MyLocation = ({ mapboxToken, sites }) => {
         }
     };
 
-    // Update site popup with route information
-// Update site popup with route information and reopen it
 const updateSitePopupWithRouteInfo = (duration, distance) => {
     const siteMarker = markersRef.current.find(marker => 
         marker.getElement().querySelector('.bg-green-500')
     );
 };
 
-    // Fit map to show route
     const fitMapToRoute = (userLng, userLat, siteLng, siteLat) => {
         if (!map.current) return;
 
@@ -340,13 +335,11 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
         }
     };
 
-    // Add markers to map
     const addMarkersToMap = (userLat, userLng, nearestSite) => {
         if (!map.current) return;
 
         clearMarkers();
 
-        // Add user location marker
         const userMarkerEl = document.createElement('div');
         userMarkerEl.className = 'custom-marker animate-pulse';
         userMarkerEl.innerHTML = `
@@ -367,7 +360,6 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
 
         markersRef.current.push(userMarker);
 
-        // Add nearest site marker
         if (nearestSite && nearestSite.latitude && nearestSite.longitude) {
             const borderColor = '#3b82f6';
             const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
@@ -401,7 +393,7 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
         }
     };
 
-    // Calculate distance using Haversine formula
+    // haversine formula
     const calculateDistance = (lat1, lng1, lat2, lng2) => {
         const earthRadius = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -413,7 +405,6 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
         return earthRadius * c;
     };
 
-    // Find nearest site
     const findNearestSite = (userLat, userLng) => {
         let minDistance = Infinity;
         let closestSite = null;
@@ -435,7 +426,6 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
         return closestSite;
     };
 
-    // Get user's current location and automatically show route
     const getUserLocation = () => {
         setLoading(true);
         setError(null);
@@ -457,10 +447,7 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
                 setNearestSite(closest);
                 
                 if (map.current && mapLoaded && closest) {
-                    // Add markers first
                     addMarkersToMap(lat, lng, closest);
-                    
-                    // Then calculate and show route automatically
                     await calculateFastestRoute(lat, lng, closest.latitude, closest.longitude);
                 }
                 
@@ -523,8 +510,6 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
                         </div>
                     </div>
                 )}
-                
-                {/* Back Button - Always top left */}
                 <Link
                     href="/"
                     className="absolute top-4 left-4 z-40 bg-white hover:bg-gray-50 text-gray-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:shadow-xl border border-gray-200"
@@ -534,8 +519,6 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
                 </Link>
-
-                {/* Main Controls - Mobile: Bottom, Desktop: Top */}
                 <div className={`
                     absolute z-40 bg-white rounded-lg shadow-lg p-4
                     ${isMobile ? 
@@ -569,7 +552,6 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
                         )}
                     </button>
                     
-                    {/* Route Information */}
                     {userLocation && nearestSite && routeInfo && (
                         <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                             <h3 className="font-semibold text-blue-800 text-sm mb-2">Route Information</h3>
@@ -591,7 +573,6 @@ const updateSitePopupWithRouteInfo = (duration, distance) => {
                     )}
                 </div>
 
-                {/* Map */}
                 <div 
                     ref={mapContainer} 
                     className="w-full h-full absolute inset-0"
