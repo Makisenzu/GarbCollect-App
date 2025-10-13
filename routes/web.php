@@ -50,6 +50,7 @@ Route::get('/barangay/routes', [UserController::class, 'showBarangayRoutes'])->n
 Route::get('/getBarangay', [UserController::class, 'getBarangay']);
 Route::get('/barangay/schedule/{id}', [UserController::class, 'getBarangaySchedule'])->name('getschedule.barangay');
 Route::get('/barangay/getSites/{id}', [UserController::class, 'getActiveSite']);
+Route::get('/site', [UserController::class, 'showMyLocation'])->name('site.location');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     

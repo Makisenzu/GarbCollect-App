@@ -26,6 +26,21 @@ class UserController extends Controller
         ]);
     }
 
+    // public function getSite(){
+    //     $sites = Site::with(['purok.baranggay'])->get();
+    //     return response()->json([
+    //         'sites' => $sites
+    //     ]);
+    // }
+
+    public function showMyLocation() {
+        $sites = Site::with(['purok.baranggay'])->get();
+        return Inertia::render('User/components/ThrowGarbageComponents/MyLocation', [
+            'mapboxToken' => env('MAPBOX_ACCESS_TOKEN'),
+            'sites' => $sites
+        ]);
+    }
+
     public function getBarangay() {
         try {
             $barangayData = Baranggay::all();
