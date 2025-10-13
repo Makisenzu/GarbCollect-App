@@ -22,15 +22,32 @@ import { BsFillTrash3Fill } from "react-icons/bs";
 export default function Header({ header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
+    // Prevent drag behavior
+    const preventDrag = (e) => {
+        e.preventDefault();
+        return false;
+    };
+
     return (
-        <div className="bg-gray-100">
-            <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 bg-white shadow-sm">
+        <div className="bg-gray-100 prevent-drag">
+            <nav 
+                className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 bg-white shadow-sm prevent-drag"
+                onDragStart={preventDrag}
+                onSelect={preventDrag}
+            >
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-10 w-auto fill-current text-gray-800" />
+                                <Link 
+                                    href="/"
+                                    onDragStart={preventDrag}
+                                    className="prevent-drag"
+                                >
+                                    <ApplicationLogo 
+                                        className="block h-10 w-auto fill-current text-gray-800 prevent-drag" 
+                                        onDragStart={preventDrag}
+                                    />
                                 </Link>
                             </div>
                         </div>
@@ -39,51 +56,54 @@ export default function Header({ header, children }) {
                             <div className="relative ms-3">
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <span className="inline-flex rounded-md">
+                                        <span className="inline-flex rounded-md prevent-drag">
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
+                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none prevent-drag"
+                                                onDragStart={preventDrag}
                                             >
-                                                <div className="flex items-center">
-                                                    <TiThMenu className="mr-2" size={17} />
+                                                <div className="flex items-center prevent-drag">
+                                                    <TiThMenu className="mr-2 prevent-drag" size={17} />
                                                 </div>
                                             </button>
                                         </span>
                                     </Dropdown.Trigger>
 
-                                    <Dropdown.Content>
-                                        <Dropdown.Link href={route('barangay.schedule')} className="flex items-center hover:text-blue-600">
-                                        <FaCalendarAlt className="mr-2" size={16}/>
-                                        Schedule
+                                    <Dropdown.Content className="prevent-drag">
+                                        <Dropdown.Link 
+                                            href={route('barangay.schedule')} 
+                                            className="flex items-center hover:text-blue-600 prevent-drag"
+                                            onDragStart={preventDrag}
+                                        >
+                                            <FaCalendarAlt className="mr-2" size={16}/>
+                                            Schedule
                                         </Dropdown.Link>
-                                        <Dropdown.Link className="flex items-center hover:text-green-600"
+                                        <Dropdown.Link 
+                                            className="flex items-center hover:text-green-600 prevent-drag"
                                             href={route('barangay.routes')}
+                                            onDragStart={preventDrag}
                                         >
                                             <FaTruckMoving className="mr-2" size={16}/>
                                             Routes
                                         </Dropdown.Link>
 
-                                        <Dropdown.Link className="flex items-center hover:text-pink-600"
+                                        <Dropdown.Link 
+                                            className="flex items-center hover:text-pink-600 prevent-drag"
                                             href={route('site.location')}
+                                            onDragStart={preventDrag}
                                         >
                                             <CiTrash className="mr-2" size={16}/>
                                             Near Site
                                         </Dropdown.Link>
 
-                                        <Dropdown.Link className="flex items-center hover:text-yellow-600"
+                                        <Dropdown.Link 
+                                            className="flex items-center hover:text-yellow-600 prevent-drag"
                                             href={route('dashboard')}
+                                            onDragStart={preventDrag}
                                         >
                                             <MdOutlineReviews className="mr-2" size={16} />
                                             Reviews
                                         </Dropdown.Link>
-
-                                        {/* <Dropdown.Link className="flex items-center hover:text-red-600"
-                                            href={route('dashboard')}
-                                        >
-                                            <IoCallOutline className="mr-2" size={16}/>
-                                            Contact Us
-                                        </Dropdown.Link> */}
-
                                     </Dropdown.Content>
                                 </Dropdown>
                             </div>
@@ -92,13 +112,15 @@ export default function Header({ header, children }) {
                         <div className="-me-2 flex items-center sm:hidden">
                             <button
                                 onClick={() => setShowingNavigationDropdown(!showingNavigationDropdown)}
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
+                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none prevent-drag"
+                                onDragStart={preventDrag}
                             >
                                 <svg
-                                    className="h-6 w-6"
+                                    className="h-6 w-6 prevent-drag"
                                     stroke="currentColor"
                                     fill="none"
                                     viewBox="0 0 24 24"
+                                    onDragStart={preventDrag}
                                 >
                                     <path
                                         className={!showingNavigationDropdown ? 'inline-flex' : 'hidden'}
@@ -120,11 +142,16 @@ export default function Header({ header, children }) {
                     </div>
                 </div>
 
-                <div className={`${showingNavigationDropdown ? 'block' : 'hidden'} sm:hidden`}>
-                    <div className="space-y-1 pb-3 pt-2">
+                <div 
+                    className={`${showingNavigationDropdown ? 'block' : 'hidden'} sm:hidden prevent-drag`}
+                    onDragStart={preventDrag}
+                >
+                    <div className="space-y-1 pb-3 pt-2 prevent-drag">
                         <ResponsiveNavLink
                             href="/"
                             active={route().current('home')}
+                            className="prevent-drag"
+                            onDragStart={preventDrag}
                         >
                             <IoHome className="mr-3" size={20} />Home
                         </ResponsiveNavLink>
@@ -132,6 +159,8 @@ export default function Header({ header, children }) {
                         <ResponsiveNavLink
                             href={route('barangay.routes')}
                             active={route().current('barangay.routes')}
+                            className="prevent-drag"
+                            onDragStart={preventDrag}
                         >
                             <FaTruckMoving className="mr-3" size={20}/>Routes
                         </ResponsiveNavLink>
@@ -139,6 +168,8 @@ export default function Header({ header, children }) {
                         <ResponsiveNavLink
                             href={route('barangay.schedule')}
                             active={route().current('barangay.schedule')}
+                            className="prevent-drag"
+                            onDragStart={preventDrag}
                         >
                             <FaCalendarAlt className="mr-3" size={20}/>Schedule
                         </ResponsiveNavLink>
@@ -146,37 +177,55 @@ export default function Header({ header, children }) {
                         <ResponsiveNavLink
                             href={route('site.location')}
                             active={route().current('site.location')}
+                            className="prevent-drag"
+                            onDragStart={preventDrag}
                         >
                             <BsFillTrash3Fill className="mr-3" size={20} /> Near Site
                         </ResponsiveNavLink>
                     </div>
 
-                    <div className="border-t border-gray-200 pb-1 pt-4">
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('login')}>
+                    <div className="border-t border-gray-200 pb-1 pt-4 prevent-drag">
+                        <div className="mt-3 space-y-1 prevent-drag">
+                            <ResponsiveNavLink 
+                                href={route('login')}
+                                className="prevent-drag"
+                                onDragStart={preventDrag}
+                            >
                                 <MdOutlineReviews className="mr-3" size={20}/> Reviews
                             </ResponsiveNavLink>
-                            {/* <ResponsiveNavLink href={route('dashboard')}>
-                                <IoCallOutline className="mr-3" size={20}/> Contact Us
-                            </ResponsiveNavLink> */}
                         </div>
                     </div>
                 </div>
             </nav>
 
-            <div className="pt-16">
+            <div className="pt-16 prevent-drag">
                 {header && (
-                    <header className="bg-white shadow">
-                        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                    <header className="bg-white shadow prevent-drag">
+                        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 prevent-drag">
                             {header}
                         </div>
                     </header>
                 )}
 
-                <main className="pb-8">
+                <main className="pb-8 prevent-drag">
                     {children}
                 </main>
             </div>
+
+            {/* Add inline styles for immediate effect */}
+            <style jsx>{`
+                .prevent-drag {
+                    -webkit-user-select: none;
+                    -moz-user-select: none;
+                    -ms-user-select: none;
+                    user-select: none;
+                    -webkit-user-drag: none;
+                    -khtml-user-drag: none;
+                    -moz-user-drag: none;
+                    -o-user-drag: none;
+                    user-drag: none;
+                }
+            `}</style>
         </div>
     );
 }
