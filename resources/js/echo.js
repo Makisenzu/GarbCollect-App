@@ -3,11 +3,11 @@ import Pusher from 'pusher-js';
 
 window.Pusher = Pusher;
 
-console.log('Reverb Config:', {
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    host: import.meta.env.VITE_REVERB_HOST,
-    port: import.meta.env.VITE_REVERB_PORT
-});
+// console.log('Reverb Config:', {
+//     key: import.meta.env.VITE_REVERB_APP_KEY,
+//     host: import.meta.env.VITE_REVERB_HOST,
+//     port: import.meta.env.VITE_REVERB_PORT
+// });
 
 const getCsrfToken = () => {
     const metaTag = document.querySelector('meta[name="csrf-token"]');
@@ -16,7 +16,7 @@ const getCsrfToken = () => {
 
 const csrfToken = getCsrfToken();
 
-console.log('CSRF Token available:', !!csrfToken);
+// console.log('CSRF Token available:', !!csrfToken);
 
 const echoConfig = {
     broadcaster: 'reverb',
@@ -35,7 +35,7 @@ if (csrfToken) {
         },
     };
 } else {
-    console.warn('CSRF token not found. Private channels may not work.');
+    // console.warn('CSRF token not found. Private channels may not work.');
 }
 
 window.Echo = new Echo(echoConfig);

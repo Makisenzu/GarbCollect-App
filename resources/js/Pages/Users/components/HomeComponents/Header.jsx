@@ -77,12 +77,12 @@ export default function Header({ header, children }) {
                                             Reviews
                                         </Dropdown.Link>
 
-                                        <Dropdown.Link className="flex items-center hover:text-red-600"
+                                        {/* <Dropdown.Link className="flex items-center hover:text-red-600"
                                             href={route('dashboard')}
                                         >
                                             <IoCallOutline className="mr-2" size={16}/>
                                             Contact Us
-                                        </Dropdown.Link>
+                                        </Dropdown.Link> */}
 
                                     </Dropdown.Content>
                                 </Dropdown>
@@ -133,7 +133,7 @@ export default function Header({ header, children }) {
                             href={route('barangay.routes')}
                             active={route().current('barangay.routes')}
                         >
-                            <FaTruckMoving className="mr-3" size={20}/>Collection Route
+                            <FaTruckMoving className="mr-3" size={20}/>Routes
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink
@@ -156,9 +156,9 @@ export default function Header({ header, children }) {
                             <ResponsiveNavLink href={route('login')}>
                                 <MdOutlineReviews className="mr-3" size={20}/> Reviews
                             </ResponsiveNavLink>
-                            <ResponsiveNavLink href={route('dashboard')}>
+                            {/* <ResponsiveNavLink href={route('dashboard')}>
                                 <IoCallOutline className="mr-3" size={20}/> Contact Us
-                            </ResponsiveNavLink>
+                            </ResponsiveNavLink> */}
                         </div>
                     </div>
                 </div>
