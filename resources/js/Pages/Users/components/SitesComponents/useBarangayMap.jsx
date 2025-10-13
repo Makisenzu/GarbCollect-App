@@ -5,7 +5,6 @@ import Select from 'react-select';
 import axios from 'axios';
 import can from "@/images/can.png";
 
-//barangay colors
 const barangayColors = {
   'Alegria': '#FF5733',
   'Barangay 1': '#33FF57',
@@ -38,7 +37,6 @@ const barangayColors = {
   '_default': '#4F262A'
 };
 
-//file hook
 const useBarangayMap = (mapboxToken) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
@@ -51,7 +49,6 @@ const useBarangayMap = (mapboxToken) => {
   const [loadingSites, setLoadingSites] = useState(false);
   const markersRef = useRef([]);
 
-  // Route-related states from useTaskMap
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [routeInfo, setRouteInfo] = useState(null);
   const [optimizedSiteOrder, setOptimizedSiteOrder] = useState([]);
@@ -66,7 +63,6 @@ const useBarangayMap = (mapboxToken) => {
     label: barangay.baranggay_name
   }));
 
-  // Route calculation functions from useTaskMap
   const formatDuration = (minutes) => {
     if (minutes < 60) {
       return `${minutes} min`;
@@ -150,7 +146,6 @@ const useBarangayMap = (mapboxToken) => {
     if (!mapboxToken || sites.length < 1) return;
 
     try {
-      // Filter out sites without proper coordinates
       const validSites = sites.filter(site => 
         site.latitude && site.longitude && 
         !isNaN(parseFloat(site.latitude)) && !isNaN(parseFloat(site.longitude))
@@ -170,11 +165,9 @@ const useBarangayMap = (mapboxToken) => {
         setNearestSite(optimizedSites[0]);
       }
       
-      // Build coordinates array for Mapbox API
       let coordinates = [];
       
       if (station) {
-        // Start from station and visit all optimized sites
         coordinates = [
           `${parseFloat(station.longitude).toFixed(6)},${parseFloat(station.latitude).toFixed(6)}`,
           ...optimizedSites.map(site => 
@@ -182,13 +175,11 @@ const useBarangayMap = (mapboxToken) => {
           )
         ];
       } else {
-        // No station, just route between sites
         coordinates = optimizedSites.map(site => 
           `${parseFloat(site.longitude).toFixed(6)},${parseFloat(site.latitude).toFixed(6)}`
         );
       }
 
-      // For routes with multiple waypoints, use optimized=true for better routing
       const isMultiWaypoint = coordinates.length > 2;
       
       const response = await fetch(
@@ -220,7 +211,7 @@ const useBarangayMap = (mapboxToken) => {
             duration: durationMinutes,
             formattedDuration: formatDuration(durationMinutes),
             distance: distanceKm,
-            rawData: route // Store raw data for debugging
+            rawData: route
           });
           
           console.log(`Route calculated: ${durationMinutes}min, ${distanceKm}km, ${route.geometry.coordinates.length} points`);
@@ -232,7 +223,6 @@ const useBarangayMap = (mapboxToken) => {
       }
     } catch (error) {
       console.error('Error calculating route:', error);
-      // Fallback: create straight line between points
       const validSites = sites.filter(site => 
         site.latitude && site.longitude && 
         !isNaN(parseFloat(site.latitude)) && !isNaN(parseFloat(site.longitude))
@@ -244,7 +234,7 @@ const useBarangayMap = (mapboxToken) => {
         );
         setRouteCoordinates(fallbackRoute);
         setRouteInfo({
-          duration: Math.round(calculateRouteDistance(fallbackRoute) * 2), // Estimate 30km/h average
+          duration: Math.round(calculateRouteDistance(fallbackRoute) * 2), 
           formattedDuration: 'Estimated',
           distance: calculateRouteDistance(fallbackRoute).toFixed(1),
           isFallback: true
@@ -253,7 +243,6 @@ const useBarangayMap = (mapboxToken) => {
     }
   };
 
-  // Helper function to calculate approximate distance for fallback route
   const calculateRouteDistance = (coordinates) => {
     let totalDistance = 0;
     for (let i = 1; i < coordinates.length; i++) {
@@ -275,8 +264,7 @@ const useBarangayMap = (mapboxToken) => {
       });
       return;
     }
-  
-    // Remove existing route layers and markers
+
     [
       'route', 'route-glow', 'route-direction', 
       'route-start', 'route-end', 'route-waypoints'
@@ -290,7 +278,6 @@ const useBarangayMap = (mapboxToken) => {
       map.current.removeSource('route');
     }
   
-    // Remove marker sources if they exist
     [
       'route-start-marker', 'route-end-marker', 'route-waypoints-marker'
     ].forEach(sourceId => {
@@ -320,7 +307,6 @@ const useBarangayMap = (mapboxToken) => {
       const lineWidth = isMobile ? 6 : 5;
       const glowWidth = isMobile ? 14 : 12;
   
-      // Add glow effect
       map.current.addLayer({
         id: 'route-glow',
         type: 'line',
@@ -336,8 +322,7 @@ const useBarangayMap = (mapboxToken) => {
           'line-blur': 10
         }
       });
-  
-      // Main route line
+
       map.current.addLayer({
         id: 'route',
         type: 'line',
@@ -352,8 +337,7 @@ const useBarangayMap = (mapboxToken) => {
           'line-opacity': 0.9
         }
       });
-  
-      // Add direction arrows for better visualization
+
       map.current.addLayer({
         id: 'route-direction',
         type: 'symbol',
@@ -369,10 +353,8 @@ const useBarangayMap = (mapboxToken) => {
         }
       });
   
-      // Create waypoints for all sites including station and optimized sites
       const waypoints = [];
-      
-      // Add station as first waypoint if exists
+
       if (stationLocation && stationLocation.latitude && stationLocation.longitude) {
         waypoints.push({
           coordinates: [parseFloat(stationLocation.longitude), parseFloat(stationLocation.latitude)],
@@ -380,8 +362,7 @@ const useBarangayMap = (mapboxToken) => {
           sequence: 0
         });
       }
-      
-      // Add all optimized sites as waypoints
+
       optimizedSiteOrder.forEach((site, index) => {
         if (site.latitude && site.longitude) {
           waypoints.push({
@@ -392,7 +373,6 @@ const useBarangayMap = (mapboxToken) => {
         }
       });
   
-      // Add waypoints source
       if (waypoints.length > 0) {
         map.current.addSource('route-waypoints-marker', {
           type: 'geojson',
@@ -413,7 +393,6 @@ const useBarangayMap = (mapboxToken) => {
           }
         });
   
-        // Add waypoints layer with different colors based on type
         map.current.addLayer({
           id: 'route-waypoints',
           type: 'circle',
@@ -421,13 +400,13 @@ const useBarangayMap = (mapboxToken) => {
           paint: {
             'circle-radius': [
               'case',
-              ['==', ['get', 'type'], 'station'], isMobile ? 10 : 8, // Larger for station
-              isMobile ? 8 : 6 // Smaller for regular sites
+              ['==', ['get', 'type'], 'station'], isMobile ? 10 : 8,
+              isMobile ? 8 : 6 
             ],
             'circle-color': [
               'case',
-              ['==', ['get', 'type'], 'station'], '#dc2626', // Red for station
-              '#3b82f6' // Blue for regular sites
+              ['==', ['get', 'type'], 'station'], '#dc2626',
+              '#3b82f6'
             ],
             'circle-stroke-width': 2,
             'circle-stroke-color': '#ffffff'
@@ -436,9 +415,7 @@ const useBarangayMap = (mapboxToken) => {
 
       }
   
-      // Add start and end markers (optional - you can remove these if you prefer only the waypoints)
       if (routeCoordinates.length >= 2) {
-        // Start marker
         map.current.addSource('route-start-marker', {
           type: 'geojson',
           data: {
@@ -453,7 +430,6 @@ const useBarangayMap = (mapboxToken) => {
           }
         });
   
-        // End marker
         map.current.addSource('route-end-marker', {
           type: 'geojson',
           data: {
@@ -500,7 +476,6 @@ const useBarangayMap = (mapboxToken) => {
     } catch (error) {
       console.error('Error adding route layer:', error);
       
-      // Retry with delay
       setTimeout(() => {
         addRouteLayer();
       }, 500);
@@ -511,13 +486,11 @@ const useBarangayMap = (mapboxToken) => {
     if (!map.current || routeCoordinates.length === 0 || activeSites.length === 0) return;
 
     const bounds = new mapboxgl.LngLatBounds();
-    
-    // Extend bounds to include all route coordinates
+
     routeCoordinates.forEach(coord => {
       bounds.extend(coord);
     });
 
-    // Also include all site markers
     if (stationLocation) {
       bounds.extend([parseFloat(stationLocation.longitude), parseFloat(stationLocation.latitude)]);
     }
@@ -536,14 +509,13 @@ const useBarangayMap = (mapboxToken) => {
         duration: 1500,
         essential: true,
         maxZoom: isMobile ? 16 : 15,
-        offset: [0, isMobile ? -50 : 0] // Adjust for mobile controls
+        offset: [0, isMobile ? -50 : 0]
       });
     } catch (error) {
       console.error('Error fitting map to bounds:', error);
     }
   };
 
-  //mobile responsiveness
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
@@ -555,7 +527,6 @@ const useBarangayMap = (mapboxToken) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  //fetch barangays
   useEffect(() => {
     const fetchBarangays = async () => {
       setLoadingBarangays(true);
@@ -581,15 +552,12 @@ const useBarangayMap = (mapboxToken) => {
 
     clearMarkers();
 
-    // Find station and separate it from regular sites
     const station = sites.find(site => site.type === 'station');
     const regularSites = sites.filter(site => site.type !== 'station');
     
-    // Optimize site order for sequencing
     const optimizedSites = station ? optimizeSiteOrderFromStation(station, regularSites) : regularSites;
     setOptimizedSiteOrder(optimizedSites);
 
-    // station marker
     if (station && station.latitude && station.longitude) {
       const stationEl = document.createElement('div');
       stationEl.className = 'custom-marker animate-pulse';
@@ -618,7 +586,6 @@ const useBarangayMap = (mapboxToken) => {
       });
     }
 
-    // sequence marker
     optimizedSites.forEach((site, index) => {
       if (site.latitude && site.longitude) {
         const sequenceNumber = index + 1;
@@ -666,7 +633,6 @@ const useBarangayMap = (mapboxToken) => {
       }
     });
 
-    // show all markers
     if (sites.length > 0 && sites.some(site => site.latitude && site.longitude)) {
       const bounds = new mapboxgl.LngLatBounds();
       
@@ -684,7 +650,6 @@ const useBarangayMap = (mapboxToken) => {
     }
   };
 
-  // fetch active site for selected barangay
   const fetchActiveSites = async (barangayId) => {
     if (!barangayId) {
       setActiveSites([]);
@@ -702,7 +667,6 @@ const useBarangayMap = (mapboxToken) => {
         setActiveSites(sites);
         console.log('Active sites:', sites);
         
-        //get station
         const station = sites.find(site => site.type === 'station');
         if (station) {
           setStationLocation(station);
@@ -710,7 +674,6 @@ const useBarangayMap = (mapboxToken) => {
         
         addMarkersToMap(sites);
         
-        // calculate route
         if (sites.length >= 1) {
           await calculateOptimalRoute(sites, barangayId, station);
         }
@@ -738,7 +701,6 @@ const useBarangayMap = (mapboxToken) => {
     }
   }, [routeCoordinates]);
 
-  //mapbox 
   useEffect(() => {
     if (!mapboxToken) {
       setError('Mapbox API key is missing');
@@ -798,7 +760,6 @@ const useBarangayMap = (mapboxToken) => {
     };
   }, [mapboxToken]);
 
-  //selecting barangay
   const handleBarangaySelect = async (selectedOption) => {
     const selectedValue = selectedOption?.value || '';
     const selectedBarangayName = selectedOption?.label || 'None';
@@ -818,7 +779,7 @@ const useBarangayMap = (mapboxToken) => {
     }
   };
 
-  //info panel
+
   const renderSitesInfo = () => {
     if (!selectedBarangay) return null;
 
@@ -840,8 +801,7 @@ const useBarangayMap = (mapboxToken) => {
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
             )}
           </div>
-          
-          {/* route info */}
+
           {routeInfo && (
             <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
               <div className="text-xs text-blue-800">
@@ -973,7 +933,6 @@ const useBarangayMap = (mapboxToken) => {
     fetchActiveSites,
 
 
-    //routes
     routeCoordinates,
     routeInfo,
     optimizedSiteOrder,
