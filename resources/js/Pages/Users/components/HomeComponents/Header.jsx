@@ -22,7 +22,6 @@ import { BsFillTrash3Fill } from "react-icons/bs";
 export default function Header({ header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
-    // Prevent drag behavior
     const preventDrag = (e) => {
         e.preventDefault();
         return false;
@@ -212,7 +211,6 @@ export default function Header({ header, children }) {
                 </main>
             </div>
 
-            {/* Add inline styles for immediate effect */}
             <style jsx>{`
                 .prevent-drag {
                     -webkit-user-select: none;
