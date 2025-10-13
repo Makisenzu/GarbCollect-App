@@ -64,7 +64,7 @@ export default function Header({ header, children }) {
                                         </Dropdown.Link>
 
                                         <Dropdown.Link className="flex items-center hover:text-pink-600"
-                                            href={route('dashboard')}
+                                            href={route('site.location')}
                                         >
                                             <CiTrash className="mr-2" size={16}/>
                                             Throw Garbage
@@ -144,8 +144,8 @@ export default function Header({ header, children }) {
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
+                            href={route('site.location')}
+                            active={route().current('site.location')}
                         >
                             <BsFillTrash3Fill className="mr-3" size={20} />Garbage Site
                         </ResponsiveNavLink>

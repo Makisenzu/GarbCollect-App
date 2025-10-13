@@ -35,7 +35,7 @@ class UserController extends Controller
 
     public function showMyLocation() {
         $sites = Site::with(['purok.baranggay'])->get();
-        return Inertia::render('User/components/ThrowGarbageComponents/MyLocation', [
+        return Inertia::render('Users/components/ThrowGarbageComponents/MyLocation', [
             'mapboxToken' => env('MAPBOX_ACCESS_TOKEN'),
             'sites' => $sites
         ]);
