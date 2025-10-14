@@ -10,6 +10,8 @@ use App\Models\Baranggay;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
+use function Termwind\render;
+
 class UserController extends Controller
 {
     /**
@@ -95,6 +97,21 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get schedule for that barangay',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function renderReview(){
+        return Inertia::render('Users/components/ReviewsComponents/ReviewDashboard');
+    }
+    public function getReviews () {
+        try {
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get reviews',
                 'error' => $e->getMessage()
             ]);
         }

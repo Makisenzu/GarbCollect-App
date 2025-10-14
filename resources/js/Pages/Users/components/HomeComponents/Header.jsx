@@ -97,7 +97,7 @@ export default function Header({ header, children }) {
 
                                         <Dropdown.Link 
                                             className="flex items-center hover:text-yellow-600 prevent-drag"
-                                            href={route('dashboard')}
+                                            href={route('show.reviews')}
                                             onDragStart={preventDrag}
                                         >
                                             <MdOutlineReviews className="mr-2" size={16} />
