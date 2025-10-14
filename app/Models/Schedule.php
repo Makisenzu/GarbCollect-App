@@ -39,4 +39,8 @@ class Schedule extends Model
         }
         return $value;
     }
+
+    public function reports () {
+        return $this->hasMany(Report::class);
+    }
 }
