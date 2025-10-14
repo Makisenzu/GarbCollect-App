@@ -9,6 +9,9 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
   const mapContainer = useRef(null);
   const map = useRef(null);
   const siteMarkersRef = useRef([]);
+  const locationWatcherRef = useRef(null);
+  const currentLocationMarkerRef = useRef(null);
+  const offlineRouteCache = useRef(new Map());
   
   const [cssLoaded, setCssLoaded] = useState(false);
   const [siteLocations, setSiteLocations] = useState([]);
@@ -22,11 +25,16 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
   const [mapError, setMapError] = useState(null);
   const [customStyleLoaded, setCustomStyleLoaded] = useState(false);
   const [aiOptimizedRoute, setAiOptimizedRoute] = useState(null);
-  const [nearestSite, setNearestSite] = useState(null);
+  const [nearestSiteToStation, setNearestSiteToStation] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [optimizedSiteOrder, setOptimizedSiteOrder] = useState([]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [lastLocationUpdate, setLastLocationUpdate] = useState(null);
+  const [completedSites, setCompletedSites] = useState(new Set());
+  const [currentSiteIndex, setCurrentSiteIndex] = useState(0);
 
   const barangayColors = {
     'Alegria': '#FF5733',
@@ -58,6 +66,196 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     'Tagapua': '#2F4F4F',
     'San Francisco': '#FFE659',
     '_default': '#4F262A'
+  };
+
+  // Online/offline detection
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      console.log('Connection restored');
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      console.log('Connection lost - switching to offline mode');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Cache management for offline use
+  const cacheRoute = (key, routeData) => {
+    const cacheEntry = {
+      data: routeData,
+      timestamp: Date.now(),
+      ttl: 24 * 60 * 60 * 1000 // 24 hours
+    };
+    offlineRouteCache.current.set(key, cacheEntry);
+    
+    try {
+      const cache = JSON.parse(localStorage.getItem('routeCache') || '{}');
+      cache[key] = cacheEntry;
+      localStorage.setItem('routeCache', JSON.stringify(cache));
+    } catch (e) {
+      console.warn('Failed to cache route in localStorage:', e);
+    }
+  };
+
+  const getCachedRoute = (key) => {
+    // Try memory cache first
+    const memoryCache = offlineRouteCache.current.get(key);
+    if (memoryCache && (Date.now() - memoryCache.timestamp) < memoryCache.ttl) {
+      return memoryCache.data;
+    }
+
+    // Try localStorage cache
+    try {
+      const cache = JSON.parse(localStorage.getItem('routeCache') || '{}');
+      const storedCache = cache[key];
+      if (storedCache && (Date.now() - storedCache.timestamp) < storedCache.ttl) {
+        offlineRouteCache.current.set(key, storedCache);
+        return storedCache.data;
+      }
+    } catch (e) {
+      console.warn('Failed to read route from cache:', e);
+    }
+
+    return null;
+  };
+
+  // NEW: Check if user has reached a site
+  const checkSiteProximity = (currentPos, sites) => {
+    if (!currentPos || sites.length === 0) return;
+
+    const [longitude, latitude] = currentPos;
+    const PROXIMITY_THRESHOLD = 0.05; // Approximately 50 meters in degrees
+
+    sites.forEach((site, index) => {
+      if (completedSites.has(site.id)) return;
+
+      const siteLongitude = parseFloat(site.longitude);
+      const siteLatitude = parseFloat(site.latitude);
+      
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        siteLatitude,
+        siteLongitude
+      );
+
+      // If within 50 meters, mark as completed
+      if (distance < 0.05) {
+        markSiteAsCompleted(site, index);
+      }
+    });
+  };
+
+  // NEW: Mark site as completed and update visual presentation
+  const markSiteAsCompleted = (site, index) => {
+    console.log(`Site reached: ${site.site_name}`);
+    
+    setCompletedSites(prev => new Set(prev).add(site.id));
+    
+    // Update current site index for next site in sequence
+    if (optimizedSiteOrder.length > 0) {
+      const currentIndex = optimizedSiteOrder.findIndex(s => s.id === site.id);
+      if (currentIndex !== -1 && currentIndex < optimizedSiteOrder.length - 1) {
+        setCurrentSiteIndex(currentIndex + 1);
+        
+        // Calculate route to next site
+        const nextSite = optimizedSiteOrder[currentIndex + 1];
+        if (currentLocation) {
+          calculateRouteToNextSite(currentLocation, nextSite);
+        }
+      }
+    }
+    
+    updateSiteMarkers();
+    
+    if (onTaskComplete) {
+      onTaskComplete(site);
+    }
+    
+    showCompletionNotification(site.site_name);
+  };
+
+  // NEW: Calculate route to next site in sequence
+  const calculateRouteToNextSite = async (currentPos, nextSite) => {
+    if (!currentPos || !nextSite || !mapboxKey) return;
+
+    try {
+      const coordinatesString = `${currentPos[0]},${currentPos[1]};${parseFloat(nextSite.longitude)},${parseFloat(nextSite.latitude)}`;
+      
+      console.log(`Calculating route to next site: ${nextSite.site_name}`);
+      
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesString}?` +
+        `access_token=${mapboxKey}` +
+        `&geometries=geojson` +
+        `&overview=full` +
+        `&steps=true` +
+        `&alternatives=false`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const durationMinutes = Math.round(route.duration / 60);
+        
+        setRouteCoordinates(route.geometry.coordinates);
+        setRouteInfo({
+          duration: durationMinutes,
+          formattedDuration: formatDuration(durationMinutes),
+          distance: (route.distance / 1000).toFixed(1),
+          toSite: nextSite.site_name
+        });
+
+        setTimeout(() => {
+          if (map.current && route.geometry.coordinates.length > 0) {
+            addRouteLayer();
+          }
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error calculating route to next site:', error);
+    }
+  };
+
+  // NEW: Show completion notification
+  const showCompletionNotification = (siteName) => {
+    console.log(`🎉 Site completed: ${siteName}`);
+    
+    if (isMobile) {
+      alert(`✅ Site completed: ${siteName}`);
+    } else {
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.innerHTML = `✅ ${siteName} completed!`;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 3000);
+    }
+  };
+
+  // NEW: Update site markers with completion status
+  const updateSiteMarkers = () => {
+    clearSiteMarkers();
+    addSiteMarkers();
   };
 
   const formatDuration = (minutes) => {
@@ -128,6 +326,149 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     loadMapboxCSS();
   }, []);
 
+  // Find the site that is nearest to the station
+  const findNearestSiteToStation = (station, sites) => {
+    if (!station || sites.length === 0) return null;
+
+    let nearestSite = null;
+    let minDistance = Infinity;
+
+    sites.forEach(site => {
+      if (site.longitude && site.latitude) {
+        const distance = calculateDistance(
+          parseFloat(station.latitude), parseFloat(station.longitude),
+          parseFloat(site.latitude), parseFloat(site.longitude)
+        );
+        
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestSite = site;
+        }
+      }
+    });
+
+    return nearestSite;
+  };
+
+  // Calculate route from current location to the site nearest to station
+  const calculateRouteToNearestSiteFromStation = async (currentPos, nearestSiteToStation) => {
+    if (!currentPos || !nearestSiteToStation || !mapboxKey) {
+      console.log('Missing data for route calculation:', {
+        currentPos, 
+        nearestSiteToStation, 
+        mapboxKey: !!mapboxKey
+      });
+      return;
+    }
+
+    try {
+      const coordinatesString = `${currentPos[0]},${currentPos[1]};${parseFloat(nearestSiteToStation.longitude)},${parseFloat(nearestSiteToStation.latitude)}`;
+      
+      console.log('Calculating route from current location to nearest site from station:', coordinatesString);
+      
+      const cacheKey = `current_to_nearest_from_station_${coordinatesString}`;
+      const cachedRoute = getCachedRoute(cacheKey);
+      
+      if (cachedRoute && !isOnline) {
+        console.log('Using cached route to nearest site from station (offline mode)');
+        setRouteCoordinates(cachedRoute.route);
+        setRouteInfo({
+          duration: cachedRoute.duration,
+          formattedDuration: formatDuration(cachedRoute.duration),
+          distance: cachedRoute.distance,
+          toSite: nearestSiteToStation.site_name
+        });
+        
+        setTimeout(() => {
+          if (map.current) {
+            addRouteLayer();
+          }
+        }, 100);
+        
+        return cachedRoute;
+      }
+
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesString}?` +
+        `access_token=${mapboxKey}` +
+        `&geometries=geojson` +
+        `&overview=full` +
+        `&steps=true` +
+        `&alternatives=false`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const durationMinutes = Math.round(route.duration / 60);
+        
+        const routeInfo = {
+          route: route.geometry.coordinates,
+          duration: durationMinutes,
+          formattedDuration: formatDuration(durationMinutes),
+          distance: (route.distance / 1000).toFixed(1),
+          toSite: nearestSiteToStation.site_name
+        };
+
+        setRouteCoordinates(route.geometry.coordinates);
+        setRouteInfo({
+          duration: durationMinutes,
+          formattedDuration: formatDuration(durationMinutes),
+          distance: (route.distance / 1000).toFixed(1),
+          toSite: nearestSiteToStation.site_name
+        });
+
+        cacheRoute(cacheKey, routeInfo);
+        
+        console.log(`Route calculated: Your location → ${nearestSiteToStation.site_name} (nearest to station)`);
+        
+        setTimeout(() => {
+          if (map.current && route.geometry.coordinates.length > 0) {
+            addRouteLayer();
+          }
+        }, 500);
+
+        return routeInfo;
+      }
+    } catch (error) {
+      console.error('Error calculating route to nearest site from station:', error);
+      
+      const fallbackKey = `current_to_nearest_from_station_${nearestSiteToStation.id}`;
+      const cachedRoute = getCachedRoute(fallbackKey);
+      
+      if (cachedRoute) {
+        console.log('Using cached route as fallback');
+        setRouteCoordinates(cachedRoute.route);
+        setRouteInfo({
+          duration: cachedRoute.duration,
+          formattedDuration: formatDuration(cachedRoute.duration),
+          distance: cachedRoute.distance,
+          toSite: nearestSiteToStation.site_name
+        });
+        
+        setTimeout(() => {
+          if (map.current) {
+            addRouteLayer();
+          }
+        }, 100);
+      }
+    }
+    return null;
+  };
+
+  // Effect to trigger route calculation when all data is available
+  useEffect(() => {
+    if (currentLocation && nearestSiteToStation && mapInitialized) {
+      console.log('All data available, calculating route automatically');
+      calculateRouteToNearestSiteFromStation(currentLocation, nearestSiteToStation);
+    }
+  }, [currentLocation, nearestSiteToStation, mapInitialized]);
+
   useEffect(() => {
     const fetchScheduleAndSites = async () => {
       if (!scheduleId) return;
@@ -153,17 +494,17 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
               });
               
               if (regularSites.length > 0) {
+                const nearestToStation = findNearestSiteToStation(station, regularSites);
+                setNearestSiteToStation(nearestToStation);
+                console.log('Nearest site to station found:', nearestToStation?.site_name);
+                
                 const optimizedOrder = optimizeSiteOrderFromStation(station, regularSites);
                 setOptimizedSiteOrder(optimizedOrder);
-                setNearestSite(optimizedOrder[0]);
+                setCurrentSiteIndex(0);
               }
             }
             
             setSiteLocations(regularSites);
-            
-            if (regularSites.length >= 1) {
-              await calculateOptimalRoute(regularSites, schedule.barangay_id, station);
-            }
           }
         }
       } catch (error) {
@@ -181,7 +522,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       return;
     }
 
-    
     try {
       mapboxgl.accessToken = mapboxKey;
 
@@ -200,19 +540,29 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         touchZoomRotate: true,
         touchPitch: false,
         cooperativeGestures: isMobile,
+        failIfMajorPerformanceCaveat: false,
+        preserveDrawingBuffer: true
       });
 
       map.current.on('load', () => {
         setMapInitialized(true);
         setCustomStyleLoaded(true);
+        console.log('Map loaded and initialized');
+        
+        startRealtimeLocationTracking();
       });
 
       map.current.on('error', (e) => {
         console.error('Map error:', e);
         setMapError('Failed to load map: ' + e.error?.message);
+        
+        if (isOnline) {
+          console.warn('Map loading failed but continuing in limited mode');
+        }
       });
 
       map.current.on('idle', () => {
+        // Map is ready and tiles are loaded
       });
 
     } catch (error) {
@@ -221,6 +571,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     }
 
     return () => {
+      stopRealtimeLocationTracking();
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -230,9 +581,119 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     };
   }, [mapboxKey, cssLoaded, isMobile]);
 
+  // Real-time location tracking
+  const startRealtimeLocationTracking = () => {
+    if (!navigator.geolocation) {
+      console.error('Geolocation is not supported by this browser');
+      return;
+    }
+
+    stopRealtimeLocationTracking();
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    };
+
+    console.log('Starting real-time location tracking...');
+
+    locationWatcherRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        const currentPos = [longitude, latitude];
+        
+        console.log('Location updated:', currentPos);
+        setCurrentLocation(currentPos);
+        setLocationAccuracy(accuracy);
+        setLastLocationUpdate(new Date());
+        
+        updateCurrentLocationMarker(currentPos);
+        
+        if (siteLocations.length > 0) {
+          checkSiteProximity(currentPos, siteLocations);
+        }
+        
+        if (!map.current?.hasUserInteracted()) {
+          map.current?.flyTo({
+            center: currentPos,
+            zoom: isMobile ? 16 : 15,
+            essential: true,
+            duration: 1000
+          });
+        }
+      },
+      (error) => {
+        console.error('Error in real-time location tracking:', error);
+        handleLocationError(error);
+      },
+      options
+    );
+
+    if (map.current) {
+      map.current.hasUserInteracted = () => false;
+      map.current.on('movestart', () => {
+        map.current.hasUserInteracted = () => true;
+      });
+    }
+  };
+
+  const stopRealtimeLocationTracking = () => {
+    if (locationWatcherRef.current !== null) {
+      navigator.geolocation.clearWatch(locationWatcherRef.current);
+      locationWatcherRef.current = null;
+    }
+  };
+
+  const updateCurrentLocationMarker = (coordinates) => {
+    if (!map.current) return;
+
+    if (currentLocationMarkerRef.current) {
+      currentLocationMarkerRef.current.remove();
+    }
+
+    const markerElement = document.createElement('div');
+    markerElement.className = 'current-location-marker';
+    const markerSize = isMobile ? 'w-8 h-8' : 'w-6 h-6';
+    markerElement.innerHTML = `
+      <div class="relative">
+        <div class="${markerSize} bg-blue-600 border-2 border-white rounded-full shadow-lg z-50"></div>
+        <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
+      </div>
+    `;
+
+    currentLocationMarkerRef.current = new mapboxgl.Marker({
+      element: markerElement,
+      draggable: false
+    })
+    .setLngLat(coordinates)
+    .addTo(map.current);
+  };
+
+  const handleLocationError = (error) => {
+    let errorMessage = 'Location tracking error: ';
+    
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        errorMessage += 'Location access denied. Please enable location permissions.';
+        break;
+      case error.POSITION_UNAVAILABLE:
+        errorMessage += 'Location unavailable. Using last known position.';
+        break;
+      case error.TIMEOUT:
+        errorMessage += 'Location request timeout. Retrying...';
+        setTimeout(startRealtimeLocationTracking, 5000);
+        break;
+      default:
+        errorMessage += 'Unknown location error.';
+        break;
+    }
+    
+    console.warn(errorMessage);
+  };
+
   useEffect(() => {
     if (mapInitialized && customStyleLoaded && siteLocations.length > 0) {
-      
       clearSiteMarkers();
       addSiteMarkers();
       
@@ -242,7 +703,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         }, 300);
       }
     }
-  }, [mapInitialized, customStyleLoaded, siteLocations, routeCoordinates, optimizedSiteOrder]);
+  }, [mapInitialized, customStyleLoaded, siteLocations, routeCoordinates, optimizedSiteOrder, nearestSiteToStation, completedSites]);
 
   const optimizeSiteOrderFromStation = (station, sites) => {
     if (!station || sites.length === 0) return sites;
@@ -294,7 +755,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       }
     }
 
-
     return optimizedOrder;
   };
 
@@ -302,12 +762,11 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     if (!station || sites.length === 0) return null;
 
     try {
-      
       const optimizedOrder = optimizeSiteOrderFromStation(station, sites);
       setOptimizedSiteOrder(optimizedOrder);
       
       const nearest = optimizedOrder[0];
-      setNearestSite(nearest);
+      setNearestSiteToStation(nearest);
 
       const allCoordinates = [
         [parseFloat(station.longitude), parseFloat(station.latitude)],
@@ -315,12 +774,30 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       ];
 
       const coordinatesString = allCoordinates.map(coord => `${coord[0]},${coord[1]}`).join(';');
+      
+      const cacheKey = `route_${coordinatesString}`;
+      const cachedRoute = getCachedRoute(cacheKey);
+      
+      if (cachedRoute && !isOnline) {
+        console.log('Using cached route (offline mode)');
+        const aiResult = {
+          ...cachedRoute,
+          isCached: true
+        };
+        setAiOptimizedRoute(aiResult);
+        setRouteCoordinates(cachedRoute.route);
+        return aiResult;
+      }
 
       const routeResponse = await fetch(
         `https://api.mapbox.com/directions/v5/mapbox/driving/` +
         `${coordinatesString}?` +
         `access_token=${mapboxKey}&geometries=geojson&overview=full&steps=true`
       );
+
+      if (!routeResponse.ok) {
+        throw new Error(`HTTP ${routeResponse.status}: ${routeResponse.statusText}`);
+      }
 
       const routeData = await routeResponse.json();
 
@@ -337,10 +814,13 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           formattedDuration: formatDuration(durationMinutes),
           distance: (optimalRoute.distance / 1000).toFixed(1),
           trafficConditions: analyzeTrafficConditions(optimalRoute),
-          recommendation: generateRecommendation(optimalRoute, nearest, durationMinutes, optimizedOrder.length)
+          recommendation: generateRecommendation(optimalRoute, nearest, durationMinutes, optimizedOrder.length),
+          isCached: false
         };
 
         setAiOptimizedRoute(aiResult);
+        
+        cacheRoute(cacheKey, aiResult);
         
         if (isMobile) {
           setShowAIPanel(true);
@@ -350,6 +830,14 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       }
     } catch (error) {
       console.error('AI route analysis from station failed:', error);
+      
+      const fallbackRoute = getCachedRoute(`route_station_${station.id}`);
+      if (fallbackRoute) {
+        console.log('Using cached route as fallback');
+        setAiOptimizedRoute({ ...fallbackRoute, isCached: true });
+        setRouteCoordinates(fallbackRoute.route);
+        return fallbackRoute;
+      }
     }
     return null;
   };
@@ -420,7 +908,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
       setOptimizedSiteOrder(optimizedSites);
       if (optimizedSites.length > 0) {
-        setNearestSite(optimizedSites[0]);
+        setNearestSiteToStation(optimizedSites[0]);
       }
       
       const coordinates = station 
@@ -429,6 +917,21 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
             ...optimizedSites.map(site => `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`)
           ].join(';')
         : optimizedSites.map(site => `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`).join(';');
+
+      const cacheKey = `route_${coordinates}`;
+      const cachedRoute = getCachedRoute(cacheKey);
+      
+      if (cachedRoute && !isOnline) {
+        console.log('Using cached route data (offline mode)');
+        setRouteCoordinates(cachedRoute.route);
+        setRouteInfo({
+          duration: cachedRoute.duration,
+          formattedDuration: formatDuration(cachedRoute.duration),
+          distance: cachedRoute.distance,
+          toSite: cachedRoute.toSite
+        });
+        return;
+      }
 
       const response = await fetch(
         `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?` +
@@ -439,6 +942,10 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         `&alternatives=false` +
         `&continue_straight=false`
       );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
       const data = await response.json();
 
@@ -452,15 +959,38 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         setRouteInfo({
           duration: durationMinutes,
           formattedDuration: formatDuration(durationMinutes),
-          distance: (fastestRoute.distance / 1000).toFixed(1)
+          distance: (fastestRoute.distance / 1000).toFixed(1),
+          toSite: optimizedSites[0]?.site_name
+        });
+
+        cacheRoute(cacheKey, {
+          route: fastestRoute.geometry.coordinates,
+          duration: durationMinutes,
+          distance: (fastestRoute.distance / 1000).toFixed(1),
+          toSite: optimizedSites[0]?.site_name
         });
       }
     } catch (error) {
       console.error('Error calculating route:', error);
-      const fallbackRoute = sites.map(site => 
-        [parseFloat(site.longitude), parseFloat(site.latitude)]
-      );
-      setRouteCoordinates(fallbackRoute);
+      
+      const fallbackKey = `route_${sites.map(s => `${s.longitude},${s.latitude}`).join(';')}`;
+      const cachedRoute = getCachedRoute(fallbackKey);
+      
+      if (cachedRoute) {
+        console.log('Using cached route as fallback');
+        setRouteCoordinates(cachedRoute.route);
+        setRouteInfo({
+          duration: cachedRoute.duration,
+          formattedDuration: formatDuration(cachedRoute.duration),
+          distance: cachedRoute.distance,
+          toSite: cachedRoute.toSite
+        });
+      } else {
+        const fallbackRoute = sites.map(site => 
+          [parseFloat(site.longitude), parseFloat(site.latitude)]
+        );
+        setRouteCoordinates(fallbackRoute);
+      }
     }
   };
 
@@ -523,13 +1053,11 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           const { latitude, longitude, accuracy } = position.coords;
           const currentPos = [longitude, latitude];
           
-          
           setCurrentLocation(currentPos);
+          setLocationAccuracy(accuracy);
+          setLastLocationUpdate(new Date());
           
-          const existingMarker = document.querySelector('.current-location-marker');
-          if (existingMarker) existingMarker.remove();
-          
-          addCurrentLocationMarker(currentPos);
+          updateCurrentLocationMarker(currentPos);
 
           if (stationLocation && siteLocations.length > 0) {
             const aiResult = await analyzeAndOptimizeRouteFromStation(stationLocation, siteLocations);
@@ -538,7 +1066,8 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
               setRouteCoordinates(aiResult.route);
               setRouteInfo({
                 duration: aiResult.duration,
-                distance: aiResult.distance
+                distance: aiResult.distance,
+                toSite: aiResult.nearestSite?.site_name
               });
               
               setTimeout(() => {
@@ -563,25 +1092,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         (error) => {
           console.error('Error getting location:', error);
           setLoading(false);
-          
-          let errorMessage = 'Unable to get your location. ';
-          
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage += 'Please allow location access in your browser settings.';
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage += 'Location information is unavailable.';
-              break;
-            case error.TIMEOUT:
-              errorMessage += 'Location request timed out. Try moving to an area with better signal.';
-              break;
-            default:
-              errorMessage += 'An unknown error occurred.';
-              break;
-          }
-          
-          alert(errorMessage);
+          handleLocationError(error);
         },
         {
           enableHighAccuracy: true,
@@ -610,16 +1121,17 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
   const addRouteLayer = () => {
     if (!map.current || routeCoordinates.length === 0) {
+      console.log('Cannot add route layer - missing map or route coordinates');
       return;
     }
 
     if (!map.current.isStyleLoaded()) {
+      console.log('Map style not loaded yet, waiting...');
       map.current.once('styledata', () => {
         setTimeout(addRouteLayer, 100);
       });
       return;
     }
-
 
     ['route', 'route-glow', 'route-direction'].forEach(layerId => {
       if (map.current.getLayer(layerId)) {
@@ -632,6 +1144,8 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     }
 
     try {
+      console.log('Adding route layer to map with coordinates:', routeCoordinates.length);
+      
       map.current.addSource('route', {
         type: 'geojson',
         data: {
@@ -681,6 +1195,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         }
       });
 
+      console.log('Route layer added successfully');
 
       setTimeout(() => {
         fitMapToRoute();
@@ -714,6 +1229,10 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       bounds.extend(coord);
     });
 
+    if (currentLocation) {
+      bounds.extend(currentLocation);
+    }
+
     const padding = isMobile ? 20 : 50;
 
     try {
@@ -744,7 +1263,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     
     const sitesToDisplay = optimizedSiteOrder.length > 0 ? optimizedSiteOrder : siteLocations;
     
-    
     sitesToDisplay.forEach((site, index) => {
       if (site.longitude && site.latitude) {
         const marker = addMarker(
@@ -773,8 +1291,11 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     const barangayName = siteData?.purok?.baranggay?.baranggay_name;
     const borderColor = barangayColors[barangayName] || barangayColors['_default'];
     
-    const isNearest = nearestSite && nearestSite.id === siteData.id;
+    const isNearestToStation = nearestSiteToStation && nearestSiteToStation.id === siteData.id;
     const isStation = siteData.type === 'station';
+    const isCompleted = completedSites.has(siteData.id);
+    const isCurrent = optimizedSiteOrder[currentSiteIndex]?.id === siteData.id;
+    
     const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
     const imageSize = isMobile ? 'w-10 h-10' : 'w-8 h-8';
   
@@ -784,25 +1305,42 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     let sequenceBadge = '';
     if (activeSchedule) {
       const badgeSize = isMobile ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
-      const badgeColor = isStation ? 'bg-red-500' : 'bg-blue-500';
+      let badgeColor = 'bg-blue-500';
+      
+      if (isCompleted) {
+        badgeColor = 'bg-green-500';
+      } else if (isCurrent) {
+        badgeColor = 'bg-yellow-500';
+      } else if (isStation) {
+        badgeColor = 'bg-red-500';
+      }
+      
       sequenceBadge = `
         <div class="absolute -top-2 -right-2 ${badgeColor} text-white rounded-full ${badgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white z-20">
-          ${isStation ? '🏠' : sequence}
+          ${isStation ? '🏠' : (isCompleted ? '✓' : sequence)}
         </div>
       `;
     }
   
+    const opacityClass = isCompleted ? 'opacity-50' : 'opacity-100';
+    const completedClass = isCompleted ? 'grayscale' : '';
+    const currentClass = isCurrent && !isCompleted ? 'ring-4 ring-yellow-500 ring-opacity-70' : '';
+    const nearestClass = isNearestToStation && !isCompleted && !isCurrent ? 'ring-4 ring-green-500 ring-opacity-70' : '';
+  
     markerElement.innerHTML = `
-      <div class="relative">
+      <div class="relative ${opacityClass}">
         ${sequenceBadge}
-        <div class="${markerSize} rounded-full border-3 flex items-center justify-center overflow-hidden shadow-lg bg-white relative ${isNearest && !isStation ? 'ring-4 ring-green-500 ring-opacity-70' : ''}" 
+        <div class="${markerSize} rounded-full border-3 flex items-center justify-center overflow-hidden shadow-lg bg-white relative ${currentClass} ${nearestClass} ${completedClass}" 
              style="border-color: ${borderColor};">
-          ${isNearest && !isStation ? `
+          ${isCurrent && !isCompleted ? `
+            <div class="absolute -inset-3 rounded-full border-4 border-yellow-500 border-opacity-70 animate-pulse pointer-events-none z-10"></div>
+          ` : ''}
+          ${isNearestToStation && !isCompleted && !isCurrent ? `
             <div class="absolute -inset-3 rounded-full border-4 border-green-500 border-opacity-70 animate-pulse pointer-events-none z-10"></div>
           ` : ''}
           <img src="${can}" 
                alt="${siteData.site_name}" 
-               class="${imageSize} object-cover rounded-full z-0"
+               class="${imageSize} object-cover rounded-full z-0 ${completedClass}"
                onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'${imageSize} rounded-full flex items-center justify-center text-white text-xs font-bold bg-white\\' style=\\'border: 2px solid ${borderColor}; color: ${borderColor}\\'>${siteData.site_name?.charAt(0) || 'S'}</div>'">
         </div>
       </div>
@@ -860,26 +1398,22 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     return { element: el, root };
   };
 
-  const addCurrentLocationMarker = (coordinates) => {
-    const existingMarker = document.querySelector('.current-location-marker');
-    if (existingMarker) existingMarker.remove();
+  // Manual location update for testing/fallback
+  const updateLocationManually = (latitude, longitude) => {
+    const currentPos = [longitude, latitude];
+    setCurrentLocation(currentPos);
+    updateCurrentLocationMarker(currentPos);
+    
+    if (nearestSiteToStation) {
+      calculateRouteToNearestSiteFromStation(currentPos, nearestSiteToStation);
+    }
+  };
 
-    const markerElement = document.createElement('div');
-    markerElement.className = 'current-location-marker';
-    const markerSize = isMobile ? 'w-8 h-8' : 'w-6 h-6';
-    markerElement.innerHTML = `
-      <div class="relative">
-        <div class="${markerSize} bg-blue-600 border-2 border-white rounded-full shadow-lg"></div>
-        <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
-      </div>
-    `;
-
-    new mapboxgl.Marker({
-      element: markerElement,
-      draggable: false
-    })
-    .setLngLat(coordinates)
-    .addTo(map.current);
+  // NEW: Reset completed sites (useful for testing)
+  const resetCompletedSites = () => {
+    setCompletedSites(new Set());
+    setCurrentSiteIndex(0);
+    updateSiteMarkers();
   };
 
   return {
@@ -898,16 +1432,26 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     mapError,
     customStyleLoaded,
     aiOptimizedRoute,
-    nearestSite,
+    nearestSiteToStation,
     isMobile,
     showAIPanel,
     showControls,
     optimizedSiteOrder,
+    isOnline,
+    locationAccuracy,
+    lastLocationUpdate,
+    completedSites,
+    currentSiteIndex,
 
     formatDuration,
     getCurrentLocation,
     getAIOptimizedRoute,
     setShowAIPanel,
-    setShowControls
+    setShowControls,
+    startRealtimeLocationTracking,
+    stopRealtimeLocationTracking,
+    updateLocationManually,
+    resetCompletedSites,
+    markSiteAsCompleted,
   };
 };
