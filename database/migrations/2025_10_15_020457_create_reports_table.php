@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('schedule_id')->constrained('schedules')->cascadeOnDelete();
             $table->foreignId('garbage_id')->constrained('garbages')->cascadeOnDelete();
+            $table->string('report_picture');
             $table->integer('sack_count');
             $table->timestamps();
         });
