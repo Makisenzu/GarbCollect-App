@@ -8,16 +8,17 @@ class Review extends Model
 {
     protected $fillable = [
         'fullname',
-        'site_id',
+        'purok_id',
         'category_id',
         'review_content',
+        'suggestion_content',
         'rate',
         'status',
         'moderation_flags'
     ];
 
-    public function site() {
-        return $this->belongsTo(Site::class);
+    public function purok() {
+        return $this->belongsTo(Purok::class);
     }
     
     public function category() {

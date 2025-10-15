@@ -43,9 +43,10 @@ class ReviewController extends Controller
         try {
             $review = Review::create([
                 'fullname' => $request->fullname,
-                'site_id' => $request->site_id,
+                'purok_id' => $request->purok_id,
                 'category_id' => $request->category_id,
                 'review_content' => $request->review_content,
+                'suggestion_content' => $request->suggestion_content,
                 'rate' => $request->rate,
                 'status' => $status,
                 'moderation_flags' => $moderationFlags,
