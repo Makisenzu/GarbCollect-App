@@ -43,6 +43,8 @@ Route::get('/employee/login', function () {
 //Public route
 Route::post('/reviews', [ReviewController::class, 'store']);
 
+
+Route::get('/barangayFetch', [UserController::class, 'getBarangayData']);
 Route::get('/reviews', [UserController::class, 'renderReview'])->name('show.reviews');
 Route::get('/getBarangay/schedule/{id}', [PublicScheduleController::class, 'displaySchedule']);
 Route::get('/barangay/schedule/show', [PublicScheduleController::class, 'showPublicSchedule'])->name('barangay.schedule');

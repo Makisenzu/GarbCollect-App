@@ -1,7 +1,7 @@
 // hooks/useReview.js
 import { useState, useEffect } from 'react';
 
-// Static data
+// Static data for categories
 const staticCategories = [
   { id: 1, category_name: 'General Waste Collection' },
   { id: 2, category_name: 'Recycling Service' },
@@ -13,33 +13,7 @@ const staticCategories = [
   { id: 8, category_name: 'Street Cleaning' }
 ];
 
-const staticBarangays = [
-  { 
-    id: 1, 
-    name: 'Barangay 1', 
-    puroks: [
-      { id: 1, name: 'Purok 1A', sites: ['Collection Point A', 'Collection Point B'] },
-      { id: 2, name: 'Purok 1B', sites: ['Collection Point C', 'Collection Point D'] }
-    ]
-  },
-  { 
-    id: 2, 
-    name: 'Barangay 2', 
-    puroks: [
-      { id: 3, name: 'Purok 2A', sites: ['Collection Point E', 'Collection Point F'] },
-      { id: 4, name: 'Purok 2B', sites: ['Collection Point G', 'Collection Point H'] }
-    ]
-  },
-  { 
-    id: 3, 
-    name: 'Barangay 3', 
-    puroks: [
-      { id: 5, name: 'Purok 3A', sites: ['Collection Point I', 'Collection Point J'] },
-      { id: 6, name: 'Purok 3B', sites: ['Collection Point K', 'Collection Point L'] }
-    ]
-  }
-];
-
+// Initial static reviews
 const staticReviews = [
   {
     id: 1,
@@ -127,7 +101,9 @@ export const useReview = () => {
   // State management
   const [reviews, setReviews] = useState(staticReviews);
   const [categories] = useState(staticCategories);
-  const [barangays] = useState(staticBarangays);
+  const [barangays, setBarangays] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   const [newReview, setNewReview] = useState({
     rate: 0,
@@ -135,7 +111,6 @@ export const useReview = () => {
     category_id: '',
     barangay: '',
     purok: '',
-    site: '',
     review_content: '',
     additional_comments: ''
   });
@@ -145,9 +120,47 @@ export const useReview = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [availablePuroks, setAvailablePuroks] = useState([]);
-  const [availableSites, setAvailableSites] = useState([]);
 
-  // Statistics - calculated from static data
+  // Fetch barangay data from API
+  useEffect(() => {
+    const fetchBarangayData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/barangayFetch');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch barangay data');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Transform the API response to match your expected format
+          const transformedBarangays = data.barangays.map(barangay => ({
+            id: barangay.id,
+            name: barangay.baranggay_name,
+            puroks: barangay.puroks ? barangay.puroks.map(purok => ({
+              id: purok.id,
+              name: purok.purok_name
+            })) : []
+          }));
+          
+          setBarangays(transformedBarangays);
+        } else {
+          throw new Error(data.message || 'Failed to fetch barangay data');
+        }
+      } catch (err) {
+        console.error('Error fetching barangay data:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBarangayData();
+  }, []);
+
+  // Statistics - calculated from reviews data
   const averageRating = reviews.length > 0 
     ? (reviews.reduce((sum, review) => sum + review.rate, 0) / reviews.length).toFixed(1)
     : '0.0';
@@ -163,24 +176,11 @@ export const useReview = () => {
     if (newReview.barangay) {
       const selectedBarangay = barangays.find(b => b.name === newReview.barangay);
       setAvailablePuroks(selectedBarangay?.puroks || []);
-      setNewReview(prev => ({ ...prev, purok: '', site: '' }));
+      setNewReview(prev => ({ ...prev, purok: '' }));
     } else {
       setAvailablePuroks([]);
-      setAvailableSites([]);
     }
   }, [newReview.barangay, barangays]);
-
-  // Update available sites when purok changes
-  useEffect(() => {
-    if (newReview.barangay && newReview.purok) {
-      const selectedBarangay = barangays.find(b => b.name === newReview.barangay);
-      const selectedPurok = selectedBarangay?.puroks.find(p => p.name === newReview.purok);
-      setAvailableSites(selectedPurok?.sites || []);
-      setNewReview(prev => ({ ...prev, site: '' }));
-    } else {
-      setAvailableSites([]);
-    }
-  }, [newReview.purok, newReview.barangay, barangays]);
 
   const steps = [
     { number: 1, title: 'Rating', description: 'How was your experience?' },
@@ -202,7 +202,7 @@ export const useReview = () => {
       rate: newReview.rate,
       barangay: newReview.barangay,
       purok: newReview.purok,
-      site_name: newReview.site,
+      site_name: 'Default Collection Point', // Removed site selection
       created_at: new Date().toISOString(),
       category: categories.find(cat => cat.id === parseInt(newReview.category_id)),
       replies: null
@@ -215,7 +215,6 @@ export const useReview = () => {
       category_id: '',
       barangay: '',
       purok: '',
-      site: '',
       review_content: '',
       additional_comments: ''
     });
@@ -258,7 +257,7 @@ export const useReview = () => {
       case 2:
         return true;
       case 3:
-        return newReview.category_id && newReview.barangay && newReview.purok && newReview.site;
+        return newReview.category_id && newReview.barangay && newReview.purok; // Removed site requirement
       case 4:
         return newReview.review_content.trim().length > 0;
       default:
@@ -277,7 +276,8 @@ export const useReview = () => {
     activeFilter,
     sortBy,
     availablePuroks,
-    availableSites,
+    loading,
+    error,
     
     // Statistics
     averageRating,

@@ -10,6 +10,7 @@ use App\Models\Baranggay;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
+use function Pest\Laravel\get;
 use function Termwind\render;
 
 class UserController extends Controller
@@ -102,7 +103,25 @@ class UserController extends Controller
         }
     }
 
+    public function getBarangayData() {
+        try {
+            $barangays = Baranggay::with('puroks')->get();
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetch barangay data successfully',
+                'barangays' => $barangays
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get barangay',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
     public function renderReview(){
+        $barangays = Baranggay::with('puroks.sites')->get();
         return Inertia::render('Users/components/ReviewsComponents/ReviewDashboard');
     }
     public function getReviews () {
