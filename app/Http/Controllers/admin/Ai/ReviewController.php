@@ -86,7 +86,7 @@ class ReviewController extends Controller
     public function pending()
     {
         $pendingReviews = Review::where('status', 'pending')
-                          ->with('site', 'category')
+                          ->with('purok', 'category')
                           ->orderBy('created_at', 'desc')
                           ->get();
 

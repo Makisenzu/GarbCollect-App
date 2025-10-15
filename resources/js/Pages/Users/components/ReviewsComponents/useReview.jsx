@@ -220,7 +220,7 @@ export const useReview = () => {
       additional_comments: ''
     });
     setCurrentStep(1);
-    setCurrentPage(1); // Reset to first page when new review is added
+    setCurrentPage(1);
   };
 
   const nextStep = () => {
