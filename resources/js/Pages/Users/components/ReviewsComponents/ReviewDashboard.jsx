@@ -26,7 +26,9 @@ const ReviewDashboard = () => {
     ratingDistribution,
     steps,
     loading,
+    submitting,
     error,
+    submitResult,
     setNewReview,
     setCurrentStep,
     setActiveFilter,
@@ -41,9 +43,9 @@ const ReviewDashboard = () => {
     goToPage,
     nextPage,
     prevPage,
-    setItemsPerPage
+    setItemsPerPage,
+    clearSubmitResult
   } = useReview();
-
 
   useEffect(() => {
     const checkMobile = () => {
@@ -54,7 +56,6 @@ const ReviewDashboard = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
 
   if (loading) {
     return (
@@ -171,6 +172,25 @@ const ReviewDashboard = () => {
           </div>
         </div>
 
+        {/* Submission Result Message */}
+        {submitResult && (
+          <div className={`mb-6 p-4 rounded-2xl border ${
+            submitResult.success 
+              ? 'bg-green-500/20 border-green-400/30 text-green-300' 
+              : 'bg-red-500/20 border-red-400/30 text-red-300'
+          } backdrop-blur-sm`}>
+            <div className="flex items-center justify-between">
+              <p className="font-medium">{submitResult.message}</p>
+              <button
+                onClick={clearSubmitResult}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col xl:flex-row gap-6 md:gap-8 lg:gap-12">
           {/* Mobile Sidebar Overlay */}
           {isMobileMenuOpen && (
@@ -189,18 +209,18 @@ const ReviewDashboard = () => {
                   <ReviewStats 
                     averageRating={averageRating}
                     ratingDistribution={ratingDistribution}
-                    reviewsCount={allReviews.length} // Use allReviews for accurate count
+                    reviewsCount={allReviews.length}
                   />
                   <ReviewFilters 
                     activeFilter={activeFilter}
                     sortBy={sortBy}
                     onFilterChange={(filter) => {
                       setActiveFilter(filter);
-                      setCurrentPage(1); // Reset to first page when filter changes
+                      setCurrentPage(1);
                     }}
                     onSortChange={(sort) => {
                       setSortBy(sort);
-                      setCurrentPage(1); // Reset to first page when sort changes
+                      setCurrentPage(1);
                     }}
                   />
                 </div>
@@ -213,7 +233,7 @@ const ReviewDashboard = () => {
             <ReviewStats 
               averageRating={averageRating}
               ratingDistribution={ratingDistribution}
-              reviewsCount={allReviews.length} // Use allReviews for accurate count
+              reviewsCount={allReviews.length}
             />
             
             <ReviewFilters 
@@ -221,11 +241,11 @@ const ReviewDashboard = () => {
               sortBy={sortBy}
               onFilterChange={(filter) => {
                 setActiveFilter(filter);
-                setCurrentPage(1); // Reset to first page when filter changes
+                setCurrentPage(1);
               }}
               onSortChange={(sort) => {
                 setSortBy(sort);
-                setCurrentPage(1); // Reset to first page when sort changes
+                setCurrentPage(1);
               }}
             />
           </div>
@@ -293,8 +313,8 @@ const ReviewDashboard = () => {
                     />
                   </div>
                   
-                  {steps.map((step, index) => (
-                    <div key={step.number} className="flex flex-col items-center flex-1 z-10">
+                  {steps.map((step) => (
+                    <div key={`step-${step.number}`} className="flex flex-col items-center flex-1 z-10">
                       <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center border-2 font-bold transition-all duration-500 transform ${
                         currentStep >= step.number
                           ? 'bg-gradient-to-br from-green-500 to-emerald-500 border-transparent text-white scale-110 shadow-lg shadow-green-500/25'
@@ -361,11 +381,20 @@ const ReviewDashboard = () => {
                   ) : (
                     <button
                       type="submit"
-                      disabled={!isStepValid()}
+                      disabled={!isStepValid() || submitting}
                       className="px-4 py-3 sm:px-6 sm:py-3 md:px-8 md:py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl md:rounded-2xl font-semibold hover:from-green-500 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2 sm:space-x-3 shadow-lg shadow-green-500/25 order-1 sm:order-2"
                     >
-                      <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
-                      <span className="text-sm md:text-base lg:text-lg">Submit Review</span>
+                      {submitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 md:h-5 md:w-5 border-b-2 border-white"></div>
+                          <span className="text-sm md:text-base lg:text-lg">Submitting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+                          <span className="text-sm md:text-base lg:text-lg">Submit Review</span>
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -394,7 +423,7 @@ const ReviewDashboard = () => {
               {reviews.length > 0 ? (
                 reviews.map((review) => (
                   <ReviewCard 
-                    key={review.id} 
+                    key={`review-${review.id}-${review.created_at}`}
                     review={review} 
                     onHelpful={handleHelpful} 
                   />
@@ -480,7 +509,7 @@ const ReviewDashboard = () => {
                       {/* Page numbers */}
                       {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
                         <button
-                          key={page}
+                          key={`page-${page}`}
                           onClick={() => goToPage(page)}
                           className={`px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                             pagination.currentPage === page

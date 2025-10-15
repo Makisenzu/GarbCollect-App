@@ -1,16 +1,5 @@
 import { useState, useEffect } from 'react';
 
-const staticCategories = [
-  { id: 1, category_name: 'General Waste Collection' },
-  { id: 2, category_name: 'Recycling Service' },
-  { id: 3, category_name: 'Organic Waste' },
-  { id: 4, category_name: 'Bulky Item Pickup' },
-  { id: 5, category_name: 'Hazardous Waste' },
-  { id: 6, category_name: 'Commercial Collection' },
-  { id: 7, category_name: 'Emergency Cleanup' },
-  { id: 8, category_name: 'Street Cleaning' }
-];
-
 const staticReviews = [
   {
     id: 1,
@@ -97,10 +86,12 @@ const staticReviews = [
 export const useReview = () => {
   // State management
   const [reviews, setReviews] = useState(staticReviews);
-  const [categories] = useState(staticCategories);
+  const [categories, setCategories] = useState([]);
   const [barangays, setBarangays] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [submitResult, setSubmitResult] = useState(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -122,43 +113,82 @@ export const useReview = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [availablePuroks, setAvailablePuroks] = useState([]);
 
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/categoryFetch');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setCategories(data.categories || []);
+      } else {
+        throw new Error(data.message || 'Failed to fetch categories');
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      setError(prev => prev || `Categories: ${err.message}`);
+    }
+  };
+
   // Fetch barangay data from API
+  const fetchBarangayData = async () => {
+    try {
+      const response = await fetch('/barangayFetch');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch barangay data');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform the API response to match your expected format
+        const transformedBarangays = data.barangays.map(barangay => ({
+          id: barangay.id,
+          name: barangay.baranggay_name,
+          puroks: barangay.puroks ? barangay.puroks.map(purok => ({
+            id: purok.id,
+            name: purok.purok_name
+          })) : []
+        }));
+        
+        setBarangays(transformedBarangays);
+      } else {
+        throw new Error(data.message || 'Failed to fetch barangay data');
+      }
+    } catch (err) {
+      console.error('Error fetching barangay data:', err);
+      setError(prev => prev || `Barangays: ${err.message}`);
+    }
+  };
+
+  // Fetch both categories and barangays on component mount
   useEffect(() => {
-    const fetchBarangayData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/barangayFetch');
+        setError(null);
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch barangay data');
-        }
+        // Fetch both categories and barangays in parallel
+        await Promise.all([
+          fetchCategories(),
+          fetchBarangayData()
+        ]);
         
-        const data = await response.json();
-        
-        if (data.success) {
-          // Transform the API response to match your expected format
-          const transformedBarangays = data.barangays.map(barangay => ({
-            id: barangay.id,
-            name: barangay.baranggay_name,
-            puroks: barangay.puroks ? barangay.puroks.map(purok => ({
-              id: purok.id,
-              name: purok.purok_name
-            })) : []
-          }));
-          
-          setBarangays(transformedBarangays);
-        } else {
-          throw new Error(data.message || 'Failed to fetch barangay data');
-        }
       } catch (err) {
-        console.error('Error fetching barangay data:', err);
+        console.error('Error fetching data:', err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBarangayData();
+    fetchData();
   }, []);
 
   // Statistics - calculated from ALL reviews data (not just paginated)
@@ -190,37 +220,136 @@ export const useReview = () => {
     { number: 4, title: 'Review Content', description: 'Share your experience' }
   ];
 
-  const handleSubmitReview = (e) => {
+  // Updated handleSubmitReview to use API
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
-    if (newReview.rate === 0 || !newReview.review_content.trim() || !newReview.category_id) return;
+    
+    // Validation
+    if (newReview.rate === 0 || !newReview.review_content.trim() || !newReview.category_id) {
+      setSubmitResult({
+        success: false,
+        message: 'Please fill in all required fields: rating, service type, and review content.'
+      });
+      return;
+    }
 
-    const review = {
-      id: reviews.length + 1,
-      fullname: newReview.fullname || 'Anonymous User',
-      category_id: newReview.category_id,
-      review_content: newReview.review_content,
-      additional_comments: newReview.additional_comments,
-      rate: newReview.rate,
-      barangay: newReview.barangay,
-      purok: newReview.purok,
-      site_name: 'Default Collection Point',
-      created_at: new Date().toISOString(),
-      category: categories.find(cat => cat.id === parseInt(newReview.category_id)),
-      replies: null
-    };
+    // Find purok_id from selected barangay and purok
+    const selectedBarangay = barangays.find(b => b.name === newReview.barangay);
+    const selectedPurok = selectedBarangay?.puroks.find(p => p.name === newReview.purok);
+    
+    if (!selectedPurok) {
+      setSubmitResult({
+        success: false,
+        message: 'Please select a valid barangay and purok.'
+      });
+      return;
+    }
 
-    setReviews([review, ...reviews]);
-    setNewReview({ 
-      rate: 0,
-      fullname: '',
-      category_id: '',
-      barangay: '',
-      purok: '',
-      review_content: '',
-      additional_comments: ''
-    });
-    setCurrentStep(1);
-    setCurrentPage(1);
+    try {
+      setSubmitting(true);
+      setSubmitResult(null);
+
+      // Prepare data for API
+      const reviewData = {
+        fullname: newReview.fullname || 'Anonymous User',
+        purok_id: selectedPurok.id,
+        category_id: parseInt(newReview.category_id),
+        review_content: newReview.review_content,
+        suggestion_content: newReview.additional_comments || '',
+        rate: parseInt(newReview.rate)
+      };
+
+      console.log('Submitting review:', reviewData);
+
+      const response = await fetch('/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(reviewData)
+      });
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text.substring(0, 200));
+        throw new Error('Server returned an invalid response. Please try again.');
+      }
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || `Server error: ${response.status}`);
+      }
+
+      if (result.success) {
+        // Success - update local state with the new review
+        const savedReview = {
+          id: result.review.id,
+          fullname: result.review.fullname,
+          category_id: result.review.category_id,
+          review_content: result.review.review_content,
+          additional_comments: result.review.suggestion_content,
+          rate: result.review.rate,
+          barangay: newReview.barangay,
+          purok: newReview.purok,
+          site_name: 'Default Collection Point',
+          created_at: result.review.created_at,
+          category: categories.find(cat => cat.id === result.review.category_id) || { 
+            id: result.review.category_id, 
+            category_name: 'Unknown Category' 
+          },
+          replies: null,
+          status: result.review.status
+        };
+
+        // Add to local state (only if approved, or you can filter by status later)
+        if (result.status === 'approved') {
+          setReviews(prev => [savedReview, ...prev]);
+        }
+
+        // Reset form
+        setNewReview({ 
+          rate: 0,
+          fullname: '',
+          category_id: '',
+          barangay: '',
+          purok: '',
+          review_content: '',
+          additional_comments: ''
+        });
+        setCurrentStep(1);
+        setCurrentPage(1);
+
+        // Show success message
+        setSubmitResult({
+          success: true,
+          message: result.message,
+          status: result.status,
+          review: savedReview
+        });
+
+        // Auto-clear success message after 5 seconds
+        setTimeout(() => {
+          setSubmitResult(null);
+        }, 5000);
+
+      } else {
+        throw new Error(result.message || 'Failed to submit review');
+      }
+
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      setSubmitResult({
+        success: false,
+        message: err.message || 'An error occurred while submitting your review. Please try again.'
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const nextStep = () => {
@@ -239,9 +368,12 @@ export const useReview = () => {
     console.log('Marked review as helpful:', reviewId);
   };
 
-  // Filter and sort ALL reviews
+  // Filter and sort ALL reviews (only show approved reviews)
   const filteredAndSortedReviews = reviews
     .filter(review => {
+      // Only show approved reviews or reviews without status (for backward compatibility)
+      if (review.status && review.status !== 'approved') return false;
+      
       if (activeFilter === 'all') return true;
       return review.rate === parseInt(activeFilter);
     })
@@ -308,7 +440,9 @@ export const useReview = () => {
     sortBy,
     availablePuroks,
     loading,
+    submitting,
     error,
+    submitResult,
     
     pagination: {
       currentPage,
@@ -338,6 +472,7 @@ export const useReview = () => {
     goToPage,
     nextPage,
     prevPage,
-    setItemsPerPage
+    setItemsPerPage,
+    clearSubmitResult: () => setSubmitResult(null)
   };
 };

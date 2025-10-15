@@ -9,6 +9,7 @@ use App\Models\Schedule;
 use App\Models\Baranggay;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 
 use function Pest\Laravel\get;
 use function Termwind\render;
@@ -115,6 +116,23 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get barangay',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getCategory() {
+        try {
+            $categories = Category::all();
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetch categories successfully',
+                'categories' => $categories
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve categories',
                 'error' => $e->getMessage()
             ]);
         }
