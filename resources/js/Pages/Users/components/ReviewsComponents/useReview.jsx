@@ -257,7 +257,7 @@ export const useReview = () => {
       case 2:
         return true;
       case 3:
-        return newReview.category_id && newReview.barangay && newReview.purok; // Removed site requirement
+        return newReview.category_id && newReview.barangay && newReview.purok;
       case 4:
         return newReview.review_content.trim().length > 0;
       default:

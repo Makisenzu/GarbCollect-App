@@ -33,9 +33,6 @@ const ReviewCard = ({ review, onHelpful }) => (
       <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
         {review.category.category_name}
       </span>
-      <span className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-full font-medium">
-        {review.site_name}
-      </span>
     </div>
 
     <div className="mb-4">
