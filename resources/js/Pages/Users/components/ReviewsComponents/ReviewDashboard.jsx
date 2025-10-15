@@ -122,7 +122,9 @@ const ReviewDashboard = ({
     }
 
     return (
-        <div className="relative text-white min-h-screen py-6 md:py-12 px-3 sm:px-4 md:px-6 overflow-hidden">
+      <>
+            <Head title={'Community Reviews'} />
+              <div className="relative text-white min-h-screen py-6 md:py-12 px-3 sm:px-4 md:px-6 overflow-hidden">
             {/* Background matching Hero */}
             <div className="absolute inset-0 bg-gradient-to-br from-green-900/90 via-emerald-800/80 to-blue-900/90"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/30"></div>
@@ -165,21 +167,18 @@ const ReviewDashboard = ({
                 {/* Header with Back Button */}
                 <div className="mb-8 md:mb-12 lg:mb-16">
                     <div className="hidden xl:block">
-                        <button
-                            onClick={() => route('/')}
-                            className="group flex items-center space-x-3 text-white/80 hover:text-white mb-6 transition-all duration-300 transform hover:-translate-x-1"
-                        >
-                            <div className="p-2 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 group-hover:bg-white/20 transition-all duration-300">
-                                <ArrowLeft className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                            </div>
-                            <span className="font-semibold text-lg">Back to Home</span>
-                        </button>
+                    <Link
+          href="/"
+          className="absolute top-4 left-4 z-40 bg-white hover:bg-gray-50 text-gray-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:shadow-xl border border-gray-200"
+          title="Back to Dashboard"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </Link>
                     </div>
                     
                     <div className="text-center relative">
-                        <div className="absolute -top-6 md:-top-10 left-1/2 transform -translate-x-1/2">
-                            <Sparkles className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-green-300 animate-pulse" />
-                        </div>
                         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold mb-4 md:mb-6">
                             Community
                             <span className="block text-green-300 mt-1 md:mt-2">Reviews</span>
@@ -597,6 +596,7 @@ const ReviewDashboard = ({
                 .animate-pulseSlow { animation: pulseSlow 4s ease-in-out infinite; }
             `}</style>
         </div>
+      </>
     );
 };
 

@@ -186,7 +186,7 @@ export default function Header({ header, children }) {
                     <div className="border-t border-gray-200 pb-1 pt-4 prevent-drag">
                         <div className="mt-3 space-y-1 prevent-drag">
                             <ResponsiveNavLink 
-                                href={route('login')}
+                                href={route('show.reviews')}
                                 className="prevent-drag"
                                 onDragStart={preventDrag}
                             >
