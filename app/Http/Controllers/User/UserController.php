@@ -5,14 +5,15 @@ namespace App\Http\Controllers\User;
 use Exception;
 use App\Models\Site;
 use Inertia\Inertia;
+use App\Models\Review;
+use App\Models\Category;
 use App\Models\Schedule;
 use App\Models\Baranggay;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Models\Category;
 
-use function Pest\Laravel\get;
 use function Termwind\render;
+use function Pest\Laravel\get;
+use App\Http\Controllers\Controller;
 
 class UserController extends Controller
 {
@@ -139,9 +140,59 @@ class UserController extends Controller
     }
 
     public function renderReview(){
-        $barangays = Baranggay::with('puroks.sites')->get();
-        return Inertia::render('Users/components/ReviewsComponents/ReviewDashboard');
+        $reviews = Review::with(['purok.baranggay', 'category', 'replies'])
+            ->where('status', 'approved')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $allReviews = Review::all();
+        $averageRating = $allReviews->avg('rate') ?? 0;
+        
+        $ratingDistribution = [
+            5 => $allReviews->where('rate', 5)->count(),
+            4 => $allReviews->where('rate', 4)->count(),
+            3 => $allReviews->where('rate', 3)->count(),
+            2 => $allReviews->where('rate', 2)->count(),
+            1 => $allReviews->where('rate', 1)->count(),
+        ];
+    
+        $totalReviewsCount = $allReviews->count();
+    
+        $transformedReviews = $reviews->map(function ($review) {
+            return [
+                'id' => $review->id,
+                'fullname' => $review->fullname,
+                'category_id' => $review->category_id,
+                'review_content' => $review->review_content,
+                'additional_comments' => $review->suggestion_content,
+                'rate' => $review->rate,
+                'barangay' => $review->purok->baranggay->baranggay_name ?? 'Unknown Barangay',
+                'purok' => $review->purok->purok_name ?? 'Unknown Purok',
+                'created_at' => $review->created_at->toISOString(),
+                'category' => [
+                    'id' => $review->category->id,
+                    'category_name' => $review->category->category_name
+                ],
+                'replies' => $review->replies ? [
+                    'id' => $review->replies->id,
+                    'review_id' => $review->replies->review_id,
+                    'reply_content' => $review->replies->reply_content,
+                    'created_at' => $review->replies->created_at->toISOString()
+                ] : null,
+                'status' => $review->status
+            ];
+        });
+    
+        return Inertia::render('Users/components/ReviewsComponents/ReviewDashboard', [
+            'reviews' => $transformedReviews,
+            'reviews_count' => $transformedReviews->count(),
+            'total_reviews_count' => $totalReviewsCount,
+            'average_rating' => round($averageRating, 1),
+            'rating_distribution' => $ratingDistribution
+        ]);
     }
+
+
     public function getReviews () {
         try {
 

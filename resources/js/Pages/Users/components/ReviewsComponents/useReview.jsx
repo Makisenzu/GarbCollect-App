@@ -1,91 +1,8 @@
 import { useState, useEffect } from 'react';
 
-const staticReviews = [
-  {
-    id: 1,
-    fullname: 'Sarah Johnson',
-    category_id: 1,
-    review_content: 'The garbage collection service in our area has improved significantly. Regular and efficient.',
-    additional_comments: 'Would be great if they could come a bit earlier in the morning.',
-    rate: 5,
-    barangay: 'Barangay 1',
-    purok: 'Purok 1A',
-    site_name: 'Collection Point A',
-    created_at: '2024-01-15T10:30:00Z',
-    category: { id: 1, category_name: 'General Waste Collection' },
-    replies: null
-  },
-  {
-    id: 2,
-    fullname: 'Michael Chen',
-    category_id: 2,
-    review_content: 'Excellent recycling service. They properly sort all materials and the schedule is reliable.',
-    additional_comments: 'More frequent collection during holidays would be helpful.',
-    rate: 4,
-    barangay: 'Barangay 2',
-    purok: 'Purok 2A',
-    site_name: 'Collection Point E',
-    created_at: '2024-01-12T14:20:00Z',
-    category: { id: 2, category_name: 'Recycling Service' },
-    replies: {
-      id: 1,
-      review_id: 2,
-      reply_content: 'Thank you for your feedback! We are working on improving holiday schedules.',
-      created_at: '2024-01-12T16:45:00Z'
-    }
-  },
-  {
-    id: 3,
-    fullname: 'Emily Rodriguez',
-    category_id: 4,
-    review_content: 'Scheduled a bulky item pickup but there was a delay. However, customer service was responsive.',
-    additional_comments: 'Better communication about delays would be appreciated.',
-    rate: 3,
-    barangay: 'Barangay 3',
-    purok: 'Purok 3B',
-    site_name: 'Collection Point L',
-    created_at: '2024-01-08T09:15:00Z',
-    category: { id: 4, category_name: 'Bulky Item Pickup' },
-    replies: null
-  },
-  {
-    id: 4,
-    fullname: 'John Smith',
-    category_id: 3,
-    review_content: 'Organic waste collection is very efficient. The compost produced is excellent for gardening.',
-    additional_comments: 'Could you provide more compost bins for larger households?',
-    rate: 5,
-    barangay: 'Barangay 1',
-    purok: 'Purok 1B',
-    site_name: 'Collection Point D',
-    created_at: '2024-01-05T08:45:00Z',
-    category: { id: 3, category_name: 'Organic Waste' },
-    replies: null
-  },
-  {
-    id: 5,
-    fullname: 'Maria Garcia',
-    category_id: 6,
-    review_content: 'Commercial waste collection for our restaurant has been very reliable. Always on time.',
-    additional_comments: 'Please consider later pickup times for businesses that close late.',
-    rate: 4,
-    barangay: 'Barangay 2',
-    purok: 'Purok 2B',
-    site_name: 'Collection Point H',
-    created_at: '2024-01-03T11:20:00Z',
-    category: { id: 6, category_name: 'Commercial Collection' },
-    replies: {
-      id: 2,
-      review_id: 5,
-      reply_content: 'Thank you for the suggestion! We will review our commercial collection schedules.',
-      created_at: '2024-01-04T09:30:00Z'
-    }
-  }
-];
-
-export const useReview = () => {
-  // State management
-  const [reviews, setReviews] = useState(staticReviews);
+export const useReview = (initialReviews = []) => {
+  // State management - use initialReviews from Laravel controller
+  const [reviews, setReviews] = useState(initialReviews);
   const [categories, setCategories] = useState([]);
   const [barangays, setBarangays] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -191,17 +108,6 @@ export const useReview = () => {
     fetchData();
   }, []);
 
-  // Statistics - calculated from ALL reviews data (not just paginated)
-  const averageRating = reviews.length > 0 
-    ? (reviews.reduce((sum, review) => sum + review.rate, 0) / reviews.length).toFixed(1)
-    : '0.0';
-
-  const ratingDistribution = [5, 4, 3, 2, 1].map(stars => ({
-    stars,
-    count: reviews.filter(review => review.rate === stars).length,
-    percentage: (reviews.filter(review => review.rate === stars).length / reviews.length) * 100
-  }));
-
   // Update available puroks when barangay changes
   useEffect(() => {
     if (newReview.barangay) {
@@ -296,7 +202,6 @@ export const useReview = () => {
           rate: result.review.rate,
           barangay: newReview.barangay,
           purok: newReview.purok,
-          site_name: 'Default Collection Point',
           created_at: result.review.created_at,
           category: categories.find(cat => cat.id === result.review.category_id) || { 
             id: result.review.category_id, 
@@ -452,9 +357,6 @@ export const useReview = () => {
       startIndex: startIndex + 1,
       endIndex: Math.min(endIndex, totalReviews)
     },
-    
-    averageRating,
-    ratingDistribution,
     
     steps,
     
