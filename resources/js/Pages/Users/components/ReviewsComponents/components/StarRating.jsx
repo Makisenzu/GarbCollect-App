@@ -3,8 +3,9 @@ import { Star } from 'lucide-react';
 const StarRating = ({ rating, onRate, onHover, size = 'md', readonly = false }) => {
   const sizeClasses = {
     sm: 'w-4 h-4',
-    md: 'w-5 h-5',
-    lg: 'w-7 h-7'
+    md: 'w-6 h-6',
+    lg: 'w-8 h-8',
+    xl: 'w-10 h-10'
   };
 
   return (
@@ -13,17 +14,19 @@ const StarRating = ({ rating, onRate, onHover, size = 'md', readonly = false }) 
         <button
           key={star}
           type="button"
-          className={`${sizeClasses[size]} transition-all duration-200 ${
+          className={`${sizeClasses[size]} transition-all duration-300 transform ${
             star <= (onHover || rating)
-              ? 'text-yellow-400 fill-yellow-400 transform scale-110'
-              : 'text-gray-300 fill-gray-300 hover:text-yellow-300 hover:fill-yellow-300'
-          } ${onRate && !readonly ? 'cursor-pointer hover:scale-125' : 'cursor-default'}`}
+              ? 'text-yellow-400 fill-yellow-400 scale-110 drop-shadow-lg'
+              : 'text-slate-500 fill-slate-500/30 hover:text-yellow-300 hover:fill-yellow-300/50'
+          } ${onRate && !readonly ? 'cursor-pointer hover:scale-125' : 'cursor-default'} ${
+            star <= (onHover || rating) ? 'animate-pulse' : ''
+          }`}
           onClick={() => !readonly && onRate?.(star)}
           onMouseEnter={() => !readonly && onHover?.(star)}
           onMouseLeave={() => !readonly && onHover?.(0)}
           disabled={readonly}
         >
-          <Star className="w-full h-full" />
+          <Star className="w-full h-full drop-shadow-sm" />
         </button>
       ))}
     </div>

@@ -1,7 +1,5 @@
-// hooks/useReview.js
 import { useState, useEffect } from 'react';
 
-// Static data for categories
 const staticCategories = [
   { id: 1, category_name: 'General Waste Collection' },
   { id: 2, category_name: 'Recycling Service' },
@@ -13,7 +11,6 @@ const staticCategories = [
   { id: 8, category_name: 'Street Cleaning' }
 ];
 
-// Initial static reviews
 const staticReviews = [
   {
     id: 1,
@@ -105,6 +102,10 @@ export const useReview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(3);
+  
   const [newReview, setNewReview] = useState({
     rate: 0,
     fullname: '',
@@ -160,7 +161,7 @@ export const useReview = () => {
     fetchBarangayData();
   }, []);
 
-  // Statistics - calculated from reviews data
+  // Statistics - calculated from ALL reviews data (not just paginated)
   const averageRating = reviews.length > 0 
     ? (reviews.reduce((sum, review) => sum + review.rate, 0) / reviews.length).toFixed(1)
     : '0.0';
@@ -202,7 +203,7 @@ export const useReview = () => {
       rate: newReview.rate,
       barangay: newReview.barangay,
       purok: newReview.purok,
-      site_name: 'Default Collection Point', // Removed site selection
+      site_name: 'Default Collection Point',
       created_at: new Date().toISOString(),
       category: categories.find(cat => cat.id === parseInt(newReview.category_id)),
       replies: null
@@ -219,6 +220,7 @@ export const useReview = () => {
       additional_comments: ''
     });
     setCurrentStep(1);
+    setCurrentPage(1); // Reset to first page when new review is added
   };
 
   const nextStep = () => {
@@ -237,6 +239,7 @@ export const useReview = () => {
     console.log('Marked review as helpful:', reviewId);
   };
 
+  // Filter and sort ALL reviews
   const filteredAndSortedReviews = reviews
     .filter(review => {
       if (activeFilter === 'all') return true;
@@ -249,6 +252,34 @@ export const useReview = () => {
       if (sortBy === 'lowest') return a.rate - b.rate;
       return 0;
     });
+
+  // Pagination calculations
+  const totalReviews = filteredAndSortedReviews.length;
+  const totalPages = Math.ceil(totalReviews / itemsPerPage);
+  
+  // Get current page reviews
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentReviews = filteredAndSortedReviews.slice(startIndex, endIndex);
+
+  // Pagination functions
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   const isStepValid = () => {
     switch (currentStep) {
@@ -266,8 +297,8 @@ export const useReview = () => {
   };
 
   return {
-    // State
-    reviews: filteredAndSortedReviews,
+    reviews: currentReviews,
+    allReviews: filteredAndSortedReviews,
     categories,
     barangays,
     newReview,
@@ -279,14 +310,20 @@ export const useReview = () => {
     loading,
     error,
     
-    // Statistics
+    pagination: {
+      currentPage,
+      totalPages,
+      totalReviews,
+      itemsPerPage,
+      startIndex: startIndex + 1,
+      endIndex: Math.min(endIndex, totalReviews)
+    },
+    
     averageRating,
     ratingDistribution,
     
-    // Steps
     steps,
     
-    // Actions
     setNewReview,
     setCurrentStep,
     setHoverRating,
@@ -296,6 +333,11 @@ export const useReview = () => {
     nextStep,
     prevStep,
     handleHelpful,
-    isStepValid
+    isStepValid,
+    
+    goToPage,
+    nextPage,
+    prevPage,
+    setItemsPerPage
   };
 };
