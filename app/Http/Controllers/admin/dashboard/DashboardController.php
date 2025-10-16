@@ -24,7 +24,7 @@ class DashboardController extends Controller
         
         $drivers = Driver::with('user')->get();
         $sites = Site::with(['purok'])->get();
-        $pending = Review::with(['site', 'category'])->get();
+        $pending = Review::with(['purok', 'category'])->get();
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
         return Inertia::render('Admin/adminDashboard', [
             'drivers' => $drivers,
