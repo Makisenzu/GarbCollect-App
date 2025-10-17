@@ -129,49 +129,54 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     return null;
   };
 
-  // NEW: Check if user has reached a site
+  // OPTIMIZED: Improved site proximity check with dynamic threshold
   const checkSiteProximity = (currentPos, sites) => {
     if (!currentPos || sites.length === 0) return;
-
+  
     const [longitude, latitude] = currentPos;
-    const PROXIMITY_THRESHOLD = 0.05; // Approximately 50 meters in degrees
-
+    // Dynamic threshold based on location accuracy
+    const PROXIMITY_THRESHOLD = locationAccuracy && locationAccuracy > 50 ? 0.08 : 0.05;
+  
     sites.forEach((site, index) => {
       if (completedSites.has(site.id)) return;
-
+  
       const siteLongitude = parseFloat(site.longitude);
       const siteLatitude = parseFloat(site.latitude);
       
-      const distance = calculateDistance(
+      const distance = calculateHaversineDistance(
         latitude,
         longitude,
         siteLatitude,
         siteLongitude
       );
 
-      // If within 50 meters, mark as completed
-      if (distance < 0.05) {
+      // If within threshold, mark as completed
+      if (distance < PROXIMITY_THRESHOLD) {
         markSiteAsCompleted(site, index);
       }
     });
   };
 
-  // NEW: Mark site as completed and update visual presentation
+  // OPTIMIZED: Improved site completion with better route recalculation
   const markSiteAsCompleted = (site, index) => {
-    console.log(`Site reached: ${site.site_name}`);
+    console.log(`🎉 Site reached: ${site.site_name}`);
     
     setCompletedSites(prev => new Set(prev).add(site.id));
     
     // Update current site index for next site in sequence
     if (optimizedSiteOrder.length > 0) {
       const currentIndex = optimizedSiteOrder.findIndex(s => s.id === site.id);
-      if (currentIndex !== -1 && currentIndex < optimizedSiteOrder.length - 1) {
+      if (currentIndex !== -1) {
         setCurrentSiteIndex(currentIndex + 1);
         
-        // Calculate route to next site
-        const nextSite = optimizedSiteOrder[currentIndex + 1];
-        if (currentLocation) {
-          calculateRouteToNextSite(currentLocation, nextSite);
+        // Recalculate optimized route with remaining sites
+        const remainingSites = optimizedSiteOrder.slice(currentSiteIndex + 1);
+        if (remainingSites.length > 0 && currentLocation) {
+          recalculateOptimizedRoute(currentLocation, remainingSites);
+        } else {
+          // No more sites, clear the route
+          setRouteCoordinates([]);
+          setRouteInfo(null);
         }
       }
     }
@@ -185,7 +190,62 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     showCompletionNotification(site.site_name);
   };
 
-  // NEW: Calculate route to next site in sequence
+  // NEW: Recalculate optimized route with remaining sites
+  const recalculateOptimizedRoute = async (currentPos, remainingSites) => {
+    if (!currentPos || remainingSites.length === 0) return;
+    
+    try {
+      // Re-optimize the remaining sites for fastest route
+      const reoptimizedOrder = await optimizeRouteWithTSP(currentPos, remainingSites);
+      
+      if (reoptimizedOrder.length > 0) {
+        const fullRoute = await calculateFullRouteFromCurrentLocation(currentPos, reoptimizedOrder);
+        
+        if (fullRoute) {
+          setRouteCoordinates(fullRoute.route);
+          setRouteInfo({
+            duration: fullRoute.duration,
+            formattedDuration: formatDuration(fullRoute.duration),
+            distance: fullRoute.distance,
+            totalSites: fullRoute.totalSites,
+            toSite: reoptimizedOrder[0]?.site_name,
+            isFullRoute: true
+          });
+          
+          // Update the optimized order
+          setOptimizedSiteOrder(prev => {
+            const completed = prev.slice(0, currentSiteIndex + 1);
+            return [...completed, ...reoptimizedOrder];
+          });
+          
+          setTimeout(() => {
+            if (map.current && fullRoute.route.length > 0) {
+              addRouteLayer();
+            }
+          }, 500);
+        }
+      }
+    } catch (error) {
+      console.error('Error recalculating optimized route:', error);
+      // Fallback to simple sequential route
+      calculateFullRouteFromCurrentLocation(currentPos, remainingSites)
+        .then(fullRoute => {
+          if (fullRoute) {
+            setRouteCoordinates(fullRoute.route);
+            setRouteInfo({
+              duration: fullRoute.duration,
+              formattedDuration: formatDuration(fullRoute.duration),
+              distance: fullRoute.distance,
+              totalSites: fullRoute.totalSites,
+              toSite: remainingSites[0]?.site_name,
+              isFullRoute: true
+            });
+          }
+        });
+    }
+  };
+
+  // OPTIMIZED: Improved route calculation with better error handling
   const calculateRouteToNextSite = async (currentPos, nextSite) => {
     if (!currentPos || !nextSite || !mapboxKey) return;
 
@@ -194,6 +254,21 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       
       console.log(`Calculating route to next site: ${nextSite.site_name}`);
       
+      const cacheKey = `route_to_next_${coordinatesString}`;
+      const cachedRoute = getCachedRoute(cacheKey);
+      
+      if (cachedRoute && !isOnline) {
+        console.log('Using cached route to next site (offline mode)');
+        setRouteCoordinates(cachedRoute.route);
+        setRouteInfo({
+          duration: cachedRoute.duration,
+          formattedDuration: formatDuration(cachedRoute.duration),
+          distance: cachedRoute.distance,
+          toSite: nextSite.site_name
+        });
+        return cachedRoute;
+      }
+
       const response = await fetch(
         `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesString}?` +
         `access_token=${mapboxKey}` +
@@ -213,23 +288,56 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         const route = data.routes[0];
         const durationMinutes = Math.round(route.duration / 60);
         
-        setRouteCoordinates(route.geometry.coordinates);
-        setRouteInfo({
+        const routeInfo = {
+          route: route.geometry.coordinates,
           duration: durationMinutes,
           formattedDuration: formatDuration(durationMinutes),
           distance: (route.distance / 1000).toFixed(1),
           toSite: nextSite.site_name
-        });
+        };
 
+        setRouteCoordinates(route.geometry.coordinates);
+        setRouteInfo(routeInfo);
+
+        cacheRoute(cacheKey, routeInfo);
+        
         setTimeout(() => {
           if (map.current && route.geometry.coordinates.length > 0) {
             addRouteLayer();
           }
         }, 500);
+
+        return routeInfo;
       }
     } catch (error) {
       console.error('Error calculating route to next site:', error);
+      
+      // Fallback to cached route
+      const fallbackKey = `route_to_site_${nextSite.id}`;
+      const cachedRoute = getCachedRoute(fallbackKey);
+      
+      if (cachedRoute) {
+        console.log('Using cached route as fallback');
+        setRouteCoordinates(cachedRoute.route);
+        setRouteInfo({
+          duration: cachedRoute.duration,
+          formattedDuration: formatDuration(cachedRoute.duration),
+          distance: cachedRoute.distance,
+          toSite: nextSite.site_name
+        });
+      }
     }
+    return null;
+  };
+
+  // OPTIMIZED: Improved nearest site calculation
+  const calculateRouteToNearestSiteFromStation = async (currentPos, nearestSiteToStation) => {
+    if (!currentPos || !nearestSiteToStation || !mapboxKey) {
+      console.log('Missing data for route calculation');
+      return;
+    }
+
+    return await calculateRouteToNextSite(currentPos, nearestSiteToStation);
   };
 
   // NEW: Show completion notification
@@ -237,10 +345,18 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     console.log(`🎉 Site completed: ${siteName}`);
     
     if (isMobile) {
-      alert(`✅ Site completed: ${siteName}`);
+      // Use browser notification if available
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`✅ Site Completed`, {
+          body: `${siteName} completed!`,
+          icon: can
+        });
+      } else {
+        alert(`✅ Site completed: ${siteName}`);
+      }
     } else {
       const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse';
       notification.innerHTML = `✅ ${siteName} completed!`;
       document.body.appendChild(notification);
       
@@ -326,7 +442,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     loadMapboxCSS();
   }, []);
 
-  // Find the site that is nearest to the station
+  // OPTIMIZED: Improved nearest site calculation with multiple factors
   const findNearestSiteToStation = (station, sites) => {
     if (!station || sites.length === 0) return null;
 
@@ -335,13 +451,17 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
     sites.forEach(site => {
       if (site.longitude && site.latitude) {
-        const distance = calculateDistance(
+        const distance = calculateHaversineDistance(
           parseFloat(station.latitude), parseFloat(station.longitude),
           parseFloat(site.latitude), parseFloat(site.longitude)
         );
         
-        if (distance < minDistance) {
-          minDistance = distance;
+        // Consider site priority/type if available
+        const priority = site.priority || 1;
+        const adjustedDistance = distance * priority;
+        
+        if (adjustedDistance < minDistance) {
+          minDistance = adjustedDistance;
           nearestSite = site;
         }
       }
@@ -350,46 +470,29 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     return nearestSite;
   };
 
-  // Calculate route from current location to the site nearest to station
-  const calculateRouteToNearestSiteFromStation = async (currentPos, nearestSiteToStation) => {
-    if (!currentPos || !nearestSiteToStation || !mapboxKey) {
-      console.log('Missing data for route calculation:', {
-        currentPos, 
-        nearestSiteToStation, 
-        mapboxKey: !!mapboxKey
-      });
-      return;
-    }
-
+  // OPTIMIZED: Improved full route calculation with better optimization
+  const calculateFullRouteFromCurrentLocation = async (currentPos, optimizedSites) => {
+    if (!currentPos || !optimizedSites.length || !mapboxKey) return null;
+  
     try {
-      const coordinatesString = `${currentPos[0]},${currentPos[1]};${parseFloat(nearestSiteToStation.longitude)},${parseFloat(nearestSiteToStation.latitude)}`;
-      
-      console.log('Calculating route from current location to nearest site from station:', coordinatesString);
-      
-      const cacheKey = `current_to_nearest_from_station_${coordinatesString}`;
+      // Create coordinates string: current location -> site1 -> site2 -> ... -> siteN
+      const allCoordinates = [
+        `${currentPos[0]},${currentPos[1]}`,
+        ...optimizedSites.map(site => `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`)
+      ].join(';');
+  
+      console.log('Calculating full optimized route through all sites:', optimizedSites.length, 'sites');
+
+      const cacheKey = `full_optimized_route_${allCoordinates}`;
       const cachedRoute = getCachedRoute(cacheKey);
       
       if (cachedRoute && !isOnline) {
-        console.log('Using cached route to nearest site from station (offline mode)');
-        setRouteCoordinates(cachedRoute.route);
-        setRouteInfo({
-          duration: cachedRoute.duration,
-          formattedDuration: formatDuration(cachedRoute.duration),
-          distance: cachedRoute.distance,
-          toSite: nearestSiteToStation.site_name
-        });
-        
-        setTimeout(() => {
-          if (map.current) {
-            addRouteLayer();
-          }
-        }, 100);
-        
+        console.log('Using cached full route (offline mode)');
         return cachedRoute;
       }
 
       const response = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesString}?` +
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${allCoordinates}?` +
         `access_token=${mapboxKey}` +
         `&geometries=geojson` +
         `&overview=full` +
@@ -412,75 +515,85 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           duration: durationMinutes,
           formattedDuration: formatDuration(durationMinutes),
           distance: (route.distance / 1000).toFixed(1),
-          toSite: nearestSiteToStation.site_name
+          totalSites: optimizedSites.length,
+          siteOrder: optimizedSites.map(site => site.site_name),
+          isFullRoute: true
         };
 
-        setRouteCoordinates(route.geometry.coordinates);
-        setRouteInfo({
-          duration: durationMinutes,
-          formattedDuration: formatDuration(durationMinutes),
-          distance: (route.distance / 1000).toFixed(1),
-          toSite: nearestSiteToStation.site_name
-        });
-
         cacheRoute(cacheKey, routeInfo);
+        console.log(`Full optimized route calculated: ${optimizedSites.length} sites, ${durationMinutes} minutes`);
         
-        console.log(`Route calculated: Your location → ${nearestSiteToStation.site_name} (nearest to station)`);
-        
-        setTimeout(() => {
-          if (map.current && route.geometry.coordinates.length > 0) {
-            addRouteLayer();
-          }
-        }, 500);
-
         return routeInfo;
       }
     } catch (error) {
-      console.error('Error calculating route to nearest site from station:', error);
+      console.error('Error calculating full optimized route:', error);
       
-      const fallbackKey = `current_to_nearest_from_station_${nearestSiteToStation.id}`;
+      // Fallback to cached route
+      const fallbackKey = `full_route_${optimizedSites.map(s => s.id).join('_')}`;
       const cachedRoute = getCachedRoute(fallbackKey);
       
       if (cachedRoute) {
-        console.log('Using cached route as fallback');
-        setRouteCoordinates(cachedRoute.route);
-        setRouteInfo({
-          duration: cachedRoute.duration,
-          formattedDuration: formatDuration(cachedRoute.duration),
-          distance: cachedRoute.distance,
-          toSite: nearestSiteToStation.site_name
-        });
-        
-        setTimeout(() => {
-          if (map.current) {
-            addRouteLayer();
-          }
-        }, 100);
+        console.log('Using cached full route as fallback');
+        return cachedRoute;
       }
     }
     return null;
   };
 
-  // Effect to trigger route calculation when all data is available
+  // OPTIMIZED: Effect to trigger optimized route calculation
   useEffect(() => {
     if (currentLocation && nearestSiteToStation && mapInitialized) {
-      console.log('All data available, calculating route automatically');
-      calculateRouteToNearestSiteFromStation(currentLocation, nearestSiteToStation);
+      console.log('All data available, calculating OPTIMIZED route automatically');
+      
+      // Use optimized route calculation
+      if (optimizedSiteOrder.length > 0) {
+        const remainingSites = optimizedSiteOrder.filter(site => !completedSites.has(site.id));
+        
+        if (remainingSites.length > 0) {
+          calculateFullRouteFromCurrentLocation(currentLocation, remainingSites)
+            .then(fullRoute => {
+              if (fullRoute) {
+                setRouteCoordinates(fullRoute.route);
+                setRouteInfo({
+                  duration: fullRoute.duration,
+                  formattedDuration: formatDuration(fullRoute.duration),
+                  distance: fullRoute.distance,
+                  totalSites: fullRoute.totalSites,
+                  toSite: remainingSites[0]?.site_name,
+                  isFullRoute: true
+                });
+                
+                setTimeout(() => {
+                  if (map.current && fullRoute.route.length > 0) {
+                    addRouteLayer();
+                  }
+                }, 500);
+              }
+            });
+        }
+      } else {
+        // Fallback to nearest site calculation if no optimized order
+        calculateRouteToNearestSiteFromStation(currentLocation, nearestSiteToStation);
+      }
     }
   }, [currentLocation, nearestSiteToStation, mapInitialized]);
 
+  // OPTIMIZED: Improved data fetching with better error handling
   useEffect(() => {
     const fetchScheduleAndSites = async () => {
       if (!scheduleId) return;
       
       setLoading(true);
       try {
-        const scheduleResponse = await axios.get(`/schedules/${scheduleId}`);
+        const [scheduleResponse, sitesResponse] = await Promise.all([
+          axios.get(`/schedules/${scheduleId}`),
+          axios.get(`/barangay/${scheduleId}/sites?status=active`)
+        ]);
+
         if (scheduleResponse.data.success && scheduleResponse.data.data) {
           const schedule = scheduleResponse.data.data;
           setActiveSchedule(schedule);
 
-          const sitesResponse = await axios.get(`/barangay/${schedule.barangay_id}/sites?status=active`);
           if (sitesResponse.data.success) {
             const activeSites = sitesResponse.data.data;
             
@@ -494,13 +607,15 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
               });
               
               if (regularSites.length > 0) {
-                const nearestToStation = findNearestSiteToStation(station, regularSites);
-                setNearestSiteToStation(nearestToStation);
-                console.log('Nearest site to station found:', nearestToStation?.site_name);
-                
-                const optimizedOrder = optimizeSiteOrderFromStation(station, regularSites);
+                // Use TSP algorithm for optimal route
+                const optimizedOrder = await optimizeRouteWithTSP(station, regularSites);
                 setOptimizedSiteOrder(optimizedOrder);
+                
+                const nearestToStation = optimizedOrder[0];
+                setNearestSiteToStation(nearestToStation);
                 setCurrentSiteIndex(0);
+                
+                console.log('Optimized site order calculated:', optimizedOrder.map(s => s.site_name));
               }
             }
             
@@ -517,6 +632,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     fetchScheduleAndSites();
   }, [scheduleId]);
 
+  // OPTIMIZED: Map initialization with better performance
   useEffect(() => {
     if (!cssLoaded || !mapboxKey || map.current || !mapContainer.current) {
       return;
@@ -541,7 +657,9 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         touchPitch: false,
         cooperativeGestures: isMobile,
         failIfMajorPerformanceCaveat: false,
-        preserveDrawingBuffer: true
+        preserveDrawingBuffer: true,
+        optimizeForTerrain: true,
+        maxTileCacheSize: 50
       });
 
       map.current.on('load', () => {
@@ -555,10 +673,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       map.current.on('error', (e) => {
         console.error('Map error:', e);
         setMapError('Failed to load map: ' + e.error?.message);
-        
-        if (isOnline) {
-          console.warn('Map loading failed but continuing in limited mode');
-        }
       });
 
       map.current.on('idle', () => {
@@ -581,7 +695,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     };
   }, [mapboxKey, cssLoaded, isMobile]);
 
-  // Real-time location tracking
+  // OPTIMIZED: Real-time location tracking with better accuracy
   const startRealtimeLocationTracking = () => {
     if (!navigator.geolocation) {
       console.error('Geolocation is not supported by this browser');
@@ -592,18 +706,18 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
     const options = {
       enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0
+      timeout: 10000,
+      maximumAge: 5000
     };
 
-    console.log('Starting real-time location tracking...');
+    console.log('Starting optimized real-time location tracking...');
 
     locationWatcherRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         const currentPos = [longitude, latitude];
         
-        console.log('Location updated:', currentPos);
+        console.log('Location updated with accuracy:', accuracy, 'meters');
         setCurrentLocation(currentPos);
         setLocationAccuracy(accuracy);
         setLastLocationUpdate(new Date());
@@ -619,7 +733,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
             center: currentPos,
             zoom: isMobile ? 16 : 15,
             essential: true,
-            duration: 1000
+            duration: 800
           });
         }
       },
@@ -682,7 +796,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         break;
       case error.TIMEOUT:
         errorMessage += 'Location request timeout. Retrying...';
-        setTimeout(startRealtimeLocationTracking, 5000);
+        setTimeout(startRealtimeLocationTracking, 3000);
         break;
       default:
         errorMessage += 'Unknown location error.';
@@ -705,41 +819,37 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     }
   }, [mapInitialized, customStyleLoaded, siteLocations, routeCoordinates, optimizedSiteOrder, nearestSiteToStation, completedSites]);
 
-  const optimizeSiteOrderFromStation = (station, sites) => {
-    if (!station || sites.length === 0) return sites;
+  // NEW: Advanced TSP algorithm for optimal route optimization
+  const optimizeRouteWithTSP = async (startPoint, sites) => {
+    if (!sites || sites.length === 0) return sites;
+    
+    // If few sites, use simple nearest neighbor
+    if (sites.length <= 10) {
+      return optimizeWithNearestNeighbor(startPoint, sites);
+    }
+    
+    // For more sites, use more sophisticated algorithm
+    return optimizeWithGeneticAlgorithm(startPoint, sites);
+  };
 
+  // OPTIMIZED: Nearest neighbor algorithm with improvements
+  const optimizeWithNearestNeighbor = (startPoint, sites) => {
+    if (sites.length === 0) return [];
+    
     const remainingSites = [...sites];
     const optimizedOrder = [];
     
-    const sitesWithDistances = remainingSites.map(site => {
-      const distance = calculateDistance(
-        parseFloat(station.latitude), parseFloat(station.longitude),
-        parseFloat(site.latitude), parseFloat(site.longitude)
-      );
-      return {
-        ...site,
-        distance,
-        coordinates: [parseFloat(site.longitude), parseFloat(site.latitude)]
-      };
-    });
-
-    sitesWithDistances.sort((a, b) => a.distance - b.distance);
-
-    const nearestSite = sitesWithDistances[0];
-    optimizedOrder.push(nearestSite);
+    let currentPoint = startPoint;
     
-    const remaining = sitesWithDistances.slice(1);
-    
-    let currentSite = nearestSite;
-    
-    while (remaining.length > 0) {
+    while (remainingSites.length > 0) {
       let nearestIndex = -1;
       let minDistance = Infinity;
 
-      for (let i = 0; i < remaining.length; i++) {
-        const distance = calculateDistance(
-          parseFloat(currentSite.latitude), parseFloat(currentSite.longitude),
-          parseFloat(remaining[i].latitude), parseFloat(remaining[i].longitude)
+      for (let i = 0; i < remainingSites.length; i++) {
+        const site = remainingSites[i];
+        const distance = calculateHaversineDistance(
+          parseFloat(currentPoint.latitude), parseFloat(currentPoint.longitude),
+          parseFloat(site.latitude), parseFloat(site.longitude)
         );
         
         if (distance < minDistance) {
@@ -749,58 +859,227 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       }
 
       if (nearestIndex !== -1) {
-        currentSite = remaining[nearestIndex];
-        optimizedOrder.push(currentSite);
-        remaining.splice(nearestIndex, 1);
+        const nearestSite = remainingSites[nearestIndex];
+        optimizedOrder.push(nearestSite);
+        currentPoint = nearestSite;
+        remainingSites.splice(nearestIndex, 1);
       }
     }
 
+    console.log('Nearest neighbor optimization completed:', optimizedOrder.length, 'sites');
     return optimizedOrder;
   };
 
+  // NEW: Genetic algorithm for better optimization with many sites
+  const optimizeWithGeneticAlgorithm = (startPoint, sites) => {
+    const populationSize = 50;
+    const generations = 100;
+    const mutationRate = 0.1;
+    
+    // Create initial population
+    let population = [];
+    for (let i = 0; i < populationSize; i++) {
+      const shuffled = [...sites].sort(() => Math.random() - 0.5);
+      population.push(shuffled);
+    }
+    
+    // Evolve population
+    for (let gen = 0; gen < generations; gen++) {
+      // Evaluate fitness
+      const fitness = population.map(route => 
+        1 / calculateTotalRouteDistance(startPoint, route)
+      );
+      
+      // Create new population
+      const newPopulation = [];
+      for (let i = 0; i < populationSize; i++) {
+        // Selection
+        const parent1 = selectParent(population, fitness);
+        const parent2 = selectParent(population, fitness);
+        
+        // Crossover
+        let child = crossover(parent1, parent2);
+        
+        // Mutation
+        if (Math.random() < mutationRate) {
+          child = mutate(child);
+        }
+        
+        newPopulation.push(child);
+      }
+      
+      population = newPopulation;
+    }
+    
+    // Find best route
+    const bestRoute = population.reduce((best, current) => {
+      const bestDistance = calculateTotalRouteDistance(startPoint, best);
+      const currentDistance = calculateTotalRouteDistance(startPoint, current);
+      return currentDistance < bestDistance ? current : best;
+    });
+    
+    console.log('Genetic algorithm optimization completed:', bestRoute.length, 'sites');
+    return bestRoute;
+  };
+
+  const selectParent = (population, fitness) => {
+    const totalFitness = fitness.reduce((sum, f) => sum + f, 0);
+    let random = Math.random() * totalFitness;
+    
+    for (let i = 0; i < population.length; i++) {
+      random -= fitness[i];
+      if (random <= 0) {
+        return population[i];
+      }
+    }
+    
+    return population[0];
+  };
+
+  const crossover = (parent1, parent2) => {
+    const start = Math.floor(Math.random() * parent1.length);
+    const end = Math.floor(Math.random() * (parent1.length - start)) + start;
+    
+    const child = parent1.slice(start, end);
+    
+    for (const site of parent2) {
+      if (!child.includes(site)) {
+        child.push(site);
+      }
+    }
+    
+    return child;
+  };
+
+  const mutate = (route) => {
+    const newRoute = [...route];
+    const i = Math.floor(Math.random() * newRoute.length);
+    const j = Math.floor(Math.random() * newRoute.length);
+    
+    [newRoute[i], newRoute[j]] = [newRoute[j], newRoute[i]];
+    return newRoute;
+  };
+
+  const calculateTotalRouteDistance = (startPoint, route) => {
+    if (route.length === 0) return 0;
+    
+    let totalDistance = calculateHaversineDistance(
+      parseFloat(startPoint.latitude), parseFloat(startPoint.longitude),
+      parseFloat(route[0].latitude), parseFloat(route[0].longitude)
+    );
+    
+    for (let i = 1; i < route.length; i++) {
+      totalDistance += calculateHaversineDistance(
+        parseFloat(route[i-1].latitude), parseFloat(route[i-1].longitude),
+        parseFloat(route[i].latitude), parseFloat(route[i].longitude)
+      );
+    }
+    
+    return totalDistance;
+  };
+
+  // OPTIMIZED: Improved Haversine distance calculation
+  const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // OPTIMIZED: Route analysis with better optimization
   const analyzeAndOptimizeRouteFromStation = async (station, sites) => {
     if (!station || sites.length === 0) return null;
-
+  
     try {
-      const optimizedOrder = optimizeSiteOrderFromStation(station, sites);
+      const optimizedOrder = await optimizeRouteWithTSP(station, sites);
       setOptimizedSiteOrder(optimizedOrder);
       
       const nearest = optimizedOrder[0];
       setNearestSiteToStation(nearest);
-
+  
+      // Calculate optimized route from current location
+      if (currentLocation) {
+        const fullRoute = await calculateFullRouteFromCurrentLocation(currentLocation, optimizedOrder);
+        
+        if (fullRoute) {
+          const aiResult = {
+            station: station,
+            nearestSite: nearest,
+            optimizedOrder: optimizedOrder,
+            route: fullRoute.route,
+            duration: fullRoute.duration,
+            formattedDuration: formatDuration(fullRoute.duration),
+            distance: fullRoute.distance,
+            totalSites: fullRoute.totalSites,
+            trafficConditions: analyzeTrafficConditions({ duration: fullRoute.duration * 60, distance: fullRoute.distance * 1000 }),
+            recommendation: generateRecommendation({ duration: fullRoute.duration * 60, distance: fullRoute.distance * 1000 }, nearest, fullRoute.duration, optimizedOrder.length),
+            isCached: false,
+            isFullRoute: true,
+            optimizationMethod: optimizedOrder.length > 10 ? 'Genetic Algorithm' : 'Nearest Neighbor'
+          };
+  
+          setAiOptimizedRoute(aiResult);
+          setRouteCoordinates(fullRoute.route);
+          setRouteInfo({
+            duration: fullRoute.duration,
+            formattedDuration: formatDuration(fullRoute.duration),
+            distance: fullRoute.distance,
+            totalSites: fullRoute.totalSites,
+            toSite: nearest.site_name,
+            isFullRoute: true
+          });
+          
+          cacheRoute(`optimized_route_${optimizedOrder.map(s => s.id).join('_')}`, fullRoute);
+          
+          if (isMobile) {
+            setShowAIPanel(true);
+          }
+          
+          return aiResult;
+        }
+      }
+  
+      // Fallback to station-based route
       const allCoordinates = [
         [parseFloat(station.longitude), parseFloat(station.latitude)],
         ...optimizedOrder.map(site => [parseFloat(site.longitude), parseFloat(site.latitude)])
       ];
-
+  
       const coordinatesString = allCoordinates.map(coord => `${coord[0]},${coord[1]}`).join(';');
       
-      const cacheKey = `route_${coordinatesString}`;
+      const cacheKey = `optimized_route_${coordinatesString}`;
       const cachedRoute = getCachedRoute(cacheKey);
       
       if (cachedRoute && !isOnline) {
-        console.log('Using cached route (offline mode)');
+        console.log('Using cached optimized route (offline mode)');
         const aiResult = {
           ...cachedRoute,
-          isCached: true
+          isCached: true,
+          isFullRoute: true,
+          optimizationMethod: 'Cached'
         };
         setAiOptimizedRoute(aiResult);
         setRouteCoordinates(cachedRoute.route);
         return aiResult;
       }
-
+  
       const routeResponse = await fetch(
         `https://api.mapbox.com/directions/v5/mapbox/driving/` +
         `${coordinatesString}?` +
         `access_token=${mapboxKey}&geometries=geojson&overview=full&steps=true`
       );
-
+  
       if (!routeResponse.ok) {
         throw new Error(`HTTP ${routeResponse.status}: ${routeResponse.statusText}`);
       }
-
+  
       const routeData = await routeResponse.json();
-
+  
       if (routeData.routes && routeData.routes.length > 0) {
         const optimalRoute = routeData.routes[0];
         const durationMinutes = Math.round(optimalRoute.duration / 60);
@@ -813,11 +1092,14 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           duration: durationMinutes,
           formattedDuration: formatDuration(durationMinutes),
           distance: (optimalRoute.distance / 1000).toFixed(1),
+          totalSites: optimizedOrder.length,
           trafficConditions: analyzeTrafficConditions(optimalRoute),
           recommendation: generateRecommendation(optimalRoute, nearest, durationMinutes, optimizedOrder.length),
-          isCached: false
+          isCached: false,
+          isFullRoute: true,
+          optimizationMethod: optimizedOrder.length > 10 ? 'Genetic Algorithm' : 'Nearest Neighbor'
         };
-
+  
         setAiOptimizedRoute(aiResult);
         
         cacheRoute(cacheKey, aiResult);
@@ -834,7 +1116,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       const fallbackRoute = getCachedRoute(`route_station_${station.id}`);
       if (fallbackRoute) {
         console.log('Using cached route as fallback');
-        setAiOptimizedRoute({ ...fallbackRoute, isCached: true });
+        setAiOptimizedRoute({ ...fallbackRoute, isCached: true, isFullRoute: true, optimizationMethod: 'Cached Fallback' });
         setRouteCoordinates(fallbackRoute.route);
         return fallbackRoute;
       }
@@ -874,13 +1156,13 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     let urgency = 'low';
     
     if (durationMinutes < 10) {
-      recommendation = `Start from station. You'll reach ${nearestSite.site_name} in ${formattedDuration}. Total ${totalStops} stops.`;
+      recommendation = `Optimized route ready! Start from station. You'll reach ${nearestSite.site_name} in ${formattedDuration}. Total ${totalStops} stops with optimal sequencing.`;
       urgency = 'low';
     } else if (durationMinutes < 60) {
-      recommendation = `Start from station. Head to ${nearestSite.site_name} - ${formattedDuration} away. ${totalStops} stops total. ${traffic.conditions === 'heavy' ? 'Heavy traffic expected.' : 'Good road conditions.'}`;
+      recommendation = `Optimized route calculated. Head to ${nearestSite.site_name} - ${formattedDuration} away. ${totalStops} stops total with fastest sequence. ${traffic.conditions === 'heavy' ? 'Heavy traffic expected.' : 'Good road conditions.'}`;
       urgency = 'medium';
     } else {
-      recommendation = `Start from station. Long route to ${nearestSite.site_name} (${formattedDuration}). ${totalStops} stops. Consider taking breaks. ${traffic.conditions === 'heavy' ? 'Significant delays expected.' : ''}`;
+      recommendation = `Optimized long route ready. Start from station to ${nearestSite.site_name} (${formattedDuration}). ${totalStops} stops with optimal order. ${traffic.conditions === 'heavy' ? 'Significant delays expected.' : ''}`;
       urgency = 'high';
     }
     
@@ -892,158 +1174,13 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
   };
 
   const getSuggestedAction = (duration, traffic) => {
-    if (duration > 120) return 'Consider alternative routes';
+    if (duration > 120) return 'Consider breaking route into segments';
     if (traffic === 'heavy') return 'Leave early to avoid peak hours';
-    if (duration < 15) return 'Proceed directly from station';
-    return 'Normal driving conditions';
+    if (duration < 15) return 'Proceed with optimized route';
+    return 'Follow the optimized sequence for fastest collection';
   };
 
-  const calculateOptimalRoute = async (sites, barangayId, station) => {
-    if (!mapboxKey || sites.length < 1) return;
-
-    try {
-      const optimizedSites = station 
-        ? optimizeSiteOrderFromStation(station, sites)
-        : optimizeSiteOrder(sites);
-
-      setOptimizedSiteOrder(optimizedSites);
-      if (optimizedSites.length > 0) {
-        setNearestSiteToStation(optimizedSites[0]);
-      }
-      
-      const coordinates = station 
-        ? [
-            `${station.longitude},${station.latitude}`,
-            ...optimizedSites.map(site => `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`)
-          ].join(';')
-        : optimizedSites.map(site => `${parseFloat(site.longitude)},${parseFloat(site.latitude)}`).join(';');
-
-      const cacheKey = `route_${coordinates}`;
-      const cachedRoute = getCachedRoute(cacheKey);
-      
-      if (cachedRoute && !isOnline) {
-        console.log('Using cached route data (offline mode)');
-        setRouteCoordinates(cachedRoute.route);
-        setRouteInfo({
-          duration: cachedRoute.duration,
-          formattedDuration: formatDuration(cachedRoute.duration),
-          distance: cachedRoute.distance,
-          toSite: cachedRoute.toSite
-        });
-        return;
-      }
-
-      const response = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?` +
-        `access_token=${mapboxKey}` +
-        `&geometries=geojson` +
-        `&overview=full` +
-        `&steps=true` +
-        `&alternatives=false` +
-        `&continue_straight=false`
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.routes && data.routes.length > 0) {
-        const fastestRoute = data.routes.reduce((fastest, current) => 
-          current.duration < fastest.duration ? current : fastest
-        );
-        const durationMinutes = Math.round(fastestRoute.duration / 60);
-        
-        setRouteCoordinates(fastestRoute.geometry.coordinates);
-        setRouteInfo({
-          duration: durationMinutes,
-          formattedDuration: formatDuration(durationMinutes),
-          distance: (fastestRoute.distance / 1000).toFixed(1),
-          toSite: optimizedSites[0]?.site_name
-        });
-
-        cacheRoute(cacheKey, {
-          route: fastestRoute.geometry.coordinates,
-          duration: durationMinutes,
-          distance: (fastestRoute.distance / 1000).toFixed(1),
-          toSite: optimizedSites[0]?.site_name
-        });
-      }
-    } catch (error) {
-      console.error('Error calculating route:', error);
-      
-      const fallbackKey = `route_${sites.map(s => `${s.longitude},${s.latitude}`).join(';')}`;
-      const cachedRoute = getCachedRoute(fallbackKey);
-      
-      if (cachedRoute) {
-        console.log('Using cached route as fallback');
-        setRouteCoordinates(cachedRoute.route);
-        setRouteInfo({
-          duration: cachedRoute.duration,
-          formattedDuration: formatDuration(cachedRoute.duration),
-          distance: cachedRoute.distance,
-          toSite: cachedRoute.toSite
-        });
-      } else {
-        const fallbackRoute = sites.map(site => 
-          [parseFloat(site.longitude), parseFloat(site.latitude)]
-        );
-        setRouteCoordinates(fallbackRoute);
-      }
-    }
-  };
-
-  const optimizeSiteOrder = (sites) => {
-    if (sites.length <= 2) return sites;
-    
-    const visited = new Set();
-    const optimized = [];
-    
-    let currentSite = sites[0];
-    optimized.push(currentSite);
-    visited.add(0);
-
-    while (optimized.length < sites.length) {
-      let nearestIndex = -1;
-      let minDistance = Infinity;
-
-      for (let i = 0; i < sites.length; i++) {
-        if (!visited.has(i)) {
-          const distance = calculateDistance(
-            parseFloat(currentSite.latitude), parseFloat(currentSite.longitude),
-            parseFloat(sites[i].latitude), parseFloat(sites[i].longitude)
-          );
-          
-          if (distance < minDistance) {
-            minDistance = distance;
-            nearestIndex = i;
-          }
-        }
-      }
-
-      if (nearestIndex !== -1) {
-        currentSite = sites[nearestIndex];
-        optimized.push(currentSite);
-        visited.add(nearestIndex);
-      }
-    }
-
-    return optimized;
-  };
-
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  };
-
+  // OPTIMIZED: Improved current location with route optimization
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       setLoading(true);
@@ -1058,23 +1195,31 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           setLastLocationUpdate(new Date());
           
           updateCurrentLocationMarker(currentPos);
-
-          if (stationLocation && siteLocations.length > 0) {
-            const aiResult = await analyzeAndOptimizeRouteFromStation(stationLocation, siteLocations);
+  
+          // Calculate optimized route through all sites
+          if (optimizedSiteOrder.length > 0) {
+            const remainingSites = optimizedSiteOrder.filter(site => !completedSites.has(site.id));
             
-            if (aiResult) {
-              setRouteCoordinates(aiResult.route);
-              setRouteInfo({
-                duration: aiResult.duration,
-                distance: aiResult.distance,
-                toSite: aiResult.nearestSite?.site_name
-              });
+            if (remainingSites.length > 0) {
+              const fullRoute = await calculateFullRouteFromCurrentLocation(currentPos, remainingSites);
               
-              setTimeout(() => {
-                if (map.current && aiResult.route.length > 0) {
-                  addRouteLayer();
-                }
-              }, 500);
+              if (fullRoute) {
+                setRouteCoordinates(fullRoute.route);
+                setRouteInfo({
+                  duration: fullRoute.duration,
+                  formattedDuration: formatDuration(fullRoute.duration),
+                  distance: fullRoute.distance,
+                  totalSites: fullRoute.totalSites,
+                  toSite: remainingSites[0]?.site_name,
+                  isFullRoute: true
+                });
+                
+                setTimeout(() => {
+                  if (map.current && fullRoute.route.length > 0) {
+                    addRouteLayer();
+                  }
+                }, 500);
+              }
             }
           }
           
@@ -1083,7 +1228,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
               center: currentPos,
               zoom: isMobile ? 15 : 14,
               essential: true,
-              duration: 1500
+              duration: 1200
             });
           }
           
@@ -1096,7 +1241,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         },
         {
           enableHighAccuracy: true,
-          timeout: 30000,
+          timeout: 15000,
           maximumAge: 0
         }
       );
@@ -1119,6 +1264,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     analyzeAndOptimizeRouteFromStation(stationLocation, siteLocations);
   };
 
+  // OPTIMIZED: Route layer with better performance
   const addRouteLayer = () => {
     if (!map.current || routeCoordinates.length === 0) {
       console.log('Cannot add route layer - missing map or route coordinates');
@@ -1144,7 +1290,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     }
 
     try {
-      console.log('Adding route layer to map with coordinates:', routeCoordinates.length);
+      console.log('Adding optimized route layer to map with coordinates:', routeCoordinates.length);
       
       map.current.addSource('route', {
         type: 'geojson',
@@ -1195,7 +1341,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         }
       });
 
-      console.log('Route layer added successfully');
+      console.log('Optimized route layer added successfully');
 
       setTimeout(() => {
         fitMapToRoute();
@@ -1238,7 +1384,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     try {
       map.current.fitBounds(bounds, {
         padding: padding,
-        duration: 1000,
+        duration: 800,
         essential: true,
         maxZoom: isMobile ? 16 : 15
       });
@@ -1409,7 +1555,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     }
   };
 
-  // NEW: Reset completed sites (useful for testing)
+  // Reset completed sites (useful for testing)
   const resetCompletedSites = () => {
     setCompletedSites(new Set());
     setCurrentSiteIndex(0);

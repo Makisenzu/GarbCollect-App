@@ -311,6 +311,12 @@ const AIPanelContent = ({ aiOptimizedRoute, completedSites, currentSiteIndex, op
   <>
     <div className="space-y-2 text-sm">
       <div className="flex justify-between">
+        <span className="text-gray-600">Route Type:</span>
+        <span className="font-semibold text-purple-600">
+          {aiOptimizedRoute.isFullRoute ? 'Complete Route' : 'Station Start'}
+        </span>
+      </div>
+      <div className="flex justify-between">
         <span className="text-gray-600">Current Target:</span>
         <span className="font-semibold">
           {optimizedSiteOrder[currentSiteIndex]?.site_name || aiOptimizedRoute.nearestSite.site_name}
@@ -319,15 +325,15 @@ const AIPanelContent = ({ aiOptimizedRoute, completedSites, currentSiteIndex, op
       <div className="flex justify-between">
         <span className="text-gray-600">Progress:</span>
         <span className="font-semibold">
-          {completedSites.size}/{optimizedSiteOrder.length} sites
+          {completedSites.size}/{aiOptimizedRoute.totalSites || optimizedSiteOrder.length} sites
         </span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-600">Distance:</span>
+        <span className="text-gray-600">Total Distance:</span>
         <span className="font-semibold">{aiOptimizedRoute.distance} km</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-600">Est. Time:</span>
+        <span className="text-gray-600">Total Time:</span>
         <span className="font-semibold">{aiOptimizedRoute.formattedDuration}</span>
       </div>
       <div className="flex justify-between">
@@ -350,7 +356,12 @@ const AIPanelContent = ({ aiOptimizedRoute, completedSites, currentSiteIndex, op
       </p>
       {completedSites.size > 0 && (
         <p className="text-xs text-green-600 mt-2 font-medium">
-          ✅ {completedSites.size} site(s) completed
+          ✅ {completedSites.size} site(s) completed • {aiOptimizedRoute.totalSites - completedSites.size} remaining
+        </p>
+      )}
+      {aiOptimizedRoute.isFullRoute && (
+        <p className="text-xs text-purple-600 mt-1 font-medium">
+          🗺️ Showing complete route through all sites
         </p>
       )}
     </div>
@@ -461,6 +472,11 @@ const ScheduleInfoPanel = ({
             Current: {optimizedSiteOrder[currentSiteIndex]?.site_name}
           </div>
         )}
+        {routeInfo?.isFullRoute && (
+          <div className="text-xs text-purple-600 font-medium">
+            Full route: {routeInfo.totalSites} sites
+          </div>
+        )}
       </div>
       {routeInfo && (
         <div className="text-right">
@@ -470,7 +486,12 @@ const ScheduleInfoPanel = ({
           </div>
           {routeInfo.toSite && (
             <div className="text-xs text-gray-500">
-              To: {routeInfo.toSite}
+              Next: {routeInfo.toSite}
+            </div>
+          )}
+          {routeInfo?.isFullRoute && (
+            <div className="text-xs text-purple-500">
+              Complete route active
             </div>
           )}
           {isMobile && aiOptimizedRoute && (
