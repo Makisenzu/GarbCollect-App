@@ -589,6 +589,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           axios.get(`/schedules/${scheduleId}`),
           axios.get(`/barangay/${scheduleId}/sites?status=active`)
         ]);
+        console.log('sched Id', scheduleId);
 
         if (scheduleResponse.data.success && scheduleResponse.data.data) {
           const schedule = scheduleResponse.data.data;

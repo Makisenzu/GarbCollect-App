@@ -436,7 +436,7 @@ const PublicSchedule = () => {
                                         href={route('barangay.routes')}
                                         className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
                                       >
-                                        Track Route Now
+                                        Track
                                       </a>
                                     ) : (
                                       <div className="text-sm text-gray-700">
@@ -506,7 +506,7 @@ const PublicSchedule = () => {
                                         href={route('barangay.routes')}
                                         className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
                                       >
-                                        Track Route Now
+                                        Track
                                       </a>
                                     ) : (
                                       <div className="text-sm text-gray-700">
@@ -599,7 +599,7 @@ const PublicSchedule = () => {
                                         href={route('barangay.routes')}
                                         className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
                                       >
-                                        View Route Now
+                                        View
                                       </a>
                                     ) : (
                                       <div className="text-sm text-gray-700">
