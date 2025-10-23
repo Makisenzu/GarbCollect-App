@@ -16,6 +16,7 @@ use App\Http\Controllers\admin\resident\AreaController;
 use App\Http\Controllers\admin\truck\ScheduleController;
 use App\Http\Controllers\admin\dashboard\DashboardController;
 use App\Http\Controllers\admin\LocationRoute\RouteController;
+use App\Http\Controllers\truck\DriverTrackerController;
 use App\Http\Controllers\truck\EmployeeController;
 use App\Http\Controllers\User\PublicSchedule;
 use App\Http\Controllers\User\PublicScheduleController;
@@ -43,7 +44,6 @@ Route::get('/employee/login', function () {
 //Public route
 Route::post('/reviews', [ReviewController::class, 'store']);
 
-
 Route::get('/barangayFetch', [UserController::class, 'getBarangayData']);
 Route::get('/categoryFetch', [UserController::class, 'getCategory']);
 Route::get('/reviews', [UserController::class, 'renderReview'])->name('show.reviews');
@@ -55,6 +55,10 @@ Route::get('/barangay/schedule/{id}', [UserController::class, 'getBarangaySchedu
 Route::get('/barangay/getSites/{id}', [UserController::class, 'getActiveSite']);
 Route::get('/site', [UserController::class, 'showMyLocation'])->name('site.location');
 
+
+Route::get('/public/driver-locations/{barangayId?}', [DriverTrackerController::class, 'getActiveDriverLocations']);
+Route::get('/public/active-schedules/{barangayId?}', [DriverTrackerController::class, 'getActiveSchedules']);
+
 Route::middleware(['auth', 'verified'])->group(function () {
     
 
@@ -63,6 +67,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard', [EmployeeController::class, 'index'])->name('dashboard');
         Route::get('/schedules/{id}', [EmployeeController::class, 'show']);
         Route::get('/barangay/{barangayId}/sites', [EmployeeController::class, 'getActiveSites']);
+
+        Route::post('/driver/location/update', [DriverTrackerController::class, 'updateLocation']);
+        Route::post('/schedule/start', [DriverTrackerController::class, 'startSchedule']);
+        Route::post('/schedule/complete', [DriverTrackerController::class, 'completeSchedule']);
     });
     
 

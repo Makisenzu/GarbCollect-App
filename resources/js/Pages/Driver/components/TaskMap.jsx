@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 're
 import { createRoot } from 'react-dom/client';
 import mapboxgl from 'mapbox-gl';
 import { GiControlTower } from "react-icons/gi";
-import { IoClose, IoCheckmark, IoNavigate, IoSparkles, IoChevronDown, IoChevronUp, IoRefresh } from "react-icons/io5";
+import { IoClose, IoCheckmark, IoNavigate, IoSparkles, IoChevronDown, IoChevronUp, IoRefresh, IoPlay, IoStop } from "react-icons/io5";
 import axios from 'axios';
 import can from "@/images/can.png";
 import { useTaskMap } from './useTaskMap';
@@ -34,6 +34,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     lastLocationUpdate,
     completedSites,
     currentSiteIndex,
+    isTaskActive,
     
     formatDuration,
     getCurrentLocation,
@@ -45,6 +46,11 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     updateLocationManually,
     resetCompletedSites,
     markSiteAsCompleted,
+    
+    // NEW: Reverb functions
+    startTaskAndBroadcast,
+    completeTaskAndBroadcast,
+    sendLocationToReverb
   } = useTaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel });
 
   useImperativeHandle(ref, () => ({
@@ -69,6 +75,13 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     markSiteAsCompleted: (siteId) => {
       const site = siteLocations.find(s => s.id === siteId);
       if (site) markSiteAsCompleted(site);
+    },
+    // NEW: Reverb methods
+    startTaskAndBroadcast: () => {
+      startTaskAndBroadcast();
+    },
+    completeTaskAndBroadcast: () => {
+      completeTaskAndBroadcast();
     }
   }));
 
@@ -78,6 +91,16 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
       getCurrentLocation();
     }
   }, [autoGetLocation, currentLocation, loading, mapInitialized]);
+
+  // NEW: Handle task completion with broadcast
+  const handleTaskComplete = () => {
+    completeTaskAndBroadcast();
+  };
+
+  // NEW: Handle task start with broadcast
+  const handleTaskStart = () => {
+    startTaskAndBroadcast();
+  };
 
   return (
     <div className="relative w-full h-full bg-white">
@@ -94,6 +117,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
           completedSites={completedSites}
           currentSiteIndex={currentSiteIndex}
           optimizedSiteOrder={optimizedSiteOrder}
+          isTaskActive={isTaskActive}
         />
       )}
 
@@ -114,12 +138,15 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
         showControls={showControls}
         getAIOptimizedRoute={getAIOptimizedRoute}
         getCurrentLocation={getCurrentLocation}
-        onTaskComplete={onTaskComplete}
+        onTaskComplete={handleTaskComplete}
         onTaskCancel={onTaskCancel}
+        onTaskStart={handleTaskStart}
         scheduleId={scheduleId}
         currentLocation={currentLocation}
         completedSites={completedSites}
         resetCompletedSites={resetCompletedSites}
+        activeSchedule={activeSchedule}
+        isTaskActive={isTaskActive}
       />
 
       {activeSchedule && (
@@ -133,6 +160,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
           completedSites={completedSites}
           currentSiteIndex={currentSiteIndex}
           optimizedSiteOrder={optimizedSiteOrder}
+          isTaskActive={isTaskActive}
         />
       )}
       
@@ -190,7 +218,8 @@ const MobileHeader = ({
   currentLocation, 
   completedSites,
   currentSiteIndex,
-  optimizedSiteOrder
+  optimizedSiteOrder,
+  isTaskActive
 }) => (
   <div className="absolute top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3">
     <div className="flex items-center justify-between">
@@ -209,6 +238,11 @@ const MobileHeader = ({
           {currentSiteIndex < optimizedSiteOrder.length && (
             <p className="text-xs text-blue-600 font-medium">
               Next: {optimizedSiteOrder[currentSiteIndex]?.site_name}
+            </p>
+          )}
+          {isTaskActive && (
+            <p className="text-xs text-green-600 font-medium">
+              🔴 Live - Broadcasting to residents
             </p>
           )}
         </div>
@@ -364,14 +398,28 @@ const ControlButtons = ({
   getCurrentLocation, 
   onTaskComplete, 
   onTaskCancel, 
+  onTaskStart,
   scheduleId, 
   currentLocation,
   completedSites,
-  resetCompletedSites
+  resetCompletedSites,
+  activeSchedule,
+  isTaskActive
 }) => (
   <div className={`absolute ${isMobile ? 'top-16' : 'top-4'} right-4 z-10 flex flex-col gap-3 transition-all duration-300 ${
     isMobile && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100'
   }`}>
+    {/* NEW: Start Task Button */}
+    {activeSchedule && !isTaskActive && (
+      <ControlButton 
+        onClick={onTaskStart}
+        icon={<IoPlay className="w-6 h-6" />}
+        label="Start Task"
+        className="bg-green-500 hover:bg-green-600 text-white"
+        showLabel={!isMobile}
+      />
+    )}
+
     <ControlButton 
       onClick={getAIOptimizedRoute}
       icon={<IoSparkles className="w-6 h-6" />}
@@ -400,7 +448,7 @@ const ControlButtons = ({
     )}
     
     <ControlButton 
-      onClick={() => onTaskComplete && onTaskComplete({ scheduleId })}
+      onClick={onTaskComplete}
       icon={<IoCheckmark className="w-6 h-6" />}
       label="Complete"
       className="bg-green-500 hover:bg-green-600 text-white"
@@ -441,7 +489,8 @@ const ScheduleInfoPanel = ({
   setShowAIPanel,
   completedSites,
   currentSiteIndex,
-  optimizedSiteOrder
+  optimizedSiteOrder,
+  isTaskActive
 }) => (
   <div className={`absolute ${isMobile ? 'bottom-20 left-4 right-4' : 'bottom-4 left-4'} z-10 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-lg ${
     isMobile ? 'max-w-full' : 'max-w-xs'
@@ -459,6 +508,12 @@ const ScheduleInfoPanel = ({
         {currentSiteIndex < optimizedSiteOrder.length && (
           <div className="text-xs text-blue-600">
             Current: {optimizedSiteOrder[currentSiteIndex]?.site_name}
+          </div>
+        )}
+        {isTaskActive && (
+          <div className="text-xs text-green-600 font-medium flex items-center gap-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            Live - Residents can see your location
           </div>
         )}
       </div>

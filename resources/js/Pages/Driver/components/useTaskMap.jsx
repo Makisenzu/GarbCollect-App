@@ -35,6 +35,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
   const [lastLocationUpdate, setLastLocationUpdate] = useState(null);
   const [completedSites, setCompletedSites] = useState(new Set());
   const [currentSiteIndex, setCurrentSiteIndex] = useState(0);
+  const [isTaskActive, setIsTaskActive] = useState(false);
 
   const barangayColors = {
     'Alegria': '#FF5733',
@@ -66,6 +67,341 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     'Tagapua': '#2F4F4F',
     'San Francisco': '#FFE659',
     '_default': '#4F262A'
+  };
+
+  const sendLocationToReverb = async (latitude, longitude, accuracy = null) => {
+    if (!scheduleId) {
+      console.error('No schedule ID available');
+      return;
+    }
+  
+    try {
+      const barangayId = activeSchedule?.barangay_id || 'unknown';
+  
+      const response = await axios.post('/driver/location/update', {
+        latitude: latitude,
+        longitude: longitude,
+        accuracy: accuracy,
+        schedule_id: scheduleId,
+        barangay_id: barangayId,
+      });
+  
+      if (response.data.success) {
+        console.log('Location broadcasted via Reverb');
+      }
+    } catch (error) {
+      console.error('Failed to broadcast location:', error);
+    }
+  };
+
+  const startTaskAndBroadcast = async () => {
+    if (!scheduleId) {
+      console.error('Cannot start task: missing schedule ID');
+      return;
+    }
+  
+    try {
+      const barangayId = activeSchedule?.barangay_id || 'unknown';
+  
+      const response = await axios.post('/schedule/start', {
+        schedule_id: scheduleId,
+        barangay_id: barangayId
+      });
+  
+      if (response.data.success) {
+        console.log('Task started and broadcasted to residents');
+        setIsTaskActive(true);
+        
+        if (response.data.data) {
+          setActiveSchedule(prev => ({
+            ...prev,
+            ...response.data.data,
+            status: 'in_progress'
+          }));
+        }
+        
+        startRealtimeLocationTracking();
+      }
+    } catch (error) {
+      console.error('Failed to start task:', error);
+    }
+  };
+
+  const completeTaskAndBroadcast = async () => {
+    if (!scheduleId) {
+      console.error('Cannot complete task: missing schedule ID');
+      return;
+    }
+
+    try {
+      const response = await axios.post('/schedule/complete', {
+        schedule_id: scheduleId
+      });
+
+      if (response.data.success) {
+        console.log('Task completed and broadcasted to residents');
+        setIsTaskActive(false);
+        stopRealtimeLocationTracking();
+        
+        if (onTaskComplete) {
+          onTaskComplete();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+    }
+  };
+
+  const startRealtimeLocationTracking = () => {
+    if (!navigator.geolocation) {
+      console.error('Geolocation is not supported by this browser');
+      return;
+    }
+  
+    stopRealtimeLocationTracking();
+  
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    };
+  
+    console.log('Starting real-time location tracking with Reverb...');
+  
+    locationWatcherRef.current = navigator.geolocation.watchPosition(
+      async (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        const currentPos = [longitude, latitude];
+        
+        console.log('Location updated:', currentPos);
+        
+        try {
+          await sendLocationToReverb(latitude, longitude, accuracy);
+        } catch (error) {
+          console.error('Failed to send location to Reverb:', error);
+        }
+        
+        setCurrentLocation(currentPos);
+        setLocationAccuracy(accuracy);
+        setLastLocationUpdate(new Date());
+        
+        updateCurrentLocationMarker(currentPos);
+        
+        if (siteLocations.length > 0) {
+          checkSiteProximity(currentPos, siteLocations);
+        }
+        
+        if (!map.current?.hasUserInteracted()) {
+          map.current?.flyTo({
+            center: currentPos,
+            zoom: isMobile ? 16 : 15,
+            essential: true,
+            duration: 1000
+          });
+        }
+      },
+      (error) => {
+        console.error('Error in real-time location tracking:', error);
+        handleLocationError(error);
+      },
+      options
+    );
+  
+    if (map.current) {
+      map.current.hasUserInteracted = () => false;
+      map.current.on('movestart', () => {
+        map.current.hasUserInteracted = () => true;
+      });
+    }
+  };
+
+  const stopRealtimeLocationTracking = () => {
+    if (locationWatcherRef.current !== null) {
+      navigator.geolocation.clearWatch(locationWatcherRef.current);
+      locationWatcherRef.current = null;
+    }
+  };
+
+  const updateCurrentLocationMarker = (coordinates) => {
+    if (!map.current) return;
+
+    if (currentLocationMarkerRef.current) {
+      currentLocationMarkerRef.current.remove();
+    }
+
+    const markerElement = document.createElement('div');
+    markerElement.className = 'current-location-marker';
+    const markerSize = isMobile ? 'w-8 h-8' : 'w-6 h-6';
+    markerElement.innerHTML = `
+      <div class="relative">
+        <div class="${markerSize} bg-blue-600 border-2 border-white rounded-full shadow-lg z-50"></div>
+        <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
+      </div>
+    `;
+
+    currentLocationMarkerRef.current = new mapboxgl.Marker({
+      element: markerElement,
+      draggable: false
+    })
+    .setLngLat(coordinates)
+    .addTo(map.current);
+  };
+
+  const handleLocationError = (error) => {
+    let errorMessage = 'Location tracking error: ';
+    
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        errorMessage += 'Location access denied. Please enable location permissions.';
+        break;
+      case error.POSITION_UNAVAILABLE:
+        errorMessage += 'Location unavailable. Using last known position.';
+        break;
+      case error.TIMEOUT:
+        errorMessage += 'Location request timeout. Retrying...';
+        setTimeout(startRealtimeLocationTracking, 5000);
+        break;
+      default:
+        errorMessage += 'Unknown location error.';
+        break;
+    }
+    
+    console.warn(errorMessage);
+  };
+
+  const checkSiteProximity = (currentPos, sites) => {
+    if (!currentPos || sites.length === 0) return;
+
+    const [longitude, latitude] = currentPos;
+    const PROXIMITY_THRESHOLD = 0.05;
+
+    sites.forEach((site, index) => {
+      if (completedSites.has(site.id)) return;
+
+      const siteLongitude = parseFloat(site.longitude);
+      const siteLatitude = parseFloat(site.latitude);
+      
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        siteLatitude,
+        siteLongitude
+      );
+
+      if (distance < 0.05) {
+        markSiteAsCompleted(site, index);
+      }
+    });
+  };
+
+  const markSiteAsCompleted = (site, index) => {
+    console.log(`Site reached: ${site.site_name}`);
+    
+    setCompletedSites(prev => new Set(prev).add(site.id));
+    
+    if (optimizedSiteOrder.length > 0) {
+      const currentIndex = optimizedSiteOrder.findIndex(s => s.id === site.id);
+      if (currentIndex !== -1 && currentIndex < optimizedSiteOrder.length - 1) {
+        setCurrentSiteIndex(currentIndex + 1);
+        
+        const nextSite = optimizedSiteOrder[currentIndex + 1];
+        if (currentLocation) {
+          calculateRouteToNextSite(currentLocation, nextSite);
+        }
+      }
+    }
+    
+    updateSiteMarkers();
+    
+    if (onTaskComplete) {
+      onTaskComplete(site);
+    }
+    
+    showCompletionNotification(site.site_name);
+  };
+
+  const formatDuration = (minutes) => {
+    if (minutes < 60) {
+      return `${minutes} min`;
+    } else {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      if (mins === 0) {
+        return `${hours}h`;
+      } else {
+        return `${hours}h ${mins}min`;
+      }
+    }
+  };
+
+  const calculateRouteToNextSite = async (currentPos, nextSite) => {
+    if (!currentPos || !nextSite || !mapboxKey) return;
+
+    try {
+      const coordinatesString = `${currentPos[0]},${currentPos[1]};${parseFloat(nextSite.longitude)},${parseFloat(nextSite.latitude)}`;
+      
+      console.log(`Calculating route to next site: ${nextSite.site_name}`);
+      
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesString}?` +
+        `access_token=${mapboxKey}` +
+        `&geometries=geojson` +
+        `&overview=full` +
+        `&steps=true` +
+        `&alternatives=false`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const durationMinutes = Math.round(route.duration / 60);
+        
+        setRouteCoordinates(route.geometry.coordinates);
+        setRouteInfo({
+          duration: durationMinutes,
+          formattedDuration: formatDuration(durationMinutes),
+          distance: (route.distance / 1000).toFixed(1),
+          toSite: nextSite.site_name
+        });
+
+        setTimeout(() => {
+          if (map.current && route.geometry.coordinates.length > 0) {
+            addRouteLayer();
+          }
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error calculating route to next site:', error);
+    }
+  };
+
+  const showCompletionNotification = (siteName) => {
+    console.log(`Site completed: ${siteName}`);
+    
+    if (isMobile) {
+      alert(`Site completed: ${siteName}`);
+    } else {
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.innerHTML = `${siteName} completed!`;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 3000);
+    }
+  };
+
+  const updateSiteMarkers = () => {
+    clearSiteMarkers();
+    addSiteMarkers();
   };
 
   // Online/offline detection
@@ -102,7 +438,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
             
             try {
                 // Send location to server
-                const response = await axios.post('/api/driver/location/update', {
+                const response = await axios.post('/driver/location/update', {
                     latitude: latitude,
                     longitude: longitude,
                     schedule_id: scheduleId
@@ -177,148 +513,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     return null;
   };
 
-  // NEW: Check if user has reached a site
-  const checkSiteProximity = (currentPos, sites) => {
-    if (!currentPos || sites.length === 0) return;
-
-    const [longitude, latitude] = currentPos;
-    const PROXIMITY_THRESHOLD = 0.05; // Approximately 50 meters in degrees
-
-    sites.forEach((site, index) => {
-      if (completedSites.has(site.id)) return;
-
-      const siteLongitude = parseFloat(site.longitude);
-      const siteLatitude = parseFloat(site.latitude);
-      
-      const distance = calculateDistance(
-        latitude,
-        longitude,
-        siteLatitude,
-        siteLongitude
-      );
-
-      // If within 50 meters, mark as completed
-      if (distance < 0.05) {
-        markSiteAsCompleted(site, index);
-      }
-    });
-  };
-
-  // NEW: Mark site as completed and update visual presentation
-  const markSiteAsCompleted = (site, index) => {
-    console.log(`Site reached: ${site.site_name}`);
-    
-    setCompletedSites(prev => new Set(prev).add(site.id));
-    
-    // Update current site index for next site in sequence
-    if (optimizedSiteOrder.length > 0) {
-      const currentIndex = optimizedSiteOrder.findIndex(s => s.id === site.id);
-      if (currentIndex !== -1 && currentIndex < optimizedSiteOrder.length - 1) {
-        setCurrentSiteIndex(currentIndex + 1);
-        
-        // Calculate route to next site
-        const nextSite = optimizedSiteOrder[currentIndex + 1];
-        if (currentLocation) {
-          calculateRouteToNextSite(currentLocation, nextSite);
-        }
-      }
-    }
-    
-    updateSiteMarkers();
-    
-    if (onTaskComplete) {
-      onTaskComplete(site);
-    }
-    
-    showCompletionNotification(site.site_name);
-  };
-
-  // NEW: Calculate route to next site in sequence
-  const calculateRouteToNextSite = async (currentPos, nextSite) => {
-    if (!currentPos || !nextSite || !mapboxKey) return;
-
-    try {
-      const coordinatesString = `${currentPos[0]},${currentPos[1]};${parseFloat(nextSite.longitude)},${parseFloat(nextSite.latitude)}`;
-      
-      console.log(`Calculating route to next site: ${nextSite.site_name}`);
-      
-      const response = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesString}?` +
-        `access_token=${mapboxKey}` +
-        `&geometries=geojson` +
-        `&overview=full` +
-        `&steps=true` +
-        `&alternatives=false`
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.routes && data.routes.length > 0) {
-        const route = data.routes[0];
-        const durationMinutes = Math.round(route.duration / 60);
-        
-        setRouteCoordinates(route.geometry.coordinates);
-        setRouteInfo({
-          duration: durationMinutes,
-          formattedDuration: formatDuration(durationMinutes),
-          distance: (route.distance / 1000).toFixed(1),
-          toSite: nextSite.site_name
-        });
-
-        setTimeout(() => {
-          if (map.current && route.geometry.coordinates.length > 0) {
-            addRouteLayer();
-          }
-        }, 500);
-      }
-    } catch (error) {
-      console.error('Error calculating route to next site:', error);
-    }
-  };
-
-  // NEW: Show completion notification
-  const showCompletionNotification = (siteName) => {
-    console.log(`🎉 Site completed: ${siteName}`);
-    
-    if (isMobile) {
-      alert(`✅ Site completed: ${siteName}`);
-    } else {
-      const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      notification.innerHTML = `✅ ${siteName} completed!`;
-      document.body.appendChild(notification);
-      
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 3000);
-    }
-  };
-
-  // NEW: Update site markers with completion status
-  const updateSiteMarkers = () => {
-    clearSiteMarkers();
-    addSiteMarkers();
-  };
-
-  const formatDuration = (minutes) => {
-    if (minutes < 60) {
-      return `${minutes} min`;
-    } else {
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      if (mins === 0) {
-        return `${hours}h`;
-      } else {
-        return `${hours}h ${mins}min`;
-      }
-    }
-  };
 
   const formatDurationForAI = (minutes) => {
     if (minutes < 60) {
@@ -519,44 +713,75 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
   useEffect(() => {
     const fetchScheduleAndSites = async () => {
-      if (!scheduleId) return;
+      if (!scheduleId) {
+        console.warn('No schedule ID provided');
+        return;
+      }
       
       setLoading(true);
       try {
-        const scheduleResponse = await axios.get(`/schedules/${scheduleId}`);
-        if (scheduleResponse.data.success && scheduleResponse.data.data) {
-          const schedule = scheduleResponse.data.data;
-          setActiveSchedule(schedule);
-
-          const sitesResponse = await axios.get(`/barangay/${schedule.barangay_id}/sites?status=active`);
-          if (sitesResponse.data.success) {
-            const activeSites = sitesResponse.data.data;
-            
-            const station = activeSites.find(site => site.type === 'station');
-            const regularSites = activeSites.filter(site => site.type !== 'station');
-            
-            if (station) {
-              setStationLocation({
-                ...station,
-                coordinates: [parseFloat(station.longitude), parseFloat(station.latitude)]
-              });
-              
-              if (regularSites.length > 0) {
-                const nearestToStation = findNearestSiteToStation(station, regularSites);
-                setNearestSiteToStation(nearestToStation);
-                console.log('Nearest site to station found:', nearestToStation?.site_name);
-                
-                const optimizedOrder = optimizeSiteOrderFromStation(station, regularSites);
-                setOptimizedSiteOrder(optimizedOrder);
-                setCurrentSiteIndex(0);
-              }
-            }
-            
-            setSiteLocations(regularSites);
+        let scheduleData = null;
+        
+        // Try to fetch schedule details
+        try {
+          const scheduleResponse = await axios.get(`/schedules/${scheduleId}`);
+          if (scheduleResponse.data.success && scheduleResponse.data.data) {
+            scheduleData = scheduleResponse.data.data;
+            setActiveSchedule(scheduleData);
+            console.log('Schedule data loaded:', scheduleData);
+          } else {
+            console.warn('No schedule data received from API');
           }
+        } catch (scheduleError) {
+          console.warn('Could not fetch schedule details:', scheduleError);
+          // Create a minimal schedule object if API fails
+          scheduleData = {
+            id: scheduleId,
+            barangay_id: 'unknown',
+            status: 'pending'
+          };
+          setActiveSchedule(scheduleData);
         }
+  
+        // Then fetch sites if we have a valid barangay_id
+        if (scheduleData?.barangay_id && scheduleData.barangay_id !== 'unknown') {
+          try {
+            const sitesResponse = await axios.get(`/barangay/${scheduleData.barangay_id}/sites?status=active`);
+            if (sitesResponse.data.success) {
+              const activeSites = sitesResponse.data.data;
+              console.log('Sites loaded:', activeSites.length);
+              
+              const station = activeSites.find(site => site.type === 'station');
+              const regularSites = activeSites.filter(site => site.type !== 'station');
+              
+              if (station) {
+                setStationLocation({
+                  ...station,
+                  coordinates: [parseFloat(station.longitude), parseFloat(station.latitude)]
+                });
+                
+                if (regularSites.length > 0) {
+                  const nearestToStation = findNearestSiteToStation(station, regularSites);
+                  setNearestSiteToStation(nearestToStation);
+                  console.log('Nearest site to station found:', nearestToStation?.site_name);
+                  
+                  const optimizedOrder = optimizeSiteOrderFromStation(station, regularSites);
+                  setOptimizedSiteOrder(optimizedOrder);
+                  setCurrentSiteIndex(0);
+                }
+              }
+              
+              setSiteLocations(regularSites);
+            }
+          } catch (sitesError) {
+            console.error('Error fetching sites:', sitesError);
+          }
+        } else {
+          console.warn('No valid barangay_id available to fetch sites');
+        }
+  
       } catch (error) {
-        console.error('Error fetching schedule and sites: ', error);
+        console.error('Error in schedule and sites setup: ', error);
       } finally {
         setLoading(false);
       }
@@ -629,116 +854,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     };
   }, [mapboxKey, cssLoaded, isMobile]);
 
-  // Real-time location tracking
-  const startRealtimeLocationTracking = () => {
-    if (!navigator.geolocation) {
-      console.error('Geolocation is not supported by this browser');
-      return;
-    }
-
-    stopRealtimeLocationTracking();
-
-    const options = {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0
-    };
-
-    console.log('Starting real-time location tracking...');
-
-    locationWatcherRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-        const currentPos = [longitude, latitude];
-        
-        console.log('Location updated:', currentPos);
-        setCurrentLocation(currentPos);
-        setLocationAccuracy(accuracy);
-        setLastLocationUpdate(new Date());
-        
-        updateCurrentLocationMarker(currentPos);
-        
-        if (siteLocations.length > 0) {
-          checkSiteProximity(currentPos, siteLocations);
-        }
-        
-        if (!map.current?.hasUserInteracted()) {
-          map.current?.flyTo({
-            center: currentPos,
-            zoom: isMobile ? 16 : 15,
-            essential: true,
-            duration: 1000
-          });
-        }
-      },
-      (error) => {
-        console.error('Error in real-time location tracking:', error);
-        handleLocationError(error);
-      },
-      options
-    );
-
-    if (map.current) {
-      map.current.hasUserInteracted = () => false;
-      map.current.on('movestart', () => {
-        map.current.hasUserInteracted = () => true;
-      });
-    }
-  };
-
-  const stopRealtimeLocationTracking = () => {
-    if (locationWatcherRef.current !== null) {
-      navigator.geolocation.clearWatch(locationWatcherRef.current);
-      locationWatcherRef.current = null;
-    }
-  };
-
-  const updateCurrentLocationMarker = (coordinates) => {
-    if (!map.current) return;
-
-    if (currentLocationMarkerRef.current) {
-      currentLocationMarkerRef.current.remove();
-    }
-
-    const markerElement = document.createElement('div');
-    markerElement.className = 'current-location-marker';
-    const markerSize = isMobile ? 'w-8 h-8' : 'w-6 h-6';
-    markerElement.innerHTML = `
-      <div class="relative">
-        <div class="${markerSize} bg-blue-600 border-2 border-white rounded-full shadow-lg z-50"></div>
-        <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
-      </div>
-    `;
-
-    currentLocationMarkerRef.current = new mapboxgl.Marker({
-      element: markerElement,
-      draggable: false
-    })
-    .setLngLat(coordinates)
-    .addTo(map.current);
-  };
-
-  const handleLocationError = (error) => {
-    let errorMessage = 'Location tracking error: ';
-    
-    switch (error.code) {
-      case error.PERMISSION_DENIED:
-        errorMessage += 'Location access denied. Please enable location permissions.';
-        break;
-      case error.POSITION_UNAVAILABLE:
-        errorMessage += 'Location unavailable. Using last known position.';
-        break;
-      case error.TIMEOUT:
-        errorMessage += 'Location request timeout. Retrying...';
-        setTimeout(startRealtimeLocationTracking, 5000);
-        break;
-      default:
-        errorMessage += 'Unknown location error.';
-        break;
-    }
-    
-    console.warn(errorMessage);
-  };
 
   useEffect(() => {
     if (mapInitialized && customStyleLoaded && siteLocations.length > 0) {
@@ -1464,6 +1579,8 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     updateSiteMarkers();
   };
 
+  
+
   return {
     mapContainer,
     siteMarkersRef,
@@ -1501,5 +1618,8 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     updateLocationManually,
     resetCompletedSites,
     markSiteAsCompleted,
+    startTaskAndBroadcast,
+    completeTaskAndBroadcast,
+    sendLocationToReverb,
   };
 };

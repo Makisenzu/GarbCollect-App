@@ -2,70 +2,46 @@
 
 namespace App\Events;
 
-use App\Models\Driver;
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 
 class DriverLocation implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $driver;
+    public $driverId;
+    public $driverName;
     public $latitude;
     public $longitude;
+    public $accuracy;
     public $scheduleId;
+    public $barangayId;
+    public $timestamp;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct(Driver $driver, $latitude, $longitude, $scheduleId = null)
+    public function __construct($driverId, $latitude, $longitude, $accuracy, $scheduleId, $barangayId)
     {
-        $this->driver = $driver;
+        $this->driverId = $driverId;
         $this->latitude = $latitude;
         $this->longitude = $longitude;
+        $this->accuracy = $accuracy;
         $this->scheduleId = $scheduleId;
+        $this->barangayId = $barangayId;
+        $this->timestamp = now()->toISOString();
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
-    public function broadcastOn(): array
+    public function broadcastOn()
     {
         return [
-            new Channel('public-driver-locations'),
-            new PrivateChannel('driver.' . $this->driver->id),
+            new Channel('driver-locations'),
+            new Channel('driver-locations.' . $this->barangayId),
         ];
     }
 
-    public function broadcastAs(): string
+    public function broadcastAs()
     {
-        return 'location.updated';
-    }
-
-    public function broadcastWith(): array
-    {
-        $this->driver->load('user');
-
-        return [
-            'driver' => [
-                'id' => $this->driver->id,
-                'name' => $this->driver->user->name,
-                'license_number' => $this->driver->license_number,
-                'status' => $this->driver->status,
-            ],
-            'location' => [
-                'latitude' => $this->latitude,
-                'longitude' => $this->longitude,
-                'timestamp' => now()->toISOString(),
-            ],
-            'schedule_id' => $this->scheduleId,
-        ];
+        return 'DriverLocationUpdated';
     }
 }
