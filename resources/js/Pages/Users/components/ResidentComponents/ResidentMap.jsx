@@ -31,10 +31,10 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   useEffect(() => {
     const checkContainer = () => {
       if (mapContainer.current) {
-        console.log('✅ Map container is ready in DOM');
+        console.log('Map container is ready in DOM');
         setContainerReady(true);
       } else {
-        console.log('⏳ Waiting for map container...');
+        console.log('Waiting for map container...');
         setTimeout(checkContainer, 100);
       }
     };
@@ -54,12 +54,12 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     link.rel = 'stylesheet';
     
     link.onload = () => {
-      console.log('✅ Mapbox CSS loaded');
+      console.log('Mapbox CSS loaded');
       setCssLoaded(true);
     };
     
     link.onerror = () => {
-      console.error('❌ Failed to load Mapbox CSS');
+      console.error('Failed to load Mapbox CSS');
       setCssLoaded(true);
     };
     
@@ -84,7 +84,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         return;
       }
 
-      console.log('🚀 Starting map initialization...');
+      console.log('Starting map initialization...');
 
       try {
         mapboxgl.accessToken = mapboxKey;
@@ -101,24 +101,24 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         console.log('🗺️ Map instance created');
 
         const handleMapLoad = () => {
-          console.log('✅ Map loaded successfully!');
+          console.log('Map loaded successfully!');
           setMapInitialized(true);
           setMapError(null);
           
           // Update markers when map loads if we already have data
           if (siteLocations.length > 0) {
-            console.log('🔄 Updating site markers after map load');
+            console.log('Updating site markers after map load');
             updateSiteMarkers(siteLocations);
           }
           
           if (driverLocation) {
-            console.log('🔄 Updating driver marker after map load');
+            console.log('Updating driver marker after map load');
             updateDriverMarker(driverLocation, {});
           }
         };
 
         const handleMapError = (e) => {
-          console.error('❌ Map error:', e);
+          console.error('Map error:', e);
           setMapError(`Map error: ${e.error?.message || 'Unknown error'}`);
           setMapInitialized(true);
         };
@@ -128,7 +128,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
         const timeoutId = setTimeout(() => {
           if (!mapInitialized) {
-            console.warn('⚠️ Map load timeout - continuing anyway');
+            console.warn('Map load timeout - continuing anyway');
             setMapInitialized(true);
           }
         }, 8000);
@@ -136,7 +136,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         return () => clearTimeout(timeoutId);
 
       } catch (error) {
-        console.error('❌ Error creating map:', error);
+        console.error('Error creating map:', error);
         setMapError(`Failed to create map: ${error.message}`);
         setMapInitialized(true);
       }
@@ -148,7 +148,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
     return () => {
       if (map.current) {
-        console.log('🧹 Cleaning up map');
+        console.log('Cleaning up map');
         map.current.remove();
         map.current = null;
         setMapInitialized(false);
@@ -156,25 +156,22 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     };
   }, [cssLoaded, mapboxKey, containerReady]);
 
-  // Update markers when map becomes initialized and we have data
   useEffect(() => {
     if (mapInitialized && map.current && siteLocations.length > 0) {
-      console.log('🔄 Rendering site markers:', siteLocations.length);
+      console.log('Rendering site markers:', siteLocations.length);
       updateSiteMarkers(siteLocations);
     }
   }, [mapInitialized, siteLocations]);
 
-  // Update driver marker when map becomes initialized and we have driver location
   useEffect(() => {
     if (mapInitialized && map.current && driverLocation) {
-      console.log('🔄 Rendering driver marker');
+      console.log('Rendering driver marker');
       updateDriverMarker(driverLocation, {});
     }
   }, [mapInitialized, driverLocation]);
 
-  // Debug state
   useEffect(() => {
-    console.log('🔍 Current state:', {
+    console.log('Current state:', {
       cssLoaded,
       mapboxKey: !!mapboxKey,
       containerReady,
@@ -202,28 +199,28 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           throw new Error('Echo not initialized');
         }
 
-        console.log('📡 Setting up Reverb listeners for barangay:', barangayId);
+        console.log('Setting up Reverb listeners for barangay:', barangayId);
 
         echo.channel(`driver-locations.${barangayId}`)
           .listen('DriverLocationUpdated', (e) => {
-            console.log('📍 Driver location update received:', e);
+            console.log('Driver location update received:', e);
             setConnectionStatus('connected');
             updateDriverLocation(e);
           });
 
         echo.channel(`schedule-updates.${barangayId}`)
           .listen('ScheduleStatusUpdated', (e) => {
-            console.log('📅 Schedule update received:', e);
+            console.log('Schedule update received:', e);
             updateScheduleData(e.schedule);
           });
 
         setConnectionStatus('connected');
-        console.log('✅ Reverb listeners set up successfully');
+        console.log('Reverb listeners set up successfully');
         
         await loadInitialData();
 
       } catch (error) {
-        console.error('❌ Realtime connection failed:', error);
+        console.error('Realtime connection failed:', error);
         setConnectionStatus('disconnected');
         startPolling();
       }
@@ -251,7 +248,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      console.log('📥 Loading initial data...');
+      console.log('Loading initial data...');
       
       // Load schedule data
       const scheduleResponse = await axios.get(`/barangay/${barangayId}/current-schedule`);
@@ -268,7 +265,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           
           if (sitesResponse.data.success) {
             const sites = sitesResponse.data.data;
-            console.log('📍 Setting site locations:', sites.length);
+            console.log('Setting site locations:', sites.length);
             setSiteLocations(sites);
           }
         }
@@ -279,13 +276,13 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           console.log('Driver location response:', locationResponse.data);
           
           if (locationResponse.data.success && locationResponse.data.data) {
-            console.log('🚗 Setting driver location from API');
+            console.log('Setting driver location from API');
             updateDriverLocation(locationResponse.data.data);
           }
         }
       }
     } catch (error) {
-      console.error('❌ Error loading initial data:', error);
+      console.error('Error loading initial data:', error);
     } finally {
       setLoading(false);
     }
@@ -293,16 +290,16 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   const updateDriverLocation = (locationData) => {
     if (!locationData.longitude || !locationData.latitude) {
-      console.log('❌ Invalid driver location data:', locationData);
+      console.log('Invalid driver location data:', locationData);
       return;
     }
     
     const newLocation = [parseFloat(locationData.longitude), parseFloat(locationData.latitude)];
-    console.log('📍 Updating driver location to:', newLocation);
+    console.log('Updating driver location to:', newLocation);
     setDriverLocation(newLocation);
     
     if (mapInitialized && map.current) {
-      console.log('🔄 Immediately updating driver marker');
+      console.log('Immediately updating driver marker');
       updateDriverMarker(newLocation, locationData);
       
       // Auto-center on driver
@@ -316,11 +313,11 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   const updateDriverMarker = (coordinates, locationData) => {
     if (!map.current || !mapInitialized) {
-      console.log('⏳ Skipping driver marker update - map not ready');
+      console.log('Skipping driver marker update - map not ready');
       return;
     }
 
-    console.log('📍 Creating driver marker at:', coordinates);
+    console.log('Creating driver marker at:', coordinates);
 
     // Remove existing marker
     if (driverMarker) {
@@ -353,9 +350,9 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       .addTo(map.current);
 
       setDriverMarker(newMarker);
-      console.log('✅ Driver marker created successfully');
+      console.log('Driver marker created successfully');
     } catch (error) {
-      console.error('❌ Error creating driver marker:', error);
+      console.error('Error creating driver marker:', error);
     }
   };
 
@@ -381,7 +378,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     
     const newMarkers = sites.map((site, index) => {
       if (!site.longitude || !site.latitude) {
-        console.log('❌ Skipping site with missing coordinates:', site.purok_name || site.site_name);
+        console.log('Skipping site with missing coordinates:', site.purok_name || site.site_name);
         return null;
       }
 
@@ -419,7 +416,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         `;
 
         const coordinates = [parseFloat(site.longitude), parseFloat(site.latitude)];
-        console.log(`📍 Creating marker ${index + 1} for ${purokName} at:`, coordinates);
+        console.log(`Creating marker ${index + 1} for ${purokName} at:`, coordinates);
 
         const marker = new mapboxgl.Marker({
           element: markerElement,
@@ -430,13 +427,13 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
         return marker;
       } catch (error) {
-        console.error('❌ Error creating marker for purok:', site.purok_name, error);
+        console.error('Error creating marker for purok:', site.purok_name, error);
         return null;
       }
     }).filter(marker => marker !== null);
 
     setSiteMarkers(newMarkers);
-    console.log('✅ Site markers updated successfully:', newMarkers.length, 'markers created');
+    console.log('Site markers updated successfully:', newMarkers.length, 'markers created');
   };
 
   const getCompletedSites = () => {
