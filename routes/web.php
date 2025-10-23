@@ -59,6 +59,11 @@ Route::get('/site', [UserController::class, 'showMyLocation'])->name('site.locat
 Route::get('/public/driver-locations/{barangayId?}', [DriverTrackerController::class, 'getActiveDriverLocations']);
 Route::get('/public/active-schedules/{barangayId?}', [DriverTrackerController::class, 'getActiveSchedules']);
 
+
+Route::get('/barangay/{id}/current-schedule', [DriverTrackerController::class, 'getCurrentSchedule']);
+Route::get('/schedule/{id}/sites', [DriverTrackerController::class, 'getScheduleSites']);
+Route::get('/schedule/{id}/driver-location', [DriverTrackerController::class, 'getDriverLocation']);
+
 Route::middleware(['auth', 'verified'])->group(function () {
     
 

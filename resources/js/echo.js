@@ -38,4 +38,18 @@ if (csrfToken) {
     // console.warn('CSRF token not found. Private channels may not work.');
 }
 
+
+let echoInstance = null;
+
+export const initEcho = () => {
+    if (typeof window !== 'undefined' && !echoInstance) {
+        echoInstance = new Echo(echoConfig);
+    }
+    return echoInstance;
+};
+
+export const getEcho = () => {
+    return echoInstance;
+};
+
 window.Echo = new Echo(echoConfig);

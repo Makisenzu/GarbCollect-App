@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ResidentMap from "../ResidentComponents/ResidentMap";
 import { Calendar, Clock, ChevronLeft, ChevronRight, CalendarDays, Menu, X, MapPin, Truck } from "lucide-react";
 import Select from 'react-select';
 import axios from 'axios';
@@ -21,6 +22,9 @@ const getFirstDayOfMonth = (year, month) => {
 };
 
 const PublicSchedule = () => {
+  const [showResidentMap, setShowResidentMap] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
+
   const [selectedBarangay, setSelectedBarangay] = useState(null);
   const [barangayOptions, setBarangayOptions] = useState([]);
   const [schedules, setSchedules] = useState([]);
@@ -92,23 +96,52 @@ const PublicSchedule = () => {
   const getScheduleStatus = (schedule) => {
     const now = new Date();
     const collectionDate = new Date(schedule.collection_date);
+    const today = new Date().toDateString();
+    const scheduleDay = new Date(schedule.collection_date).toDateString();
+
+    if (today !== scheduleDay) {
+        if (collectionDate < now) {
+            return schedule.status === 'completed' ? "completed" : "failed";
+        }
+        return "active";
+    }
 
     if (schedule.collection_time) {
-      const [hours, minutes] = schedule.collection_time.split(':');
-      collectionDate.setHours(parseInt(hours), parseInt(minutes), 0);
+        const [hours, minutes] = schedule.collection_time.split(':');
+        collectionDate.setHours(parseInt(hours), parseInt(minutes), 0);
     } else {
-      collectionDate.setHours(8, 0, 0);
+        collectionDate.setHours(8, 0, 0);
     }
     
     const endTime = new Date(collectionDate);
     endTime.setHours(endTime.getHours() + 4);
     
     if (now < collectionDate) return "active";
-    if (now >= collectionDate && now <= endTime) return "progress";
+    if (now >= collectionDate && now <= endTime) {
+        return schedule.status === 'in_progress' ? "progress" : "active";
+    }
     if (now > endTime && schedule.status === 'completed') return "completed";
     if (now > endTime && schedule.status !== 'completed') return "failed";
+    
     return "active";
+};
+
+  const handleTrackSchedule = (schedule) => {
+    setSelectedSchedule(schedule);
+    setShowResidentMap(true);
+    
+    setTimeout(() => {
+      document.getElementById('resident-map-section')?.scrollIntoView({ 
+        behavior: 'smooth' 
+      });
+    }, 100);
   };
+
+  const getTodayActiveSchedules = () => {
+    return getTodaySchedule().filter(schedule => 
+        schedule.status === 'progress' || getScheduleStatus(schedule.originalData) === 'progress'
+    );
+};
 
   const formatScheduleDate = (collectionDate) => {
     const date = new Date(collectionDate);
@@ -175,6 +208,7 @@ const PublicSchedule = () => {
       const timeRemaining = getTimeRemaining(schedule);
 
       return {
+        id: schedule.id,
         formattedDate,
         time: formattedTime,
         status,
@@ -390,6 +424,26 @@ const PublicSchedule = () => {
 
             {!loadingSchedules && (
               <>
+                {/* Active Schedule Banner */}
+                {!showResidentMap && getTodayActiveSchedules().length > 0 && (
+                  <div className="mb-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl p-6 text-white text-center shadow-lg">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <MapPin className="h-8 w-8 animate-pulse" />
+                      <h3 className="text-xl font-bold">Live Tracking Available!</h3>
+                    </div>
+                    <p className="mb-4 opacity-90">
+                      There are active collections happening right now in {selectedBarangay.label}
+                    </p>
+                    <button
+                      onClick={() => handleTrackSchedule(getTodayActiveSchedules()[0])}
+                      className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
+                    >
+                      <MapPin className="h-5 w-5" />
+                      View Live Map
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex justify-center mb-8">
                   <div className="bg-white rounded-xl shadow-md p-1">
                     {["today", "week", "month"].map((tab) => (
@@ -432,12 +486,13 @@ const PublicSchedule = () => {
                                   </div>
                                   <div className="text-right">
                                     {schedule.timeRemaining.isActive ? (
-                                      <a 
-                                        href={route('barangay.routes')}
-                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                                      <button 
+                                        onClick={() => handleTrackSchedule(schedule)}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
                                       >
-                                        Track
-                                      </a>
+                                        <MapPin className="h-4 w-4" />
+                                        Track Live
+                                      </button>
                                     ) : (
                                       <div className="text-sm text-gray-700">
                                         <div className="font-semibold mb-1">Time remaining:</div>
@@ -502,12 +557,13 @@ const PublicSchedule = () => {
                                   </div>
                                   <div className="text-right">
                                     {schedule.timeRemaining.isActive ? (
-                                      <a 
-                                        href={route('barangay.routes')}
-                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                                      <button 
+                                        onClick={() => handleTrackSchedule(schedule)}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
                                       >
-                                        Track
-                                      </a>
+                                        <MapPin className="h-4 w-4" />
+                                        Track Live
+                                      </button>
                                     ) : (
                                       <div className="text-sm text-gray-700">
                                         <div className="font-semibold mb-1">Time remaining:</div>
@@ -595,12 +651,13 @@ const PublicSchedule = () => {
                                   </div>
                                   <div className="text-right">
                                     {schedule.timeRemaining.isActive ? (
-                                      <a 
-                                        href={route('barangay.routes')}
-                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                                      <button 
+                                        onClick={() => handleTrackSchedule(schedule)}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
                                       >
-                                        View
-                                      </a>
+                                        <MapPin className="h-4 w-4" />
+                                        Track Live
+                                      </button>
                                     ) : (
                                       <div className="text-sm text-gray-700">
                                         <div className="font-semibold mb-1">Time remaining:</div>
@@ -633,6 +690,37 @@ const PublicSchedule = () => {
                             <p className="text-lg font-semibold text-gray-600">No collection scheduled for {monthNames[viewMonth]} {viewYear}</p>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Resident Map Section */}
+                {showResidentMap && selectedSchedule && (
+                  <div id="resident-map-section" className="mt-12">
+                    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                      <div className="p-6 border-b border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h2 className="text-2xl font-bold text-gray-800">Live Collection Map</h2>
+                            <p className="text-gray-600">
+                              Real-time tracking for {selectedBarangay.label} - {selectedSchedule.formattedDate}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setShowResidentMap(false)}
+                            className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                      <ResidentMap 
+  mapboxKey={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+  barangayId={selectedBarangay.value}
+  scheduleId={selectedSchedule.id}
+/>
                       </div>
                     </div>
                   </div>

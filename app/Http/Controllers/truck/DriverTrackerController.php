@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\truck;
 
+use App\Models\Site;
+use App\Models\Driver;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
 use App\Events\DriverLocation;
-use App\Events\ScheduleStatusUpdated;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Models\Driver;
 use Illuminate\Support\Facades\Auth;
+use App\Events\ScheduleStatusUpdated;
 use Illuminate\Support\Facades\Cache;
 
 class DriverTrackerController extends Controller
@@ -56,6 +57,7 @@ class DriverTrackerController extends Controller
             ];
     
             Cache::put("driver_location_{$driver->id}", $locationData, 600);
+            Cache::put("driver_location_schedule_{$request->schedule_id}", $locationData, 600);
     
             $activeDrivers = Cache::get('active_drivers', []);
             if (!in_array($driver->id, $activeDrivers)) {
@@ -212,6 +214,100 @@ class DriverTrackerController extends Controller
             'data' => $schedules
         ]);
     }
+
+    public function getCurrentSchedule($barangayId){
+    try {
+        $currentSchedule = Schedule::where('barangay_id', $barangayId)
+            ->where('status', 'progress')
+            ->orWhere(function($query) use ($barangayId) {
+                $query->where('barangay_id', $barangayId)
+                      ->where('collection_date', today())
+                      ->whereIn('status', ['pending', 'active']);
+            })
+            ->with(['driver.user', 'barangay'])
+            ->first();
+
+        if (!$currentSchedule) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active schedule found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $currentSchedule
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching schedule'
+        ], 500);
+    }
+}
+
+public function getScheduleSites($scheduleId){
+    try {
+        $schedule = Schedule::with(['barangay.puroks.sites'])->find($scheduleId);
+        
+        if (!$schedule) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Schedule not found'
+            ], 404);
+        }
+
+        $sites = $schedule->barangay->puroks->flatMap(function($purok) {
+            return $purok->sites->map(function($site) {
+                return [
+                    'id' => $site->id,
+                    'site_name' => $site->site_name,
+                    'latitude' => $site->latitude,
+                    'longitude' => $site->longitude,
+                    'type' => $site->type,
+                    'status' => $site->status,
+                    'purok' => $site->purok->purok_name
+                ];
+            });
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $sites
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching sites'
+        ], 500);
+    }
+}
+
+public function getDriverLocation($scheduleId){
+    try {
+        $location = Cache::get("driver_location_schedule_{$scheduleId}");
+        
+        if (!$location) {
+            $schedule = Schedule::with('driver')->find($scheduleId);
+            if ($schedule && $schedule->driver) {
+                $location = Cache::get("driver_location_{$schedule->driver->id}");
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $location
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching driver location'
+        ], 500);
+    }
+}
 
     /**
      * Show the form for creating a new resource.
