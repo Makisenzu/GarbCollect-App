@@ -59,7 +59,6 @@ const BarangayRoutes = ({ mapboxToken }) => {
           </div>
         )}
         
-        {/* Back Button */}
         <Link
           href="/"
           className="absolute top-4 left-4 z-40 bg-white hover:bg-gray-50 text-gray-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:shadow-xl border border-gray-200"

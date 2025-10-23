@@ -89,12 +89,60 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     };
   }, []);
 
+  const startRealtimeLocationSharing = async (scheduleId) => {
+    if (!navigator.geolocation) {
+        console.error('Geolocation not supported');
+        return;
+    }
+
+    // Start watching position
+    const watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            
+            try {
+                // Send location to server
+                const response = await axios.post('/api/driver/location/update', {
+                    latitude: latitude,
+                    longitude: longitude,
+                    schedule_id: scheduleId
+                });
+
+                if (response.data.success) {
+                    console.log('Location updated and broadcasted');
+                    
+                    // Update local state
+                    setCurrentLocation([longitude, latitude]);
+                    updateCurrentLocationMarker([longitude, latitude]);
+                    
+                    // Check site proximity
+                    if (siteLocations.length > 0) {
+                        checkSiteProximity([longitude, latitude], siteLocations);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update location:', error);
+            }
+        },
+        (error) => {
+            console.error('Location tracking error:', error);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+
+    return watchId;
+};
+
   // Cache management for offline use
   const cacheRoute = (key, routeData) => {
     const cacheEntry = {
       data: routeData,
       timestamp: Date.now(),
-      ttl: 24 * 60 * 60 * 1000 // 24 hours
+      ttl: 24 * 60 * 60 * 1000 
     };
     offlineRouteCache.current.set(key, cacheEntry);
     
