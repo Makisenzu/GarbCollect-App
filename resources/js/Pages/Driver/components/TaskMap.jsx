@@ -47,7 +47,6 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     resetCompletedSites,
     markSiteAsCompleted,
     
-    // NEW: Reverb functions
     startTaskAndBroadcast,
     completeTaskAndBroadcast,
     sendLocationToReverb
