@@ -41,6 +41,10 @@ Route::get('/employee/login', function () {
     ]);
 })->name('loginPage');
 
+Route::get('/testMap', function () {
+    return Inertia::render('Users/TestingMap');
+});
+
 //Public route
 Route::post('/reviews', [ReviewController::class, 'store']);
 

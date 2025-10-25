@@ -184,13 +184,12 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     });
   }, [cssLoaded, mapboxKey, containerReady, mapInitialized, mapError, siteLocations, driverLocation]);
 
-  // Initialize Reverb connection
   useEffect(() => {
     if (!barangayId) return;
 
     const initializeRealtime = async () => {
       try {
-        console.log('🔌 Initializing Reverb connection...');
+        console.log('Initializing Reverb connection...');
         
         initEcho();
         const echo = getEcho();
@@ -302,7 +301,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       console.log('Immediately updating driver marker');
       updateDriverMarker(newLocation, locationData);
       
-      // Auto-center on driver
       map.current.flyTo({
         center: newLocation,
         zoom: 15,

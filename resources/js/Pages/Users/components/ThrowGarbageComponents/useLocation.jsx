@@ -23,6 +23,11 @@ const useLocation = (mapboxToken, sites) => {
     const cachedRouteRef = useRef(null);
     const lastKnownLocationRef = useRef(null);
 
+    // Add these new refs for real-time tracking
+    const userLocationSourceRef = useRef(null);
+    const userLocationLayerRef = useRef(null);
+    const animationFrameRef = useRef(null);
+
     const CACHE_KEYS = {
         ROUTE: 'cached_route',
         SITE: 'cached_site',
@@ -199,6 +204,7 @@ const useLocation = (mapboxToken, sites) => {
             stopTracking();
             clearMarkers();
             clearRoute();
+            clearUserLocationLayers();
             if (map.current) {
                 map.current.remove();
                 map.current = null;
@@ -226,6 +232,13 @@ const useLocation = (mapboxToken, sites) => {
             navigator.geolocation.clearWatch(watchIdRef.current);
             watchIdRef.current = null;
         }
+        
+        // Stop animation
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+        
         setIsTracking(false);
     };
 
@@ -248,7 +261,8 @@ const useLocation = (mapboxToken, sites) => {
                 setCache(CACHE_KEYS.LOCATION, { lat: newLat, lng: newLng }, 5 * 60 * 1000);
                 
                 if (map.current && mapLoaded && nearestSite) {
-                    updateUserMarker(newLat, newLng);
+                    // Smoothly update user location on map
+                    smoothUpdateUserLocation(newLat, newLng);
                     
                     if (isOnline) {
                         calculateFastestRoute(newLat, newLng, nearestSite.latitude, nearestSite.longitude);
@@ -263,7 +277,7 @@ const useLocation = (mapboxToken, sites) => {
                 if (lastKnownLocationRef.current) {
                     setUserLocation(lastKnownLocationRef.current);
                     if (map.current && mapLoaded && nearestSite) {
-                        updateUserMarker(lastKnownLocationRef.current.lat, lastKnownLocationRef.current.lng);
+                        smoothUpdateUserLocation(lastKnownLocationRef.current.lat, lastKnownLocationRef.current.lng);
                         useCachedRoute(lastKnownLocationRef.current.lat, lastKnownLocationRef.current.lng, nearestSite);
                     }
                 }
@@ -276,6 +290,158 @@ const useLocation = (mapboxToken, sites) => {
         );
         
         setIsTracking(true);
+    };
+
+    const smoothUpdateUserLocation = (lat, lng) => {
+        if (!map.current) return;
+
+        // Update the GeoJSON source for smooth transitions
+        updateUserLocationSource(lng, lat);
+
+        // Also update the marker position
+        const userMarker = markersRef.current.find(marker => 
+            marker.getElement().querySelector('.bg-red-500')
+        );
+        
+        if (userMarker) {
+            userMarker.setLngLat([lng, lat]);
+        }
+
+        // Smoothly move the map to follow user (optional)
+        if (isTracking && map.current) {
+            map.current.flyTo({
+                center: [lng, lat],
+                speed: 0.8, // Slower speed for smoother transition
+                curve: 1, // Linear movement
+                essential: true
+            });
+        }
+    };
+
+    const updateUserLocationSource = (lng, lat) => {
+        if (!map.current) return;
+
+        const geojson = {
+            type: 'FeatureCollection',
+            features: [
+                {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [lng, lat]
+                    },
+                    properties: {
+                        description: 'Your current location'
+                    }
+                }
+            ]
+        };
+
+        // Check if source already exists
+        if (!map.current.getSource('user-location')) {
+            map.current.addSource('user-location', {
+                type: 'geojson',
+                data: geojson
+            });
+
+            // Add layer for the user location
+            map.current.addLayer({
+                id: 'user-location-layer',
+                type: 'circle',
+                source: 'user-location',
+                paint: {
+                    'circle-radius': 8,
+                    'circle-color': '#ff0000',
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#ffffff',
+                    'circle-opacity': 0.8
+                }
+            });
+
+            // Add pulsing effect layer
+            map.current.addLayer({
+                id: 'user-location-pulse',
+                type: 'circle',
+                source: 'user-location',
+                paint: {
+                    'circle-radius': {
+                        'base': 8,
+                        'stops': [
+                            [0, 8],
+                            [20, 20]
+                        ]
+                    },
+                    'circle-color': '#ff0000',
+                    'circle-opacity': {
+                        'base': 0.4,
+                        'stops': [
+                            [0, 0.4],
+                            [1, 0]
+                        ]
+                    },
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#ff0000'
+                }
+            });
+
+            userLocationSourceRef.current = map.current.getSource('user-location');
+            userLocationLayerRef.current = 'user-location-layer';
+        } else {
+            // Smoothly update the existing source
+            const source = map.current.getSource('user-location');
+            if (source) {
+                source.setData(geojson);
+            }
+        }
+
+        // Animate the pulse effect
+        animatePulse();
+    };
+
+    const animatePulse = () => {
+        if (!map.current || !map.current.getLayer('user-location-pulse')) return;
+
+        // Cancel any existing animation
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+        }
+
+        const startTime = Date.now();
+        const duration = 2000; // 2 seconds per pulse
+
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = (elapsed % duration) / duration;
+
+            // Update circle radius based on progress
+            const pulseRadius = 8 + (progress * 12); // 8 to 20
+
+            map.current.setPaintProperty('user-location-pulse', 'circle-radius', pulseRadius);
+            map.current.setPaintProperty('user-location-pulse', 'circle-opacity', 0.4 * (1 - progress));
+
+            animationFrameRef.current = requestAnimationFrame(animate);
+        };
+
+        animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    const clearUserLocationLayers = () => {
+        if (!map.current) return;
+
+        // Remove user location layers
+        ['user-location-layer', 'user-location-pulse'].forEach(layerId => {
+            if (map.current.getLayer(layerId)) {
+                map.current.removeLayer(layerId);
+            }
+        });
+
+        // Remove user location source
+        if (map.current.getSource('user-location')) {
+            map.current.removeSource('user-location');
+        }
+
+        userLocationSourceRef.current = null;
+        userLocationLayerRef.current = null;
     };
 
     const useCachedRoute = (userLat, userLng, nearestSite) => {
@@ -357,6 +523,9 @@ const useLocation = (mapboxToken, sites) => {
 
         markersRef.current.push(userMarker);
 
+        // Update or create GeoJSON source for smooth animations
+        updateUserLocationSource(lng, lat);
+
         if (nearestSite && nearestSite.latitude && nearestSite.longitude) {
             const borderColor = '#3b82f6';
             const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
@@ -393,6 +562,7 @@ const useLocation = (mapboxToken, sites) => {
         markersRef.current.forEach(marker => marker.remove());
         markersRef.current = [];
         siteMarkerRef.current = null;
+        clearUserLocationLayers();
     };
 
     const clearRoute = () => {
@@ -745,6 +915,8 @@ const useLocation = (mapboxToken, sites) => {
             },
             {
                 enableHighAccuracy: true,
+                trackUserLocation: true,
+                showUserHeading: true,
                 timeout: 20000,
                 maximumAge: 60000
             }
