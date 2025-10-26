@@ -18,16 +18,23 @@ const csrfToken = getCsrfToken();
 
 // console.log('CSRF Token available:', !!csrfToken);
 
-const echoConfig = {
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: window.location.hostname,
-    wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
-    wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
-    forceTLS: false,
-    enabledTransports: ['ws', 'wss'],
-};
+// const echoConfig = {
+//     broadcaster: 'reverb',
+//     key: import.meta.env.VITE_REVERB_APP_KEY,
+//     wsHost: window.location.hostname,
+//     wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+//     wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
+//     forceTLS: false,
+//     enabledTransports: ['ws', 'wss'],
+// };
 
+const echoConfig = {
+    broadcaster: 'pusher',
+    key: import.meta.env.VITE_PUSHER_APP_KEY,
+    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+    forceTLS: true,
+    encrypted: true,
+};
 if (csrfToken) {
     echoConfig.auth = {
         headers: {
