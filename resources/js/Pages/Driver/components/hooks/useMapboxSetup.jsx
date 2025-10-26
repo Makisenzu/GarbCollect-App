@@ -1,76 +1,86 @@
 import { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 
-export const useMapboxSetup = (mapboxKey, mapContainer, isMobile) => {
+export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
+  const mapContainer = useRef(null);
   const map = useRef(null);
+  
+  const [cssLoaded, setCssLoaded] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
   const [customStyleLoaded, setCustomStyleLoaded] = useState(false);
   const [mapError, setMapError] = useState(null);
 
   useEffect(() => {
     const loadMapboxCSS = () => {
-      return new Promise((resolve) => {
-        if (document.querySelector('link[href*="mapbox-gl.css"]')) {
-          resolve();
-          return;
+      const link = document.createElement('link');
+      link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css';
+      link.rel = 'stylesheet';
+      link.onload = () => {
+        setCssLoaded(true);
+      };
+      link.onerror = () => {
+        console.error('Failed to load Mapbox CSS');
+        setMapError('Failed to load map styles');
+      };
+      
+      document.head.appendChild(link);
+
+      return () => {
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
         }
+      };
+    };
 
-        const link = document.createElement('link');
-        link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css';
-        link.rel = 'stylesheet';
-        link.onload = resolve;
-        link.onerror = resolve; // Continue even if CSS fails
-        document.head.appendChild(link);
+    loadMapboxCSS();
+  }, []);
+
+  useEffect(() => {
+    if (!cssLoaded || !mapboxKey || map.current || !mapContainer.current) {
+      return;
+    }
+
+    try {
+      mapboxgl.accessToken = mapboxKey;
+
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
+        center: [125.94849837776422, 8.483022468128098],
+        zoom: isMobile ? 11 : 10.5,
+        attributionControl: false,
+        interactive: true,
+        scrollZoom: !isMobile,
+        dragPan: true,
+        dragRotate: false,
+        keyboard: false,
+        doubleClickZoom: !isMobile,
+        touchZoomRotate: true,
+        touchPitch: false,
+        cooperativeGestures: isMobile,
+        failIfMajorPerformanceCaveat: false,
+        preserveDrawingBuffer: true
       });
-    };
 
-    const initializeMap = async () => {
-      if (!mapboxKey || map.current || !mapContainer.current) return;
+      map.current.on('load', () => {
+        setMapInitialized(true);
+        setCustomStyleLoaded(true);
+        console.log('Map loaded and initialized');
+      });
 
-      await loadMapboxCSS();
+      map.current.on('error', (e) => {
+        console.error('Map error:', e);
+        setMapError('Failed to load map: ' + e.error?.message);
+      });
 
-      try {
-        mapboxgl.accessToken = mapboxKey;
+      map.current.on('idle', () => {
+        // Map is ready and tiles are loaded
+      });
 
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current,
-          style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
-          center: [125.94849837776422, 8.483022468128098],
-          zoom: isMobile ? 11 : 10.5,
-          attributionControl: false,
-          interactive: true,
-          scrollZoom: !isMobile,
-          dragPan: true,
-          dragRotate: false,
-          keyboard: false,
-          doubleClickZoom: !isMobile,
-          touchZoomRotate: true,
-          touchPitch: false,
-          cooperativeGestures: isMobile,
-          failIfMajorPerformanceCaveat: false,
-          preserveDrawingBuffer: true
-        });
-
-        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-        map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
-
-        map.current.on('load', () => {
-          setMapInitialized(true);
-          setCustomStyleLoaded(true);
-        });
-
-        map.current.on('error', (e) => {
-          console.error('Map error:', e);
-          setMapError('Failed to load map: ' + e.error?.message);
-        });
-
-      } catch (error) {
-        console.error('Error creating map:', error);
-        setMapError('Failed to initialize map: ' + error.message);
-      }
-    };
-
-    initializeMap();
+    } catch (error) {
+      console.error('Error creating map:', error);
+      setMapError('Failed to initialize map: ' + error.message);
+    }
 
     return () => {
       if (map.current) {
@@ -80,14 +90,14 @@ export const useMapboxSetup = (mapboxKey, mapContainer, isMobile) => {
         setCustomStyleLoaded(false);
       }
     };
-  }, [mapboxKey, mapContainer, isMobile]);
+  }, [mapboxKey, cssLoaded, isMobile]);
 
-  return { 
-    map, 
-    mapInitialized, 
-    customStyleLoaded, 
-    mapError,
-    setMapInitialized,
-    setCustomStyleLoaded 
+  return {
+    mapContainer,
+    map,
+    cssLoaded,
+    mapInitialized,
+    customStyleLoaded,
+    mapError
   };
 };

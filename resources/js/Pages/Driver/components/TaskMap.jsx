@@ -6,6 +6,7 @@ import { IoClose, IoCheckmark, IoNavigate, IoSparkles, IoChevronDown, IoChevronU
 import axios from 'axios';
 import can from "@/images/can.png";
 import { useTaskMap } from './useTaskMap';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel, autoGetLocation = false }, ref) => {
   const {
@@ -322,7 +323,7 @@ const MobileAIPanel = ({ aiOptimizedRoute, setShowAIPanel, completedSites, curre
 
 const DesktopAIPanel = ({ aiOptimizedRoute, completedSites, currentSiteIndex, optimizedSiteOrder }) => (
   <>
-    <div className="flex items-center gap-2 mb-3">
+    {/* <div className="flex items-center gap-2 mb-3">
       <IoSparkles className="w-5 h-5 text-green-600" />
       <h3 className="font-semibold text-green-800">AI Route Optimized</h3>
       {completedSites.size > 0 && (
@@ -330,7 +331,7 @@ const DesktopAIPanel = ({ aiOptimizedRoute, completedSites, currentSiteIndex, op
           {completedSites.size} completed
         </span>
       )}
-    </div>
+    </div> */}
     <AIPanelContent 
       aiOptimizedRoute={aiOptimizedRoute}
       completedSites={completedSites}
@@ -419,13 +420,13 @@ const ControlButtons = ({
       />
     )}
 
-    <ControlButton 
+    {/* <ControlButton 
       onClick={getAIOptimizedRoute}
       icon={<IoSparkles className="w-6 h-6" />}
       label="AI Route"
       className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
       showLabel={!isMobile}
-    />
+    /> */}
     
     <ControlButton 
       onClick={getCurrentLocation}

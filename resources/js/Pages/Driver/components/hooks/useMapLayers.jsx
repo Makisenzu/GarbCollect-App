@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
+import mapboxgl from 'mapbox-gl'; // ADD THIS IMPORT
 import { GiControlTower } from "react-icons/gi";
 import can from "@/images/can.png";
 
@@ -90,7 +91,7 @@ export const useMapLayers = (map, isMobile) => {
     const barangayName = siteData?.purok?.baranggay?.baranggay_name;
     const borderColor = BARANGAY_COLORS[barangayName] || BARANGAY_COLORS['_default'];
     
-    const isNearestToStation = false; // You can calculate this if needed
+    const isNearestToStation = false;
     const isStation = siteData.type === 'station';
     const isCompleted = completedSites.has(siteData.id);
     const isCurrent = optimizedSiteOrder[currentSiteIndex]?.id === siteData.id;
@@ -183,7 +184,7 @@ export const useMapLayers = (map, isMobile) => {
       markerElement = createImageMarker(siteData, sequence, activeSchedule, completedSites, currentSiteIndex, optimizedSiteOrder);
     }
 
-    const marker = new mapboxgl.Marker({
+    const marker = new mapboxgl.Marker({ // FIXED: mapboxgl is now imported
       element: markerElement,
       draggable: false
     })
@@ -254,7 +255,7 @@ export const useMapLayers = (map, isMobile) => {
       </div>
     `;
 
-    currentLocationMarkerRef.current = new mapboxgl.Marker({
+    currentLocationMarkerRef.current = new mapboxgl.Marker({ // FIXED: mapboxgl is now imported
       element: markerElement,
       draggable: false
     })
@@ -449,7 +450,7 @@ export const useMapLayers = (map, isMobile) => {
   const fitMapToRouteAndDriver = useCallback((routeCoordinates, currentLocation, optimizedSiteOrder, currentSiteIndex, isMobile) => {
     if (!map.current || routeCoordinates.length === 0) return;
 
-    const bounds = new mapboxgl.LngLatBounds();
+    const bounds = new mapboxgl.LngLatBounds(); // FIXED: mapboxgl is now imported
     
     routeCoordinates.forEach(coord => {
       bounds.extend(coord);
