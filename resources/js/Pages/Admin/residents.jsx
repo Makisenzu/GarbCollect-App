@@ -4,11 +4,10 @@ import Barangay from './components/residents/Barangay';
 import Reviews from './components/residents/Reviews';
 
 export default function Residents() {
-  const { baranggays, categories } = usePage().props;
+  const { baranggays, categories, reviews, average_rating } = usePage().props;
   
   const barangaysData = baranggays.data || baranggays;
   const paginationLinks = baranggays.links || null;
-  console.log(categories);
 
   return (
     <AuthenticatedLayout
@@ -23,7 +22,7 @@ export default function Residents() {
             links={paginationLinks}
             mapBoxKey={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN} 
           />
-          <Reviews/>
+          <Reviews reviews={reviews} average_rating={average_rating} />
         </div>
       </div>
     </AuthenticatedLayout>

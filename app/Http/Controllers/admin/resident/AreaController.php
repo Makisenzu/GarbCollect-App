@@ -4,11 +4,12 @@ namespace App\Http\Controllers\admin\resident;
 
 use Inertia\Inertia;
 use App\Models\Purok;
+use App\Models\Review;
+use App\Models\Category;
 use App\Models\Baranggay;
 use App\Models\Municipality;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 
 class AreaController extends Controller
 {
@@ -17,6 +18,49 @@ class AreaController extends Controller
      */
     public function index()
     {
+
+        $reviews = Review::with(['purok.baranggay', 'category', 'replies'])
+        ->where('status', 'approved')
+        ->orderBy('created_at', 'desc')
+        ->paginate(8);
+
+        $allReviews = Review::all();
+        $averageRating = $allReviews->avg('rate') ?? 0;
+    
+        $ratingDistribution = [
+            5 => $allReviews->where('rate', 5)->count(),
+            4 => $allReviews->where('rate', 4)->count(),
+            3 => $allReviews->where('rate', 3)->count(),
+            2 => $allReviews->where('rate', 2)->count(),
+            1 => $allReviews->where('rate', 1)->count(),
+        ];
+
+        $totalReviewsCount = $allReviews->count();
+
+        $transformedReviews = $reviews->map(function ($review) {
+            return [
+                'id' => $review->id,
+                'fullname' => $review->fullname,
+                'category_id' => $review->category_id,
+                'review_content' => $review->review_content,
+                'additional_comments' => $review->suggestion_content,
+                'rate' => $review->rate,
+                'barangay' => $review->purok->baranggay->baranggay_name ?? 'Unknown Barangay',
+                'purok' => $review->purok->purok_name ?? 'Unknown Purok',
+                'created_at' => $review->created_at->toISOString(),
+                'category' => [
+                    'id' => $review->category->id,
+                    'category_name' => $review->category->category_name
+                ],
+                'replies' => $review->replies ? [
+                    'id' => $review->replies->id,
+                    'review_id' => $review->replies->review_id,
+                    'reply_content' => $review->replies->reply_content,
+                    'created_at' => $review->replies->created_at->toISOString()
+                ] : null,
+                'status' => $review->status
+            ];
+        });
         $municipalities = Municipality::withCount('baranggays')->get();
         $categories = Category::all();
         $barangayData = Baranggay::withCount('puroks')->paginate(6);
@@ -27,6 +71,11 @@ class AreaController extends Controller
             'categories' => $categories,
             'puroks' => [],
             'total_barangay' => $municipalities->sum('baranggays_count'),
+            'reviews' => $transformedReviews,
+            'reviews_count' => $transformedReviews->count(),
+            'total_reviews_count' => $totalReviewsCount,
+            'average_rating' => round($averageRating, 1),
+            'rating_distribution' => $ratingDistribution
         ]);
     }
     

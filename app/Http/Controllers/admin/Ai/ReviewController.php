@@ -14,13 +14,11 @@ class ReviewController extends Controller
 {
     protected $moderationService;
 
-    public function __construct(OpenRouterModerationService $moderationService)
-    {
+    public function __construct(OpenRouterModerationService $moderationService){
         $this->moderationService = $moderationService;
     }
 
-    public function store(StoreReviewRequest $request): JsonResponse
-    {
+    public function store(StoreReviewRequest $request): JsonResponse{
         Log::info('Received review submission', ['data' => $request->all()]);
         
         $moderationResult = $this->moderationService->moderateWithFallback($request->review_content);
@@ -73,8 +71,7 @@ class ReviewController extends Controller
         }
     }
 
-    public function index()
-    {
+    public function index(){
         $reviews = Review::where('status', 'approved')
                     ->with('reply')
                     ->orderBy('created_at', 'desc')
@@ -83,8 +80,7 @@ class ReviewController extends Controller
         return response()->json($reviews);
     }
 
-    public function pending()
-    {
+    public function pending(){
         $pendingReviews = Review::where('status', 'pending')
                           ->with('purok', 'category')
                           ->orderBy('created_at', 'desc')
@@ -93,8 +89,7 @@ class ReviewController extends Controller
         return response()->json($pendingReviews);
     }
 
-    public function updateStatus(Review $review, Request $request)
-    {
+    public function updateStatus(Review $review, Request $request){
         $request->validate([
             'status' => 'required|in:approved,rejected'
         ]);

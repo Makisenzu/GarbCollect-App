@@ -1,60 +1,33 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Star, MessageCircle, User } from 'lucide-react';
-import { RingLoader } from 'react-spinners';
+import { usePage } from '@inertiajs/react';
+import Pagination from '@/Components/Pagination';
 
 export default function Reviews() {
-    const [reviews, setReviews] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [averageRating, setAverageRating] = useState(0);
+    const { reviews, average_rating } = usePage().props;
 
-    useEffect(() => {
-        const fetchReviews = async () => {
-            setIsLoading(true);
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            const mockReviews = [
-                {
-                    id: 1,
-                    user: 'Maria Santos',
-                    role: 'Resident',
-                    barangay: 'San Isidro',
-                    rating: 4.8,
-                    comment: 'The resident management system has made our record-keeping so much more efficient. Highly recommended!',
-                    date: '2 days ago',
-                    avatar: null
-                },
-                {
-                    id: 2,
-                    user: 'Juan dela Cruz',
-                    role: 'Resident',
-                    barangay: 'Alegria',
-                    rating: 4.5,
-                    comment: 'Easy to use and has all the features we need for managing resident information.',
-                    date: '1 week ago',
-                    avatar: null
-                },
-                {
-                    id: 3,
-                    user: 'Ana Rodriguez',
-                    role: 'Barangay Secretary',
-                    barangay: 'Barangay 1',
-                    rating: 5.0,
-                    comment: 'The reporting features have saved us countless hours of manual work. Excellent system!',
-                    date: '3 days ago',
-                    avatar: null
-                }
-            ];
+    // Extract pagination data from reviews if it's paginated
+    const reviewsData = reviews.data || reviews;
+    const paginationLinks = reviews.links || null;
 
-            setReviews(mockReviews);
-            
-            const avg = mockReviews.reduce((sum, review) => sum + review.rating, 0) / mockReviews.length;
-            setAverageRating(avg);
-            setIsLoading(false);
-        };
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+        const diffMinutes = Math.floor(diffTime / (1000 * 60));
 
-        fetchReviews();
-    }, []);
+        if (diffMinutes < 60) {
+            return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+        } else if (diffHours < 24) {
+            return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        } else if (diffDays < 7) {
+            return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+        } else {
+            return date.toLocaleDateString();
+        }
+    };
 
     const renderStars = (rating) => {
         return [1, 2, 3, 4, 5].map((star) => (
@@ -65,33 +38,7 @@ export default function Reviews() {
         ));
     };
 
-    if (isLoading) {
-        return (
-            <div className="mt-12">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-800">Reviews</h2>
-                    </div>
-                    <div className="flex items-center">
-                        <div className="flex items-center mr-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <Star key={star} className="h-5 w-5 text-gray-300" />
-                            ))}
-                        </div>
-                        <span className="text-lg font-semibold text-gray-400">Loading...</span>
-                    </div>
-                </div>
-
-                <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
-                    <RingLoader color="#00de08"  loading={true} />
-                    <p className="mt-4 text-gray-600 text-lg">Loading reviews...</p>
-                    <p className="text-gray-400 text-sm mt-1">Please wait while we fetch the latest reviews</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (reviews.length === 0) {
+    if (!reviewsData || reviewsData.length === 0) {
         return (
             <div className="mt-12">
                 <div className="flex items-center justify-between mb-6">
@@ -110,66 +57,78 @@ export default function Reviews() {
     }
 
     return (
-        <div className="mt-12">
+        <div className="mt-12 space-y-6">
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">Reviews</h2>
                 </div>
                 <div className="flex items-center">
                     <div className="flex items-center mr-2">
-                        {renderStars(Math.round(averageRating))}
+                        {renderStars(Math.round(average_rating))}
                     </div>
                     <span className="text-lg font-semibold text-gray-800">
-                        {averageRating.toFixed(1)}/5
+                        {average_rating.toFixed(1)}/5
                     </span>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {reviews.map((review) => (
+                {reviewsData.map((review) => (
                     <div key={review.id} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center">
                                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                                    {review.avatar ? (
-                                        <img src={review.avatar} alt={review.user} className="w-12 h-12 rounded-full" />
-                                    ) : (
-                                        <User className="h-6 w-6 text-blue-600" />
-                                    )}
+                                    <User className="h-6 w-6 text-blue-600" />
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-gray-800">{review.user}</h4>
-                                    <p className="text-sm text-gray-600">{review.role}</p>
+                                    <h4 className="font-semibold text-gray-800">{review.fullname}</h4>
+                                    <p className="text-sm text-gray-600">{review.category?.category_name || 'Resident'}</p>
                                     <p className="text-sm text-blue-600">{review.barangay}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center">
-                                <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                <span className="ml-1 text-sm font-medium text-gray-800">{review.rating}</span>
+                            <div className="flex flex-col items-end">
+                                <div className="flex items-center mb-1">
+                                    {renderStars(review.rate)}
+                                </div>
+                                <span className="text-sm font-medium text-gray-800">
+                                    {review.rate.toFixed(1)}/5
+                                </span>
                             </div>
                         </div>
 
-                        <p className="text-gray-700 mb-4">{review.comment}</p>
+                        <p className="text-gray-700 mb-4">{review.review_content}</p>
+                        
+                        {review.additional_comments && (
+                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-600">
+                                    <span className="font-semibold">Additional Comments:</span> {review.additional_comments}
+                                </p>
+                            </div>
+                        )}
+
+                        {review.replies && (
+                            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                <p className="text-sm text-blue-800">
+                                    <span className="font-semibold">Response:</span> {review.replies.reply_content}
+                                </p>
+                                <p className="text-xs text-blue-600 mt-1">
+                                    {formatDate(review.replies.created_at)}
+                                </p>
+                            </div>
+                        )}
 
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500">{review.date}</span>
+                            <span className="text-sm text-gray-500">{formatDate(review.created_at)}</span>
                             <button className="flex items-center text-blue-600 hover:text-blue-800 text-sm">
                                 <MessageCircle className="h-4 w-4 mr-1" />
-                                Reply
+                                {review.replies ? 'View Reply' : 'Reply'}
                             </button>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="mt-8 text-center">
-                <button className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                    View All Reviews
-                    <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
-            </div>
+            {paginationLinks && <Pagination links={paginationLinks} />}
         </div>
     );
 }
