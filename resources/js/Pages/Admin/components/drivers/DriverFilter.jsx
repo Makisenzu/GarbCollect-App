@@ -19,12 +19,12 @@ const DriverFilter = ({ activeFilter, setActiveFilter }) => {
   }, []);
 
   const filterOptions = [
-    { value: 'all', label: 'All Drivers', color: 'violet' },
-    { value: 'active', label: 'Active', color: 'blue' },
-    { value: 'inactive', label: 'In-active', color: 'gray' },
-    { value: 'pending', label: 'Pending', color: 'yellow' },
-    { value: 'onduty', label: 'On Duty', color: 'green' },
-    { value: 'resigned', label: 'Resigned', color: 'red' },
+    { value: 'all', label: 'All Drivers' },
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'onduty', label: 'On Duty' },
+    { value: 'resigned', label: 'Resigned' },
   ];
 
   const selectedOption = filterOptions.find(option => option.value === activeFilter);
@@ -37,38 +37,35 @@ const DriverFilter = ({ activeFilter, setActiveFilter }) => {
   return (
     <div className="relative inline-block" ref={dropdownRef}>
       <button
-        className="flex items-center bg-white border border-gray-300 rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm hover:bg-gray-50 transition-colors"
+        className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-0 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <MdFilterList className="mr-2"/>
-        <span className="text-sm font-medium">Filter</span>
+        <MdFilterList className="mr-2 h-4 w-4"/>
+        <span>Filter: {selectedOption?.label}</span>
         <svg 
-          className={`h-4 w-4 ml-1 text-gray-500 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} 
-          xmlns="http://www.w3.org/2000/svg" 
-          viewBox="0 0 20 20" 
-          fill="currentColor"
+          className={`h-4 w-4 ml-2 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
         >
-          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute z-10 mt-1 right-0 w-48 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute z-10 mt-2 right-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
           {filterOptions.map((option) => (
             <button
               key={option.value}
-              className={`w-full text-left px-4 py-2 flex items-center justify-between hover:bg-blue-50 transition-colors ${
-                activeFilter === option.value ? 'bg-blue-50' : ''
+              className={`w-full text-left px-4 py-2.5 flex items-center justify-between text-sm hover:bg-gray-50 transition-colors ${
+                activeFilter === option.value ? 'bg-gray-50' : ''
               }`}
               onClick={() => handleOptionClick(option.value)}
             >
-              <div className="flex items-center">
-                {/* <div className={`w-3 h-3 rounded-full bg-${option.color}-500 mr-3`}></div> */}
-                <span className="text-sm font-medium">{option.label}</span>
-              </div>
+              <span className="font-medium text-gray-900">{option.label}</span>
               {activeFilter === option.value && (
-                <svg className="h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <svg className="h-4 w-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               )}
             </button>

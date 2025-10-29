@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import Pagination from '@/Components/Pagination';
 import FormModal from '@/Components/FormModal';
 import DriverModal from '@/Components/DriverModal';
 import { showAlert, confirmDialog } from '@/SweetAlert';
@@ -10,11 +9,9 @@ const DriverCard = ({ driver, schedule, isActive }) => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [showDriverModal, setShowDriverModal] = useState(false);
-
   const [barangays, setBarangays] = useState([]);
   const [barangayLoading, setBarangayLoading] = useState(false);
   const [openBarangayModal, setOpenBarangayModal] = useState(false);
-
   const [formData, setFormData] = useState({});
   const [processing, setProcessing] = useState(false);
 
@@ -44,7 +41,6 @@ const DriverCard = ({ driver, schedule, isActive }) => {
       value: driver.id,
       disabled: true,
     },
-    
     {
       name: "barangay_id",
       type: "hidden",
@@ -81,7 +77,7 @@ const DriverCard = ({ driver, schedule, isActive }) => {
       value: "active",
       options: [
         { value: "active", label: "Active" },
-        { value: "inactive", label: "In-active" },
+        { value: "inactive", label: "Inactive" },
       ],
     },
     {
@@ -157,9 +153,7 @@ const DriverCard = ({ driver, schedule, isActive }) => {
   }, []);
 
   const getStatusColor = () => {
-    if (!isActive) {
-      return 'bg-gray-500';
-    }
+    if (!isActive) return 'bg-gray-400';
     
     switch (driver.status) {
       case 'on duty':
@@ -179,9 +173,7 @@ const DriverCard = ({ driver, schedule, isActive }) => {
   };
 
   const getStatusText = () => {
-    if (!isActive) {
-      return 'Off Duty';
-    }
+    if (!isActive) return 'Off Duty';
     
     switch (driver.status) {
       case 'on duty':
@@ -217,84 +209,69 @@ const DriverCard = ({ driver, schedule, isActive }) => {
   
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-4">
+      <div className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             {driver.user.picture ? (
               <img
                 src={`/storage/profile-pictures/${driver.user.picture}`}
                 alt={driver.user.name}
-                className="w-10 h-10 rounded-full object-cover"
+                className="w-12 h-12 rounded-full object-cover flex-shrink-0"
               />
             ) : (
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                 {getInitialsFromName(driver.user.name, driver.user.lastname)}
               </div>
             )}
-            <div>
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                {driver.user.name} {driver.user.lastname}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900 text-sm truncate">
+                  {driver.user.name} {driver.user.lastname}
+                </h3>
                 <span 
                   className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColor}`}
                   title={statusText}
-                >
-                </span>
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">{driver.user.email}</p>
+                ></span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1 truncate">{driver.user.email}</p>
             </div>
           </div>
 
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative flex-shrink-0" ref={dropdownRef}>
             <button
               onClick={() => setOpen(!open)}
-              className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
               </svg>
             </button>
 
             {open && (
-              <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg z-50">
-                <ul className="py-1 text-sm text-gray-700">
-                  <li>
-                    <button
-                      onClick={() => setShowDriverModal(true)}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
-                      View Details
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => handleDeleteDriver(driver.id)}
-                      className="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100"
-                    >
-                      Remove
-                    </button>
-                  </li>
-                </ul>
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden">
+                <button
+                  onClick={() => setShowDriverModal(true)}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  View Details
+                </button>
+                <button
+                  onClick={() => handleDeleteDriver(driver.id)}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                >
+                  Remove
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex gap-2 pt-2">
+        <div className="pt-4 border-t border-gray-200">
           <button
             onClick={() => setOpenBarangayModal(true)}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-3 rounded-md transition-colors"
+            className="w-full px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-md hover:bg-gray-800 transition-colors"
           >
-            {hasSchedule ? "Set another schedule" : "Schedule"}
+            {hasSchedule ? "Set another schedule" : "Create Schedule"}
           </button>
         </div>
       </div>

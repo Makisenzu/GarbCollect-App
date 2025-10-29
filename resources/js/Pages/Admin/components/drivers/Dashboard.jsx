@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import Header from '@/Pages/Admin/components/drivers/Header';
 import DriverFilter from '@/Pages/Admin/components/drivers/DriverFilter';
 import DriverList from '@/Pages/Admin/components/drivers/DriverList';
 import StatCard from '@/Pages/Admin/components/drivers/StatCard';
 import Pagination from '@/Components/Pagination';
 import FormModal from '@/Components/FormModal';
 import ScheduleTable from './ScheduleTable';
-import { MdOutlineDateRange, MdSearch } from "react-icons/md";
 import { showAlert, confirmDialog } from '@/SweetAlert'
 import { usePage, useForm, router } from '@inertiajs/react';
 
@@ -92,11 +90,10 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto">
-        <Header />
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+    <div className="py-6">
+      <div className="mx-auto max-w-7xl">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {stats && Array.isArray(stats) && stats.map((stat, index) => (
             <StatCard 
               key={index}
@@ -107,14 +104,15 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Tabs */}
         <div className="mb-6">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab('drivers')}
-                className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'drivers'
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-gray-900 text-gray-900'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -122,9 +120,9 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('schedules')}
-                className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'schedules'
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-gray-900 text-gray-900'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -135,42 +133,41 @@ const Dashboard = () => {
         </div>
         
         {activeTab === 'drivers' && (
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6 gap-4">
-              <div className="flex-shrink-0">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Active Drivers</h2>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1">Manage driver schedules and assignments</p>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-                <div className="flex items-center gap-2 flex-wrap">
+          <div className="bg-white rounded-lg border border-gray-200">
+            <div className="px-6 py-5 border-b border-gray-200">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900">Active Drivers</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">Manage driver schedules and assignments</p>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2">
                   <button 
                     onClick={() => setShowAddDriverModal(true)} 
-                    className="flex items-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-3 sm:px-4 rounded-md transition-colors whitespace-nowrap flex-shrink-0"
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-md hover:bg-gray-800 transition-colors"
                   >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    <span className="hidden sm:inline">Add Driver</span>
-                    <span className="sm:hidden">Add</span>
+                    Add Driver
                   </button>
                   
-                  <div className="flex-shrink-0">
-                    <DriverFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                  </div>
+                  <DriverFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
                 </div>
               </div>
             </div>
 
-            <DriverList 
-              drivers={drivers} 
-              schedules={schedules} 
-              activeFilter={activeFilter} 
-              searchQuery={searchQuery}
-            />
+            <div className="p-6">
+              <DriverList 
+                drivers={drivers} 
+                schedules={schedules} 
+                activeFilter={activeFilter} 
+                searchQuery={searchQuery}
+              />
+            </div>
             
             {drivers && drivers.links && (
-              <div className="mt-4 sm:mt-6">
+              <div className="px-6 pb-6">
                 <Pagination links={drivers.links} />
               </div>
             )}
