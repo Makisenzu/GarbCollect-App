@@ -1,11 +1,10 @@
-import { MapPin, Eye } from 'lucide-react';
+import { MapPin, Eye, X } from 'lucide-react';
 import Pagination from '@/Components/Pagination';
 import BarangayMap from './BarangayMap';
 import { useState } from 'react';
 
 export default function Barangay({ barangays, links, mapBoxKey }) {
   const [selectedBarangay, setSelectedBarangay] = useState(null);
-  const [showModal, setShowModal] = useState(false);
 
   const barangayCenters = {
     "Alegria": [126.01045429538931, 8.506148297802667],
@@ -24,62 +23,78 @@ export default function Barangay({ barangays, links, mapBoxKey }) {
     "Barangay 4": 15,
     "Barangay 5": 15, 
   };
-  
 
   const handleViewBarangay = (barangay) => {
     setSelectedBarangay(barangay);
-    setShowModal(true);
   };
 
   const closeModal = () => {
-    setShowModal(false);
     setSelectedBarangay(null);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-6">
-        <MapPin className="h-5 w-5 text-green-600" />
-        <h2 className="text-2xl font-bold text-gray-800">Barangays & Puroks</h2>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-blue-50 rounded-lg">
+          <MapPin className="h-6 w-6 text-blue-600" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Barangays & Puroks</h2>
+          <p className="text-sm text-gray-600 mt-0.5">Manage and view barangay locations</p>
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {barangays.map((barangay) => (
-          <div key={barangay.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">{barangay.baranggay_name}</h3>
-              <p className="text-sm text-gray-500">Total Purok: {barangay.puroks_count || 0}</p>
-            </div>
-            <div className="space-y-4">
+          <div 
+            key={barangay.id} 
+            className="group bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200 overflow-hidden"
+          >
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    {barangay.baranggay_name}
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                    <span>{barangay.puroks_count || 0} Puroks</span>
+                  </div>
+                </div>
+              </div>
+              
               <button 
                 onClick={() => handleViewBarangay(barangay)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md"
               >
                 <Eye className="h-4 w-4" />
-                View Barangay
+                View Details
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      {showModal && selectedBarangay && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-xl font-semibold text-gray-800">
-                {selectedBarangay.baranggay_name}
-              </h3>
+      {selectedBarangay && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {selectedBarangay.baranggay_name}
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">Barangay location and details</p>
+              </div>
               <button
                 onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                ×
+                <X className="h-6 w-6" />
               </button>
             </div>
             
             <div className="p-6">              
-              <div className="h-[75vh] rounded-lg overflow-hidden border border-gray-200">
+              <div className="h-[65vh] rounded-xl overflow-hidden border border-gray-200">
                 <BarangayMap 
                   mapBoxKey={mapBoxKey}
                   centerFocus={barangayCenters[selectedBarangay.baranggay_name] || [125.94849837776422, 8.483022468128098]}
@@ -89,10 +104,10 @@ export default function Barangay({ barangays, links, mapBoxKey }) {
               </div>
             </div>
             
-            <div className="flex justify-end p-6 border-t">
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
                 Close
               </button>

@@ -11,11 +11,15 @@ export default function Residents() {
 
   return (
     <AuthenticatedLayout
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Residents Dashboard</h2>}
+      header={
+        <h2 className="text-xl font-semibold leading-tight text-gray-800">
+          Residents Dashboard
+        </h2>
+      }
     >
       <Head title="Residents" />
 
-      <div className="py-1">
+      <div className="py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Barangay 
             barangays={barangaysData} 
