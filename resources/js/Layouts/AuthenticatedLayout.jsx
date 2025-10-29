@@ -34,16 +34,20 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
     const toggleMobileSidebar = () => {
         setMobileSidebarOpen(!mobileSidebarOpen);
     };
+
     return (
-        <div className="min-h-screen bg-gray-100 flex">
-            <div className="hidden md:flex md:flex-col w-64 bg-white shadow-lg">
-                <div className="flex items-center p-3 border-b border-gray-200">
-                    <ApplicationLogo className="block h-10 w-auto fill-current text-gray-800" />
+        <div className="min-h-screen bg-gray-50 flex">
+            {/* Desktop Sidebar */}
+            <div className="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200">
+                {/* Logo Section */}
+                <div className="flex items-center px-6 h-16 border-b border-gray-200">
+                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
                 </div>
 
                 <div className="flex flex-col flex-1 overflow-y-auto">
-                    <nav className="flex-1 p-4">
-                        <div className="space-y-2">
+                    {/* Navigation */}
+                    <nav className="flex-1 px-3 py-6">
+                        <div className="space-y-1">
                             {user.roles === 'admin' && (
                                 <>
                                     <SidebarLink
@@ -95,51 +99,68 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                                         </div>
                                         Sites
                                     </SidebarLink>
-
                                 </>
                             )}
 
                             {user.roles === 'employee' && (
                                 <>
-                                <SidebarLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    <div className="w-6 h-6 flex items-center justify-center mr-3">
-                                        <SlGraph size={18} />
-                                    </div>
-                                    Dashboard
-                                </SidebarLink>
+                                    <SidebarLink
+                                        href={route('dashboard')}
+                                        active={route().current('dashboard')}
+                                    >
+                                        <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                            <SlGraph size={18} />
+                                        </div>
+                                        Dashboard
+                                    </SidebarLink>
 
-                                <SidebarLink
-                                    href={route('profile.edit')}
-                                    active={route().current('profile.edit')}
-                                >
-                                    <div className="w-6 h-6 flex items-center justify-center mr-3">
-                                        <FaUser size={14} />
-                                    </div>
-                                    Profile
-                                </SidebarLink>
+                                    <SidebarLink
+                                        href={route('profile.edit')}
+                                        active={route().current('profile.edit')}
+                                    >
+                                        <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                            <FaUser size={14} />
+                                        </div>
+                                        Profile
+                                    </SidebarLink>
                                 </>
                             )}
                         </div>
                     </nav>
 
-                    <div className="border-t border-gray-200 my-2"></div>
-
-                    <SidebarLink
-                        href={route('logout')}
-                        method="post"
-                        as="button"
-                    >
-                        <div className="w-6 h-6 flex items-center justify-center mr-3">
-                            <TbLogout size={18} />
+                    {/* User Section */}
+                    <div className="p-4 border-t border-gray-200">
+                        <div className="flex items-center space-x-3 mb-3">
+                            <img
+                                src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
+                                alt="Profile"
+                                className="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                    {user.name}
+                                </p>
+                                <p className="text-xs text-gray-500 capitalize">
+                                    {user.roles}
+                                </p>
+                            </div>
                         </div>
-                        Logout
-                    </SidebarLink>
+
+                        <SidebarLink
+                            href={route('logout')}
+                            method="post"
+                            as="button"
+                        >
+                            <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                <TbLogout size={18} />
+                            </div>
+                            Logout
+                        </SidebarLink>
+                    </div>
                 </div>
             </div>
 
+            {/* Mobile Sidebar Overlay */}
             {mobileSidebarOpen && (
                 <div 
                     className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 md:hidden"
@@ -147,11 +168,10 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                 ></div>
             )}
 
-            <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:hidden ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                    <div className="flex items-center">
-                        <ApplicationLogo className="block h-10 w-auto fill-current text-gray-800" />
-                    </div>
+            {/* Mobile Sidebar */}
+            <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out md:hidden ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200">
+                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
                     <button 
                         onClick={() => setMobileSidebarOpen(false)}
                         className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700"
@@ -162,9 +182,9 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                     </button>
                 </div>
 
-                <div className="flex flex-col flex-1 overflow-y-auto">
-                    <nav className="flex-1 p-4">
-                        <div className="space-y-2">
+                <div className="flex flex-col flex-1 overflow-y-auto h-[calc(100vh-64px)]">
+                    <nav className="flex-1 px-3 py-6">
+                        <div className="space-y-1">
                             {user.roles === 'admin' && (
                                 <>
                                     <SidebarLink
@@ -175,6 +195,16 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                                             <SlGraph size={18} />
                                         </div>
                                         Dashboard
+                                    </SidebarLink>
+
+                                    <SidebarLink
+                                        href={route('profile.edit')}
+                                        active={route().current('profile.edit')}
+                                    >
+                                        <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                            <FaUser size={14} />
+                                        </div>
+                                        Profile
                                     </SidebarLink>
 
                                     <SidebarLink
@@ -210,25 +240,66 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                             )}
 
                             {user.roles === 'employee' && (
-                                <SidebarLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    <div className="w-6 h-6 flex items-center justify-center mr-3">
-                                        <SlGraph size={18} />
-                                    </div>
-                                    Dashboard
-                                </SidebarLink>
+                                <>
+                                    <SidebarLink
+                                        href={route('dashboard')}
+                                        active={route().current('dashboard')}
+                                    >
+                                        <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                            <SlGraph size={18} />
+                                        </div>
+                                        Dashboard
+                                    </SidebarLink>
+
+                                    <SidebarLink
+                                        href={route('profile.edit')}
+                                        active={route().current('profile.edit')}
+                                    >
+                                        <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                            <FaUser size={14} />
+                                        </div>
+                                        Profile
+                                    </SidebarLink>
+                                </>
                             )}
                         </div>
                     </nav>
 
-                    <div className="border-t border-gray-200 my-2"></div>
+                    <div className="p-4 border-t border-gray-200">
+                        <div className="flex items-center space-x-3 mb-3">
+                            <img
+                                src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
+                                alt="Profile"
+                                className="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                    {user.name}
+                                </p>
+                                <p className="text-xs text-gray-500 capitalize">
+                                    {user.roles}
+                                </p>
+                            </div>
+                        </div>
+
+                        <SidebarLink
+                            href={route('logout')}
+                            method="post"
+                            as="button"
+                        >
+                            <div className="w-6 h-6 flex items-center justify-center mr-3">
+                                <TbLogout size={18} />
+                            </div>
+                            Logout
+                        </SidebarLink>
+                    </div>
                 </div>
             </div>
 
+            {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
-                <header className="bg-white shadow-sm z-10">
+                {/* Header */}
+                <header className="bg-white border-b border-gray-200 z-10">
                     <div className="flex items-center justify-between mx-auto px-4 sm:px-6 lg:px-8 h-16">
                         <div className="flex items-center">
                             <button 
@@ -261,7 +332,7 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                                             <img
                                                 src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
                                                 alt="Profile"
-                                                className="w-7 h-7 rounded-full object-cover shadow-lg"
+                                                className="w-8 h-8 rounded-full object-cover"
                                             />
                                         </button>
                                     </span>
@@ -286,8 +357,8 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-4 bg-gray-100">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                    <div className="mx-auto max-w-7xl">
                         {children}
                     </div>
                 </main>
