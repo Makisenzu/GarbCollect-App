@@ -23,7 +23,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   useEffect(() => {
     if (mapboxKey) {
-      console.log('🔑 Setting Mapbox access token');
+      console.log('Setting Mapbox access token');
       mapboxgl.accessToken = mapboxKey;
     }
   }, [mapboxKey]);
@@ -66,17 +66,8 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     document.head.appendChild(link);
   }, []);
 
-  // Map initialization
   useEffect(() => {
     const initializeMap = () => {
-      console.log('🔍 Map initialization prerequisites:', {
-        cssLoaded,
-        mapboxKey: !!mapboxKey,
-        containerReady,
-        mapContainer: !!mapContainer.current,
-        mapCurrent: !!map.current
-      });
-
       if (!mapContainer.current) return;
       if (map.current) return;
       if (!mapboxKey) {
@@ -91,28 +82,23 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/streets-v12',
+          style: 'mapbox://styles/mapbox/light-v10',
           center: [125.948498, 8.483022],
           zoom: 10,
           attributionControl: false,
           failIfMajorPerformanceCaveat: false
         });
 
-        console.log('🗺️ Map instance created');
-
         const handleMapLoad = () => {
           console.log('Map loaded successfully!');
           setMapInitialized(true);
           setMapError(null);
           
-          // Update markers when map loads if we already have data
           if (siteLocations.length > 0) {
-            console.log('Updating site markers after map load');
             updateSiteMarkers(siteLocations);
           }
           
           if (driverLocation) {
-            console.log('Updating driver marker after map load');
             updateDriverMarker(driverLocation, {});
           }
         };
@@ -158,31 +144,15 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   useEffect(() => {
     if (mapInitialized && map.current && siteLocations.length > 0) {
-      console.log('Rendering site markers:', siteLocations.length);
       updateSiteMarkers(siteLocations);
     }
   }, [mapInitialized, siteLocations]);
 
   useEffect(() => {
     if (mapInitialized && map.current && driverLocation) {
-      console.log('Rendering driver marker');
       updateDriverMarker(driverLocation, {});
     }
   }, [mapInitialized, driverLocation]);
-
-  useEffect(() => {
-    console.log('Current state:', {
-      cssLoaded,
-      mapboxKey: !!mapboxKey,
-      containerReady,
-      mapInitialized,
-      mapContainer: !!mapContainer.current,
-      mapCurrent: !!map.current,
-      mapError,
-      siteLocationsCount: siteLocations.length,
-      driverLocation: !!driverLocation
-    });
-  }, [cssLoaded, mapboxKey, containerReady, mapInitialized, mapError, siteLocations, driverLocation]);
 
   useEffect(() => {
     if (!barangayId) return;
@@ -198,8 +168,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           throw new Error('Echo not initialized');
         }
 
-        console.log('Setting up Reverb listeners for barangay:', barangayId);
-
         echo.channel(`driver-locations.${barangayId}`)
           .listen('DriverLocationUpdated', (e) => {
             console.log('Driver location update received:', e);
@@ -214,8 +182,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           });
 
         setConnectionStatus('connected');
-        console.log('Reverb listeners set up successfully');
-        
         await loadInitialData();
 
       } catch (error) {
@@ -247,35 +213,26 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      console.log('Loading initial data...');
       
-      // Load schedule data
       const scheduleResponse = await axios.get(`/barangay/${barangayId}/current-schedule`);
-      console.log('Schedule response:', scheduleResponse.data);
       
       if (scheduleResponse.data.success) {
         const schedule = scheduleResponse.data.data;
         setCurrentSchedule(schedule);
         
-        // Load sites for this schedule
         if (schedule.id) {
           const sitesResponse = await axios.get(`/schedule/${schedule.id}/sites`);
-          console.log('Sites response:', sitesResponse.data);
           
           if (sitesResponse.data.success) {
             const sites = sitesResponse.data.data;
-            console.log('Setting site locations:', sites.length);
             setSiteLocations(sites);
           }
         }
         
-        // Load current driver location if available
         if (scheduleId) {
           const locationResponse = await axios.get(`/schedule/${scheduleId}/driver-location`);
-          console.log('Driver location response:', locationResponse.data);
           
           if (locationResponse.data.success && locationResponse.data.data) {
-            console.log('Setting driver location from API');
             updateDriverLocation(locationResponse.data.data);
           }
         }
@@ -289,16 +246,13 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   const updateDriverLocation = (locationData) => {
     if (!locationData.longitude || !locationData.latitude) {
-      console.log('Invalid driver location data:', locationData);
       return;
     }
     
     const newLocation = [parseFloat(locationData.longitude), parseFloat(locationData.latitude)];
-    console.log('Updating driver location to:', newLocation);
     setDriverLocation(newLocation);
     
     if (mapInitialized && map.current) {
-      console.log('Immediately updating driver marker');
       updateDriverMarker(newLocation, locationData);
       
       map.current.flyTo({
@@ -311,15 +265,10 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   const updateDriverMarker = (coordinates, locationData) => {
     if (!map.current || !mapInitialized) {
-      console.log('Skipping driver marker update - map not ready');
       return;
     }
 
-    console.log('Creating driver marker at:', coordinates);
-
-    // Remove existing marker
     if (driverMarker) {
-      console.log('🗑️ Removing existing driver marker');
       driverMarker.remove();
     }
 
@@ -327,15 +276,13 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     markerElement.className = 'driver-location-marker';
     markerElement.innerHTML = `
       <div class="relative">
-        <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-600 border-2 md:border-3 border-white rounded-full shadow-lg z-50 flex items-center justify-center">
-          <svg class="w-3 h-3 md:w-5 md:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6zm0 8a2 2 0 110-4 2 2 0 010 4z"/>
+        <div class="w-10 h-10 bg-gray-900 border-3 border-white rounded-full shadow-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
           </svg>
         </div>
-        <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
-        <div class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg border border-blue-300">
-          <div class="font-semibold text-xs">Driver</div>
-        </div>
+        <div class="absolute inset-0 bg-gray-700 rounded-full animate-ping opacity-50"></div>
       </div>
     `;
 
@@ -348,26 +295,20 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       .addTo(map.current);
 
       setDriverMarker(newMarker);
-      console.log('Driver marker created successfully');
     } catch (error) {
       console.error('Error creating driver marker:', error);
     }
   };
 
   const updateScheduleData = (scheduleData) => {
-    console.log('📅 Updating schedule data:', scheduleData);
     setCurrentSchedule(scheduleData);
   };
 
   const updateSiteMarkers = (sites) => {
     if (!map.current || !mapInitialized) {
-      console.log('⏳ Skipping site markers update - map not ready');
       return;
     }
 
-    console.log('🗺️ Updating site markers for', sites.length, 'sites');
-
-    // Clear existing markers
     siteMarkers.forEach(marker => {
       if (marker && marker.remove) {
         marker.remove();
@@ -376,7 +317,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     
     const newMarkers = sites.map((site, index) => {
       if (!site.longitude || !site.latitude) {
-        console.log('Skipping site with missing coordinates:', site.purok_name || site.site_name);
         return null;
       }
 
@@ -387,51 +327,62 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         const isCompleted = site.status === 'completed';
         const isCurrent = site.status === 'in_progress';
         const isStation = site.type === 'station';
-        const purokName = site.purok_name || 'Purok';
+        const purokName = site.purok_name || site.site_name || 'Site';
+        
+        const getMarkerColor = () => {
+          if (isStation) return '#DC2626';
+          if (isCompleted) return '#10B981';
+          return '#6B7280';
+        };
+
+        const getMarkerIcon = () => {
+          if (isStation) return `<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />`;
+          if (isCompleted) return `<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />`;
+          return `<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />`;
+        };
         
         markerElement.innerHTML = `
-          <div class="relative">
-            <div class="w-8 h-8 md:w-12 md:h-12 rounded-full border-2 md:border-4 flex items-center justify-center overflow-hidden shadow-lg bg-white ${
-              isCurrent ? 'ring-2 md:ring-4 ring-yellow-500 ring-opacity-70 animate-pulse' : ''
-            } ${isCompleted ? 'opacity-60 grayscale' : ''}" 
-                 style="border-color: ${isStation ? '#EF4444' : isCompleted ? '#10B981' : '#6B7280'};">
-              <div class="w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center ${
-                isStation ? 'bg-red-50' : isCompleted ? 'bg-green-50' : 'bg-gray-50'
-              }">
-                <span class="text-xs md:text-sm font-bold ${
-                  isStation ? 'text-red-600' : 
-                  isCompleted ? 'text-green-600' : 
-                  'text-gray-600'
-                }">
-                  ${isStation ? '🏠' : isCompleted ? '✓' : '🗑️'}
-                </span>
-              </div>
+          <div class="relative ${isCurrent ? 'animate-pulse' : ''}">
+            <div class="w-10 h-10 rounded-full border-3 border-white flex items-center justify-center shadow-lg" style="background-color: ${getMarkerColor()}; ${isCompleted ? 'opacity: 0.7;' : ''}">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${getMarkerIcon()}
+              </svg>
             </div>
-            <div class="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded whitespace-nowrap max-w-24 md:max-w-32 truncate shadow-lg">
-              ${purokName}${isCompleted ? ' • Done' : isCurrent ? ' • Now' : isStation ? ' • Station' : ''}
-            </div>
+            ${isCurrent ? `<div class="absolute inset-0 rounded-full border-3 border-yellow-500 animate-ping"></div>` : ''}
           </div>
         `;
 
         const coordinates = [parseFloat(site.longitude), parseFloat(site.latitude)];
-        console.log(`Creating marker ${index + 1} for ${purokName} at:`, coordinates);
+
+        const popup = new mapboxgl.Popup({
+          offset: 25,
+          closeButton: false,
+          className: 'custom-popup'
+        }).setHTML(`
+          <div class="text-sm">
+            <div class="font-semibold text-gray-900">${purokName}</div>
+            <div class="text-xs text-gray-500 mt-1">
+              ${isStation ? 'Collection Station' : isCompleted ? 'Completed' : isCurrent ? 'In Progress' : 'Pending'}
+            </div>
+          </div>
+        `);
 
         const marker = new mapboxgl.Marker({
           element: markerElement,
           draggable: false
         })
         .setLngLat(coordinates)
+        .setPopup(popup)
         .addTo(map.current);
 
         return marker;
       } catch (error) {
-        console.error('Error creating marker for purok:', site.purok_name, error);
+        console.error('Error creating marker:', error);
         return null;
       }
     }).filter(marker => marker !== null);
 
     setSiteMarkers(newMarkers);
-    console.log('Site markers updated successfully:', newMarkers.length, 'markers created');
   };
 
   const getCompletedSites = () => {
@@ -440,12 +391,12 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   if (mapError) {
     return (
-      <div className="w-full h-64 md:h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-        <div className="text-center p-4">
-          <IoWarning className="w-12 h-12 md:w-16 md:h-16 text-red-500 mx-auto mb-4" />
-          <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-2">Map Loading Error</h3>
-          <p className="text-sm md:text-base text-gray-600 mb-4">{mapError}</p>
-          <p className="text-xs md:text-sm text-gray-500">The interface will continue with limited functionality.</p>
+      <div className="w-full h-96 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+        <div className="text-center p-6">
+          <IoWarning className="w-12 h-12 text-red-600 mx-auto mb-4" />
+          <h3 className="text-base font-semibold text-gray-900 mb-2">Map Loading Error</h3>
+          <p className="text-sm text-gray-600 mb-4">{mapError}</p>
+          <p className="text-xs text-gray-500">The interface will continue with limited functionality</p>
         </div>
       </div>
     );
@@ -453,88 +404,29 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   if (loading) {
     return (
-      <div className="w-full h-64 md:h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+      <div className="w-full h-96 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-sm md:text-base text-gray-600">Loading real-time map...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mx-auto mb-3"></div>
+          <p className="text-sm text-gray-600">Loading map data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-      {/* Header Section - Responsive */}
-      <div className="bg-gradient-to-r from-blue-600 to-green-600 text-white p-3 md:p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="text-center sm:text-left">
-            <h2 className="text-lg md:text-xl font-bold">Live Collection Tracking</h2>
-            <p className="text-blue-100 text-xs md:text-sm">
-              Barangay {barangayId} • {mapInitialized ? 'Map Ready' : 'Initializing...'}
-            </p>
-          </div>
-          
-          <div className="flex items-center justify-center sm:justify-end gap-3 md:gap-4">
-            <div className={`flex items-center gap-2 text-xs md:text-sm ${
-              connectionStatus === 'connected' ? 'text-green-300' : 
-              connectionStatus === 'connecting' ? 'text-yellow-300' : 'text-red-300'
-            }`}>
-              <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-green-400 animate-pulse' : 
-                connectionStatus === 'connecting' ? 'bg-yellow-400' : 'bg-red-400'
-              }`}></div>
-              <span className="capitalize">{connectionStatus}</span>
-            </div>
-            
-            {driverLocation && (
-              <div className="flex items-center gap-1 text-green-300 text-xs md:text-sm">
-                <svg className="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6zm0 8a2 2 0 110-4 2 2 0 010 4z"/>
-                </svg>
-                <span className="hidden sm:inline">Driver Active</span>
-                <span className="sm:hidden">Driver</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Section - Responsive Grid */}
-      <div className="bg-gray-50 border-b border-gray-200 p-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-sm">
-          <div className="text-center">
-            <div className="text-xl md:text-2xl font-bold text-gray-800">{siteLocations.length}</div>
-            <div className="text-gray-600 text-xs">Total Puroks</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl md:text-2xl font-bold text-green-600">{getCompletedSites()}</div>
-            <div className="text-gray-600 text-xs">Completed</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl md:text-2xl font-bold text-blue-600">{siteLocations.length - getCompletedSites()}</div>
-            <div className="text-gray-600 text-xs">Remaining</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl md:text-2xl font-bold text-purple-600">
-              {driverLocation ? 'Yes' : 'No'}
-            </div>
-            <div className="text-gray-600 text-xs">Driver Tracking</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Map Container - Responsive Height */}
-      <div className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[500px]">
+    <div className="w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Map Container */}
+      <div className="relative w-full h-[600px]">
         {!mapInitialized && (
-          <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-20">
-            <div className="text-center p-4">
-              <div className="animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              <p className="text-sm text-gray-600">Loading map...</p>
-              <p className="text-xs text-gray-500 mt-1">
+          <div className="absolute inset-0 bg-gray-50 flex items-center justify-center z-20">
+            <div className="text-center p-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-3"></div>
+              <p className="text-sm text-gray-600">Initializing map...</p>
+              <p className="text-xs text-gray-500 mt-2">
                 {!containerReady ? 'Setting up container...' : 
                  !cssLoaded ? 'Loading styles...' : 
                  !mapboxKey ? 'Waiting for API key...' : 
-                 'Initializing Mapbox...'}
+                 'Loading Mapbox...'}
               </p>
             </div>
           </div>
@@ -547,65 +439,71 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         
         {mapInitialized && (
           <>
-            {/* Legend - Responsive Positioning & Size */}
-            <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 bg-white rounded-lg shadow-lg p-2 md:p-4 text-xs md:text-sm border border-gray-200 z-10 max-w-40 md:max-w-none">
-              <div className="font-semibold mb-1 md:mb-2 text-gray-800 text-xs md:text-sm">Legend</div>
-              <div className="space-y-1 md:space-y-2">
-                <div className="flex items-center gap-1 md:gap-2">
-                  <div className="w-3 h-3 md:w-4 md:h-4 bg-blue-600 rounded-full relative flex-shrink-0">
-                    <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
+            {/* Legend */}
+            <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-10 min-w-48">
+              <div className="font-semibold text-sm text-gray-900 mb-3">Map Legend</div>
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0 relative">
+                    <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                      <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                    </svg>
+                    <div className="absolute inset-0 bg-gray-700 rounded-full animate-ping opacity-30"></div>
                   </div>
-                  <span className="text-gray-700 text-xs md:text-sm">Driver</span>
+                  <span className="text-sm text-gray-700">Driver Location</span>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                  <div className="w-3 h-3 md:w-4 md:h-4 bg-red-500 rounded-full border-1 md:border-2 border-white flex-shrink-0"></div>
-                  <span className="text-gray-700 text-xs md:text-sm">Station</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-700">Collection Station</span>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                  <div className="w-3 h-3 md:w-4 md:h-4 bg-gray-500 rounded-full border-1 md:border-2 border-white flex-shrink-0"></div>
-                  <span className="text-gray-700 text-xs md:text-sm">Pending</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-700">Pending Collection</span>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                  <div className="w-3 h-3 md:w-4 md:h-4 bg-green-500 rounded-full border-1 md:border-2 border-white flex-shrink-0"></div>
-                  <span className="text-gray-700 text-xs md:text-sm">Completed</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-700">Completed</span>
                 </div>
               </div>
             </div>
 
-            {/* Refresh Button - Responsive Positioning & Size */}
-            <button
+            {/* Refresh Button */}
+            {/* <button
               onClick={loadInitialData}
-              className="absolute top-2 right-2 md:top-4 md:right-4 bg-white rounded-lg shadow-lg p-2 md:p-3 hover:bg-gray-50 transition-colors border border-gray-200 z-10"
+              className="absolute top-4 right-4 bg-white rounded-lg shadow-lg border border-gray-200 p-3 hover:bg-gray-50 transition-colors z-10"
               title="Refresh data"
             >
-              <IoRefresh className="w-4 h-4 md:w-5 md:h-5 text-gray-700" />
-            </button>
+              <IoRefresh className="w-5 h-5 text-gray-700" />
+            </button> */}
+
+            {/* Connection Status */}
+            <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg border border-gray-200 px-3 py-2 z-10">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  connectionStatus === 'connected' ? 'bg-green-500' : 
+                  connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+                } ${connectionStatus === 'connected' ? 'animate-pulse' : ''}`}></div>
+                <span className="text-xs font-medium text-gray-700 capitalize">
+                  {connectionStatus}
+                </span>
+              </div>
+            </div>
           </>
         )}
       </div>
-
-      {/* Progress Section - Responsive */}
-      {siteLocations.length > 0 && (
-        <div className="p-3 md:p-4 border-t border-gray-200 bg-white">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm mb-2">
-            <span className="text-gray-700 font-medium text-center sm:text-left">Collection Progress</span>
-            <span className="font-semibold text-gray-800 text-center sm:text-right">
-              {getCompletedSites()}/{siteLocations.length} puroks
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 md:h-3">
-            <div 
-              className="bg-gradient-to-r from-green-500 to-blue-500 h-2 md:h-3 rounded-full transition-all duration-500 shadow-sm"
-              style={{ 
-                width: `${(getCompletedSites() / siteLocations.length) * 100}%` 
-              }}
-            ></div>
-          </div>
-          <div className="text-xs text-gray-500 mt-2 text-center">
-            {Math.round((getCompletedSites() / siteLocations.length) * 100)}% complete
-          </div>
-        </div>
-      )}
     </div>
   );
 };
