@@ -207,6 +207,11 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     return -1; // All sites completed
   };
 
+  // NEW: Check if all sites are completed
+  const areAllSitesCompleted = () => {
+    return completedSites.size === siteLocations.length;
+  };
+
   // NEW: Create straight line route as fallback
   const createStraightLineRoute = (currentPos, nextSite) => {
     if (!currentPos || !nextSite) return;
@@ -247,7 +252,10 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     
     // Get the current target site (next uncompleted site)
     const nextSiteIndex = getNextUncompletedSiteIndex();
-    if (nextSiteIndex === -1) return;
+    if (nextSiteIndex === -1) {
+      console.log('All sites completed, no route to recalculate');
+      return;
+    }
     
     const nextSite = optimizedSiteOrder[nextSiteIndex];
     
@@ -808,29 +816,52 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     });
   };
 
+  // FIXED: Updated markSiteAsCompleted function
   const markSiteAsCompleted = (site, index) => {
     console.log(`Site reached: ${site.site_name}`);
     
-    setCompletedSites(prev => new Set(prev).add(site.id));
+    // Add site to completed set
+    setCompletedSites(prev => {
+      const newCompleted = new Set(prev).add(site.id);
+      
+      // Check if all sites are completed
+      if (newCompleted.size === siteLocations.length) {
+        console.log('🎉 All sites completed! Task finished.');
+        // Only call onTaskComplete when ALL sites are done
+        if (onTaskComplete) {
+          onTaskComplete(site);
+        }
+      } else {
+        console.log(`Progress: ${newCompleted.size}/${siteLocations.length} sites completed`);
+      }
+      
+      return newCompleted;
+    });
     
+    // Update current site index and calculate route to next site
     if (optimizedSiteOrder.length > 0) {
       const currentIndex = optimizedSiteOrder.findIndex(s => s.id === site.id);
       if (currentIndex !== -1 && currentIndex < optimizedSiteOrder.length - 1) {
-        setCurrentSiteIndex(currentIndex + 1);
+        const nextSiteIndex = currentIndex + 1;
+        setCurrentSiteIndex(nextSiteIndex);
         
-        const nextSite = optimizedSiteOrder[currentIndex + 1];
+        const nextSite = optimizedSiteOrder[nextSiteIndex];
+        console.log(`Moving to next site: ${nextSite.site_name}`);
+        
+        // Recalculate route to next site from current position
         if (currentLocation) {
           calculateRouteToNextSite(currentLocation, nextSite);
         }
+      } else if (currentIndex === optimizedSiteOrder.length - 1) {
+        console.log('🏁 Last site reached!');
+        setCurrentSiteIndex(currentIndex);
       }
     }
     
+    // Update markers to reflect completion status
     updateSiteMarkers();
     
-    if (onTaskComplete) {
-      onTaskComplete(site);
-    }
-    
+    // Show completion notification for individual site
     showCompletionNotification(site.site_name);
   };
 
@@ -898,11 +929,27 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     console.log(`Site completed: ${siteName}`);
     
     if (isMobile) {
-      alert(`Site completed: ${siteName}`);
+      // Show mobile-friendly notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 left-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 text-center';
+      notification.innerHTML = `
+        <div class="font-semibold">✅ ${siteName} Completed!</div>
+        <div class="text-sm opacity-90">Progress: ${completedSites.size + 1}/${siteLocations.length} sites</div>
+      `;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 3000);
     } else {
       const notification = document.createElement('div');
       notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      notification.innerHTML = `${siteName} completed!`;
+      notification.innerHTML = `
+        <div class="font-semibold">✅ ${siteName}</div>
+        <div class="text-xs opacity-90">${completedSites.size + 1}/${siteLocations.length} sites</div>
+      `;
       document.body.appendChild(notification);
       
       setTimeout(() => {
