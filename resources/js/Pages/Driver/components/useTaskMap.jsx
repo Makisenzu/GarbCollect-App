@@ -111,9 +111,16 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         // Update local state with smooth animation
         smoothUpdateUserLocation(location.lat, location.lng);
         
-        // Check if route should be recalculated
-        if (shouldRecalculateRoute([location.lng, location.lat])) {
-          recalculateRouteFromCurrentPosition([location.lng, location.lat]);
+        // Check site proximity and recalculate if needed
+        if (siteLocations.length > 0) {
+          const siteReached = checkSiteProximity([location.lng, location.lat], siteLocations);
+          if (siteReached) {
+            console.log('Site completed in fake location test, recalculating route');
+            // Use current fake location for recalculation
+            recalculateRouteFromCurrentPosition([location.lng, location.lat]);
+          } else if (shouldRecalculateRoute([location.lng, location.lat])) {
+            recalculateRouteFromCurrentPosition([location.lng, location.lat]);
+          }
         }
         
         console.log(`✅ Fake location sent: ${location.name}`);
@@ -180,9 +187,17 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         await sendLocationToReverb(lat, lng, 5);
         smoothUpdateUserLocation(lat, lng);
         
-        // Check site proximity during simulation
+        // Enhanced site proximity check that triggers route recalculation
         if (siteLocations.length > 0) {
-          checkSiteProximity([lng, lat], siteLocations);
+          const siteReached = checkSiteProximity([lng, lat], siteLocations);
+          // If a site was reached and completed, force immediate route recalculation
+          if (siteReached) {
+            console.log('Site completed during simulation, forcing immediate route recalculation');
+            // Use the current fake location for recalculation
+            setTimeout(() => {
+              recalculateRouteFromCurrentPosition([lng, lat]);
+            }, 100);
+          }
         }
         
         currentIndex++;
@@ -355,11 +370,16 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       routeCoordinates[0][1], routeCoordinates[0][0]
     );
     
-    // Recalculate if driver is more than 200m from route start
-    const shouldRecalc = distanceToRouteStart > 0.2; // 0.2 km = 200 meters
+    // ALWAYS recalculate if we have completed sites and the route isn't already recalculated
+    // OR if driver is significantly off-route
+    const hasCompletedSites = completedSites.size > 0;
+    const isOffRoute = distanceToRouteStart > 0.2; // 200 meters
+    const isNotRecalculated = !routeInfo?.recalculated;
+    
+    const shouldRecalc = isOffRoute || (hasCompletedSites && isNotRecalculated);
     
     if (shouldRecalc) {
-      console.log(`Driver ${(distanceToRouteStart * 1000).toFixed(0)}m from route start, recalculating...`);
+      console.log(`Recalculating route - Off route: ${isOffRoute}, Completed sites: ${completedSites.size}, Already recalculated: ${routeInfo?.recalculated}`);
     }
     
     return shouldRecalc;
@@ -792,14 +812,15 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
   };
 
   const checkSiteProximity = (currentPos, sites) => {
-    if (!currentPos || sites.length === 0) return;
-
+    if (!currentPos || sites.length === 0) return false;
+  
     const [longitude, latitude] = currentPos;
     const PROXIMITY_THRESHOLD = 0.05;
-
+    let siteReached = false;
+  
     sites.forEach((site, index) => {
       if (completedSites.has(site.id)) return;
-
+  
       const siteLongitude = parseFloat(site.longitude);
       const siteLatitude = parseFloat(site.latitude);
       
@@ -809,14 +830,17 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         siteLatitude,
         siteLongitude
       );
-
+  
       if (distance < 0.05) {
         markSiteAsCompleted(site, index);
+        siteReached = true;
       }
     });
+  
+    return siteReached;
   };
 
-  // FIXED: Updated markSiteAsCompleted function
+  // FIXED: Updated markSiteAsCompleted function to immediately recalculate route for both real and fake locations
   const markSiteAsCompleted = (site, index) => {
     console.log(`Site reached: ${site.site_name}`);
     
@@ -827,7 +851,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       // Check if all sites are completed
       if (newCompleted.size === siteLocations.length) {
         console.log('🎉 All sites completed! Task finished.');
-        // Only call onTaskComplete when ALL sites are done
         if (onTaskComplete) {
           onTaskComplete(site);
         }
@@ -838,7 +861,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       return newCompleted;
     });
     
-    // Update current site index and calculate route to next site
+    // Update current site index and IMMEDIATELY recalculate route to next site
     if (optimizedSiteOrder.length > 0) {
       const currentIndex = optimizedSiteOrder.findIndex(s => s.id === site.id);
       if (currentIndex !== -1 && currentIndex < optimizedSiteOrder.length - 1) {
@@ -848,9 +871,13 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         const nextSite = optimizedSiteOrder[nextSiteIndex];
         console.log(`Moving to next site: ${nextSite.site_name}`);
         
-        // Recalculate route to next site from current position
+        // IMMEDIATELY recalculate route when a site is completed
+        // For both real AND fake locations
         if (currentLocation) {
-          calculateRouteToNextSite(currentLocation, nextSite);
+          console.log('Immediately recalculating route from current location to next site');
+          recalculateRouteFromCurrentPosition(currentLocation);
+        } else {
+          console.log('No current location available for immediate route recalculation');
         }
       } else if (currentIndex === optimizedSiteOrder.length - 1) {
         console.log('🏁 Last site reached!');
@@ -1032,7 +1059,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     );
 
     return watchId;
-};
+  };
 
   // Cache management for offline use
   const cacheRoute = (key, routeData) => {
@@ -1073,7 +1100,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
     return null;
   };
-
 
   const formatDurationForAI = (minutes) => {
     if (minutes < 60) {
@@ -1373,7 +1399,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         doubleClickZoom: !isMobile,
         touchZoomRotate: true,
         touchPitch: false,
-        // cooperativeGestures: isMobile,
         failIfMajorPerformanceCaveat: false,
         preserveDrawingBuffer: true
       });
@@ -1416,7 +1441,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       }
     };
   }, [mapboxKey, cssLoaded, isMobile]);
-
 
   useEffect(() => {
     if (mapInitialized && customStyleLoaded && siteLocations.length > 0) {
