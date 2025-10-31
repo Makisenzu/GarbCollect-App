@@ -72,11 +72,39 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   const routeUpdateIntervalRef = useRef(null);
   const lastDriverLocationRef = useRef(null);
 
+  const [lastUserInteraction, setLastUserInteraction] = useState(Date.now());
+  const hasUserInteractedWithMap = () => {
+    // Consider map as "interacted" if user has interacted in the last 30 seconds
+    return Date.now() - lastUserInteraction < 30000;
+  };
+
   // Responsive design state
   const [windowSize, setWindowSize] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 1200,
     height: typeof window !== 'undefined' ? window.innerHeight : 800
   });
+
+  useEffect(() => {
+    if (!map.current) return;
+  
+    const interactionEvents = ['mousedown', 'touchstart', 'wheel', 'movestart', 'dragstart'];
+    
+    const handleUserInteraction = () => {
+      setLastUserInteraction(Date.now());
+    };
+  
+    interactionEvents.forEach(event => {
+      map.current.on(event, handleUserInteraction);
+    });
+  
+    return () => {
+      interactionEvents.forEach(event => {
+        if (map.current) {
+          map.current.off(event, handleUserInteraction);
+        }
+      });
+    };
+  }, [map.current]);
 
   // Check mobile and window size
   useEffect(() => {
@@ -981,10 +1009,10 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   useEffect(() => {
     if (!barangayId) return;
-
+  
     const initializeRealtime = async () => {
       try {
-        console.log('Initializing Reverb connection...');
+        console.log('Initializing Reverb connection for real-time location updates...');
         
         initEcho();
         const echo = getEcho();
@@ -992,32 +1020,59 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         if (!echo) {
           throw new Error('Echo not initialized');
         }
-
+  
+        // Listen for driver location updates
         echo.channel(`driver-locations.${barangayId}`)
           .listen('DriverLocationUpdated', (e) => {
-            console.log('Driver location update received:', e);
+            console.log('Real-time driver location update received:', e);
             setConnectionStatus('connected');
             updateDriverLocation(e);
           });
-
+  
+        // Listen for schedule updates
         echo.channel(`schedule-updates.${barangayId}`)
           .listen('ScheduleStatusUpdated', (e) => {
             console.log('Schedule update received:', e);
             updateScheduleData(e.schedule);
           });
-
+  
         setConnectionStatus('connected');
         await loadInitialData();
-
+  
+        // Start polling as backup if WebSocket fails
+        startPollingBackup();
+  
       } catch (error) {
         console.error('Realtime connection failed:', error);
         setConnectionStatus('disconnected');
-        startPolling();
+        startPollingBackup();
       }
     };
-
+  
+    const startPollingBackup = () => {
+      // Poll for location updates every 10 seconds as backup
+      const pollInterval = setInterval(() => {
+        pollDriverLocation();
+      }, 10000);
+  
+      return () => clearInterval(pollInterval);
+    };
+  
+    const pollDriverLocation = async () => {
+      try {
+        if (scheduleId) {
+          const response = await axios.get(`/schedule/${scheduleId}/driver-location`);
+          if (response.data.success && response.data.data) {
+            updateDriverLocation(response.data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error polling driver location:', error);
+      }
+    };
+  
     initializeRealtime();
-
+  
     return () => {
       const echo = getEcho();
       if (echo) {
@@ -1077,22 +1132,37 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   const updateDriverLocation = (locationData) => {
     if (!locationData.longitude || !locationData.latitude) {
+      console.warn('Invalid location data received:', locationData);
       return;
     }
     
     const newLocation = [parseFloat(locationData.longitude), parseFloat(locationData.latitude)];
+    
+    console.log('Updating driver location on map:', newLocation);
+    
+    // Update driver location state
     setDriverLocation(newLocation);
     
     if (mapInitialized && map.current) {
+      // Update driver marker with smooth transition
       updateDriverMarker(newLocation, locationData);
       
-      // Smooth fly to driver location
-      map.current.flyTo({
-        center: newLocation,
-        zoom: isMobile ? 16 : 15,
-        duration: 1500,
-        essential: true
-      });
+      // Only follow driver if user hasn't interacted with map recently
+      if (!hasUserInteractedWithMap()) {
+        // Smooth fly to driver location
+        map.current.flyTo({
+          center: newLocation,
+          zoom: isMobile ? 16 : 15,
+          duration: 2000,
+          essential: true,
+          offset: [0, isMobile ? -100 : 0] // Adjust offset for better visibility
+        });
+      }
+      
+      // Update real-time route if enabled
+      if (realTimeRouteEnabled) {
+        updateRealTimeRoute();
+      }
     }
   };
 
@@ -1101,6 +1171,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       return;
     }
   
+    // Remove existing marker
     if (driverMarker) {
       driverMarker.remove();
     }
@@ -1110,15 +1181,29 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   
     const markerElement = document.createElement('div');
     markerElement.className = 'driver-location-marker';
+    
+    // Calculate age of location data for freshness indicator
+    const locationAge = locationData.timestamp ? 
+      (new Date() - new Date(locationData.timestamp)) / 1000 : 0;
+    
+    const isFresh = locationAge < 30; // Less than 30 seconds old
+    
     markerElement.innerHTML = `
       <div class="relative">
-        <div class="${markerSize} bg-blue-600 border-3 border-white rounded-full shadow-lg flex items-center justify-center">
+        <div class="${markerSize} bg-blue-600 border-3 border-white rounded-full shadow-lg flex items-center justify-center relative z-10">
           <svg class="${iconSize} text-white" viewBox="0 0 24 24" fill="currentColor">
             <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
             <path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
           </svg>
+          ${!isFresh ? `
+            <div class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border border-white"></div>
+          ` : ''}
         </div>
         <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-30"></div>
+        ${locationData.accuracy ? `
+          <div class="absolute inset-0 border-2 border-blue-300 rounded-full opacity-50" 
+               style="transform: scale(${Math.min(locationData.accuracy / 10, 3)})"></div>
+        ` : ''}
       </div>
     `;
   
@@ -1130,11 +1215,59 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       .setLngLat(coordinates)
       .addTo(map.current);
   
+      // Add popup with driver info
+      const popup = new mapboxgl.Popup({
+        offset: 25,
+        closeButton: false,
+        className: `custom-popup ${isMobile ? 'max-w-xs' : 'max-w-sm'}`
+      }).setHTML(`
+        <div class="text-sm ${isMobile ? 'p-2' : 'p-3'}">
+          <div class="font-semibold text-gray-900 ${isMobile ? 'text-base' : ''}">🚗 Driver Location</div>
+          <div class="text-xs text-gray-500 mt-1">
+            ${locationData.timestamp ? `Updated: ${new Date(locationData.timestamp).toLocaleTimeString()}` : 'Live'}
+          </div>
+          ${locationData.accuracy ? `
+            <div class="text-xs text-gray-500 mt-1">
+              Accuracy: ±${Math.round(locationData.accuracy)} meters
+            </div>
+          ` : ''}
+          ${!isFresh ? `
+            <div class="text-xs text-yellow-600 mt-1 font-medium">
+              ⚠️ Location data may be delayed
+            </div>
+          ` : ''}
+        </div>
+      `);
+  
+      newMarker.setPopup(popup);
       setDriverMarker(newMarker);
     } catch (error) {
       console.error('Error creating driver marker:', error);
     }
   };
+  const ConnectionStatus = () => (
+    <div className={`absolute ${isMobile ? 'top-2 left-2' : 'top-4 left-4'} bg-white rounded-lg shadow-lg border border-gray-200 ${
+      isMobile ? 'px-2 py-1' : 'px-3 py-2'
+    } z-10`}>
+      <div className="flex items-center gap-2">
+        <div className={`w-2 h-2 rounded-full ${
+          connectionStatus === 'connected' ? 'bg-green-500' : 
+          connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+        } ${connectionStatus === 'connected' ? 'animate-pulse' : ''}`}></div>
+        <span className={`font-medium text-gray-700 capitalize ${
+          isMobile ? 'text-xs' : 'text-sm'
+        }`}>
+          {connectionStatus}
+          {connectionStatus === 'connected' && ' • Live'}
+        </span>
+      </div>
+      {driverLocation && (
+        <div className={`text-gray-500 ${isMobile ? 'text-xs mt-1' : 'text-sm mt-1'}`}>
+          Last update: {lastLocationUpdate ? lastLocationUpdate.toLocaleTimeString() : 'Never'}
+        </div>
+      )}
+    </div>
+  );
 
   const updateScheduleData = (scheduleData) => {
     setCurrentSchedule(scheduleData);
@@ -1420,7 +1553,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
                 title={realTimeRouteEnabled ? 'Disable real-time routing' : 'Enable real-time routing'}
               >
                 <div className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} ${realTimeRouteEnabled ? 'animate-pulse' : ''}`}>
-                  {realTimeRouteEnabled ? '🎯' : '📍'}
+                  {/* {realTimeRouteEnabled ? '🎯' : '📍'} */}
                 </div>
               </button>
 

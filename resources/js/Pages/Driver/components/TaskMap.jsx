@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 're
 import { createRoot } from 'react-dom/client';
 import mapboxgl from 'mapbox-gl';
 import { GiControlTower } from "react-icons/gi";
-import { IoClose, IoCheckmark, IoNavigate, IoSparkles, IoChevronDown, IoChevronUp, IoRefresh, IoPlay, IoStop } from "react-icons/io5";
+import { IoClose, IoCheckmark, IoNavigate, IoSparkles, IoChevronDown, IoChevronUp, IoRefresh, IoPlay, IoStop, IoCodeSlash } from "react-icons/io5";
 import axios from 'axios';
 import can from "@/images/can.png";
 import { useTaskMap } from './useTaskMap';
@@ -36,6 +36,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     completedSites,
     currentSiteIndex,
     isTaskActive,
+    isFakeLocationActive,
     
     formatDuration,
     getCurrentLocation,
@@ -50,7 +51,13 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     
     startTaskAndBroadcast,
     completeTaskAndBroadcast,
-    sendLocationToReverb
+    sendLocationToReverb,
+
+    // Fake location testing functions
+    startFakeLocationTest,
+    stopFakeLocationTest,
+    sendTestLocation,
+    simulateRouteFollowing,
   } = useTaskMap({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel });
 
   useImperativeHandle(ref, () => ({
@@ -82,6 +89,19 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     },
     completeTaskAndBroadcast: () => {
       completeTaskAndBroadcast();
+    },
+    // Fake location testing methods
+    startFakeLocationTest: () => {
+      startFakeLocationTest();
+    },
+    stopFakeLocationTest: () => {
+      stopFakeLocationTest();
+    },
+    sendTestLocation: (lat, lng) => {
+      sendTestLocation(lat, lng);
+    },
+    simulateRouteFollowing: () => {
+      simulateRouteFollowing();
     }
   }));
 
@@ -118,6 +138,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
           currentSiteIndex={currentSiteIndex}
           optimizedSiteOrder={optimizedSiteOrder}
           isTaskActive={isTaskActive}
+          isFakeLocationActive={isFakeLocationActive}
         />
       )}
 
@@ -149,6 +170,19 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
         isTaskActive={isTaskActive}
       />
 
+      {/* Fake Location Test Panel - Only show in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <FakeLocationTestPanel 
+          startFakeLocationTest={startFakeLocationTest}
+          stopFakeLocationTest={stopFakeLocationTest}
+          sendTestLocation={sendTestLocation}
+          simulateRouteFollowing={simulateRouteFollowing}
+          isFakeLocationActive={isFakeLocationActive}
+          isMobile={isMobile}
+          routeCoordinates={routeCoordinates}
+        />
+      )}
+
       {activeSchedule && (
         <ScheduleInfoPanel 
           activeSchedule={activeSchedule}
@@ -161,6 +195,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
           currentSiteIndex={currentSiteIndex}
           optimizedSiteOrder={optimizedSiteOrder}
           isTaskActive={isTaskActive}
+          isFakeLocationActive={isFakeLocationActive}
         />
       )}
       
@@ -219,7 +254,8 @@ const MobileHeader = ({
   completedSites,
   currentSiteIndex,
   optimizedSiteOrder,
-  isTaskActive
+  isTaskActive,
+  isFakeLocationActive
 }) => (
   <div className="absolute top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3">
     <div className="flex items-center justify-between">
@@ -245,6 +281,11 @@ const MobileHeader = ({
               🔴 Live - Broadcasting to residents
             </p>
           )}
+          {isFakeLocationActive && (
+            <p className="text-xs text-purple-600 font-medium">
+              🧪 Fake Location Test Active
+            </p>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -254,6 +295,11 @@ const MobileHeader = ({
         {completedSites.size > 0 && (
           <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
             {completedSites.size} done
+          </div>
+        )}
+        {isFakeLocationActive && (
+          <div className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+            Testing
           </div>
         )}
       </div>
@@ -323,7 +369,7 @@ const MobileAIPanel = ({ aiOptimizedRoute, setShowAIPanel, completedSites, curre
 
 const DesktopAIPanel = ({ aiOptimizedRoute, completedSites, currentSiteIndex, optimizedSiteOrder }) => (
   <>
-    {/* <div className="flex items-center gap-2 mb-3">
+    <div className="flex items-center gap-2 mb-3">
       <IoSparkles className="w-5 h-5 text-green-600" />
       <h3 className="font-semibold text-green-800">AI Route Optimized</h3>
       {completedSites.size > 0 && (
@@ -331,7 +377,7 @@ const DesktopAIPanel = ({ aiOptimizedRoute, completedSites, currentSiteIndex, op
           {completedSites.size} completed
         </span>
       )}
-    </div> */}
+    </div>
     <AIPanelContent 
       aiOptimizedRoute={aiOptimizedRoute}
       completedSites={completedSites}
@@ -420,13 +466,13 @@ const ControlButtons = ({
       />
     )}
 
-    {/* <ControlButton 
+    <ControlButton 
       onClick={getAIOptimizedRoute}
       icon={<IoSparkles className="w-6 h-6" />}
       label="AI Route"
       className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
       showLabel={!isMobile}
-    /> */}
+    />
     
     <ControlButton 
       onClick={getCurrentLocation}
@@ -480,6 +526,187 @@ const ControlButton = ({ onClick, icon, label, className, showLabel, indicator }
   </div>
 );
 
+// NEW: Fake Location Test Panel Component
+const FakeLocationTestPanel = ({ 
+  startFakeLocationTest, 
+  stopFakeLocationTest, 
+  sendTestLocation,
+  simulateRouteFollowing,
+  isFakeLocationActive,
+  isMobile,
+  routeCoordinates
+}) => {
+  const [testLat, setTestLat] = useState('8.4830');
+  const [testLng, setTestLng] = useState('125.9485');
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSendTestLocation = () => {
+    const lat = parseFloat(testLat);
+    const lng = parseFloat(testLng);
+    
+    if (!isNaN(lat) && !isNaN(lng)) {
+      sendTestLocation(lat, lng);
+    } else {
+      alert('Please enter valid coordinates');
+    }
+  };
+
+  if (isMobile) {
+    return (
+      <div className="fixed bottom-20 left-4 z-50">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`p-3 rounded-full shadow-lg ${
+            isFakeLocationActive 
+              ? 'bg-purple-600 text-white' 
+              : 'bg-purple-500 text-white hover:bg-purple-600'
+          }`}
+        >
+          <IoCodeSlash className="w-6 h-6" />
+        </button>
+
+        {isOpen && (
+          <div className="absolute bottom-12 left-0 bg-white p-4 rounded-lg shadow-xl border min-w-64">
+            <h3 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
+              <IoCodeSlash className="w-4 h-4 text-purple-500" />
+              🧪 Location Test
+            </h3>
+            
+            <div className="space-y-2 mb-3">
+              <input
+                type="text"
+                value={testLat}
+                onChange={(e) => setTestLat(e.target.value)}
+                placeholder="Latitude"
+                className="w-full p-2 border rounded text-sm"
+              />
+              <input
+                type="text"
+                value={testLng}
+                onChange={(e) => setTestLng(e.target.value)}
+                placeholder="Longitude"
+                className="w-full p-2 border rounded text-sm"
+              />
+              <button
+                onClick={handleSendTestLocation}
+                className="w-full bg-blue-500 text-white py-2 rounded text-sm"
+              >
+                Send Test Location
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              {!isFakeLocationActive ? (
+                <>
+                  <button
+                    onClick={() => startFakeLocationTest(5000)}
+                    className="flex-1 bg-green-500 text-white py-2 rounded text-sm flex items-center justify-center gap-1"
+                  >
+                    <IoPlay className="w-4 h-4" />
+                    Start Sim
+                  </button>
+                  {routeCoordinates.length > 0 && (
+                    <button
+                      onClick={() => simulateRouteFollowing(3000)}
+                      className="flex-1 bg-indigo-500 text-white py-2 rounded text-sm flex items-center justify-center gap-1"
+                    >
+                      <IoNavigate className="w-4 h-4" />
+                      Follow Route
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={stopFakeLocationTest}
+                  className="flex-1 bg-red-500 text-white py-2 rounded text-sm flex items-center justify-center gap-1"
+                >
+                  <IoStop className="w-4 h-4" />
+                  Stop Sim
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute top-20 right-4 z-30 bg-white p-4 rounded-lg shadow-lg border min-w-64">
+      <h3 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
+        <IoCodeSlash className="w-5 h-5 text-purple-500" />
+        🧪 Location Test Panel
+      </h3>
+      
+      <div className="space-y-3">
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={testLat}
+              onChange={(e) => setTestLat(e.target.value)}
+              placeholder="Latitude"
+              className="flex-1 p-2 border rounded text-sm"
+            />
+            <input
+              type="text"
+              value={testLng}
+              onChange={(e) => setTestLng(e.target.value)}
+              placeholder="Longitude"
+              className="flex-1 p-2 border rounded text-sm"
+            />
+          </div>
+          <button
+            onClick={handleSendTestLocation}
+            className="w-full bg-blue-500 text-white py-2 rounded text-sm flex items-center justify-center gap-2"
+          >
+            <IoNavigate className="w-4 h-4" />
+            Send Test Location
+          </button>
+        </div>
+
+        <div className="border-t pt-3">
+          <div className="flex gap-2 mb-2">
+            {!isFakeLocationActive ? (
+              <button
+                onClick={() => startFakeLocationTest(5000)}
+                className="flex-1 bg-green-500 text-white py-2 rounded text-sm flex items-center justify-center gap-2"
+              >
+                <IoPlay className="w-4 h-4" />
+                Start Simulation
+              </button>
+            ) : (
+              <button
+                onClick={stopFakeLocationTest}
+                className="flex-1 bg-red-500 text-white py-2 rounded text-sm flex items-center justify-center gap-2"
+              >
+                <IoStop className="w-4 h-4" />
+                Stop Simulation
+              </button>
+            )}
+          </div>
+          
+          {routeCoordinates.length > 0 && (
+            <button
+              onClick={() => simulateRouteFollowing(3000)}
+              className="w-full bg-indigo-500 text-white py-2 rounded text-sm flex items-center justify-center gap-2 mb-2"
+            >
+              <IoNavigate className="w-4 h-4" />
+              Follow Route Path
+            </button>
+          )}
+          
+          {isFakeLocationActive && (
+            <p className="text-xs text-purple-600 mt-2 text-center">
+              🔴 Simulation Active - Testing real-time updates
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ScheduleInfoPanel = ({ 
   activeSchedule, 
   siteLocations, 
@@ -490,7 +717,8 @@ const ScheduleInfoPanel = ({
   completedSites,
   currentSiteIndex,
   optimizedSiteOrder,
-  isTaskActive
+  isTaskActive,
+  isFakeLocationActive
 }) => (
   <div className={`absolute ${isMobile ? 'bottom-20 left-4 right-4' : 'bottom-4 left-4'} z-10 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-lg ${
     isMobile ? 'max-w-full' : 'max-w-xs'
@@ -516,6 +744,12 @@ const ScheduleInfoPanel = ({
             Live - Residents can see your location
           </div>
         )}
+        {isFakeLocationActive && (
+          <div className="text-xs text-purple-600 font-medium flex items-center gap-1">
+            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+            Testing Mode - Fake locations active
+          </div>
+        )}
       </div>
       {routeInfo && (
         <div className="text-right">
@@ -526,6 +760,11 @@ const ScheduleInfoPanel = ({
           {routeInfo.toSite && (
             <div className="text-xs text-gray-500">
               To: {routeInfo.toSite}
+            </div>
+          )}
+          {routeInfo.recalculated && (
+            <div className="text-xs text-orange-600 font-medium">
+              Route Recalculated
             </div>
           )}
           {isMobile && aiOptimizedRoute && (

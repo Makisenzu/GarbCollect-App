@@ -18,6 +18,10 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
   const userLocationLayerRef = useRef(null);
   const animationFrameRef = useRef(null);
   
+  // Fake location testing refs
+  const fakeLocationIntervalRef = useRef(null);
+  const [isFakeLocationActive, setIsFakeLocationActive] = useState(false);
+
   const [cssLoaded, setCssLoaded] = useState(false);
   const [siteLocations, setSiteLocations] = useState([]);
   const [stationLocation, setStationLocation] = useState(null);
@@ -73,6 +77,125 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     'San Francisco': '#FFE659',
     '_default': '#4F262A'
   };
+
+  // ==================== FAKE LOCATION TESTING FUNCTIONS ====================
+
+  const startFakeLocationTest = (updateInterval = 5000) => {
+    if (isFakeLocationActive) {
+      console.log('Fake location test already running');
+      return;
+    }
+
+    console.log('🚀 Starting fake location test');
+    setIsFakeLocationActive(true);
+
+    const testCoordinates = [
+      { lat: 8.4830, lng: 125.9485, name: "Start Point" },
+      { lat: 8.4900, lng: 125.9550, name: "Point A" },
+      { lat: 8.4950, lng: 125.9600, name: "Point B" },
+      { lat: 8.5000, lng: 125.9650, name: "Point C" },
+      { lat: 8.5050, lng: 125.9700, name: "Point D" },
+    ];
+
+    let currentIndex = 0;
+
+    fakeLocationIntervalRef.current = setInterval(async () => {
+      const location = testCoordinates[currentIndex];
+      
+      try {
+        console.log(`📍 Sending fake location: ${location.lat}, ${location.lng} (${location.name})`);
+        
+        // Send to Reverb
+        await sendLocationToReverb(location.lat, location.lng, 10);
+        
+        // Update local state with smooth animation
+        smoothUpdateUserLocation(location.lat, location.lng);
+        
+        // Check if route should be recalculated
+        if (shouldRecalculateRoute([location.lng, location.lat])) {
+          recalculateRouteFromCurrentPosition([location.lng, location.lat]);
+        }
+        
+        console.log(`✅ Fake location sent: ${location.name}`);
+        
+        // Move to next point
+        currentIndex = (currentIndex + 1) % testCoordinates.length;
+        
+      } catch (error) {
+        console.error('❌ Failed to send fake location:', error);
+      }
+    }, updateInterval);
+  };
+
+  const stopFakeLocationTest = () => {
+    if (fakeLocationIntervalRef.current) {
+      clearInterval(fakeLocationIntervalRef.current);
+      fakeLocationIntervalRef.current = null;
+      setIsFakeLocationActive(false);
+      console.log('🛑 Fake location test stopped');
+    }
+  };
+
+  const sendTestLocation = async (lat, lng) => {
+    try {
+      console.log(`📍 Sending test location: ${lat}, ${lng}`);
+      await sendLocationToReverb(lat, lng, 10);
+      smoothUpdateUserLocation(lat, lng);
+      console.log('✅ Test location sent successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send test location:', error);
+      return false;
+    }
+  };
+
+  const simulateRouteFollowing = async (updateInterval = 3000) => {
+    if (!routeCoordinates || routeCoordinates.length === 0) {
+      console.error('No route coordinates available for simulation');
+      return;
+    }
+
+    if (isFakeLocationActive) {
+      console.log('Fake location simulation already running');
+      return;
+    }
+
+    console.log('🛣️ Starting route following simulation');
+    setIsFakeLocationActive(true);
+
+    let currentIndex = 0;
+
+    fakeLocationIntervalRef.current = setInterval(async () => {
+      if (currentIndex >= routeCoordinates.length) {
+        console.log('🏁 Route simulation completed');
+        stopFakeLocationTest();
+        return;
+      }
+
+      const [lng, lat] = routeCoordinates[currentIndex];
+      
+      try {
+        console.log(`📍 Route point ${currentIndex + 1}/${routeCoordinates.length}: ${lat}, ${lng}`);
+        
+        await sendLocationToReverb(lat, lng, 5);
+        smoothUpdateUserLocation(lat, lng);
+        
+        // Check site proximity during simulation
+        if (siteLocations.length > 0) {
+          checkSiteProximity([lng, lat], siteLocations);
+        }
+        
+        currentIndex++;
+        
+      } catch (error) {
+        console.error('❌ Failed to send route location:', error);
+      }
+    }, updateInterval);
+
+    return fakeLocationIntervalRef.current;
+  };
+
+  // ==================== EXISTING FUNCTIONS ====================
 
   // NEW: Get the next uncompleted site index
   const getNextUncompletedSiteIndex = () => {
@@ -463,13 +586,15 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         accuracy: accuracy,
         schedule_id: scheduleId,
         barangay_id: barangayId,
+        timestamp: new Date().toISOString(),
       });
   
       if (response.data.success) {
-        console.log('Location broadcasted via Reverb');
+        console.log('Location successfully sent to backend');
       }
     } catch (error) {
-      console.error('Failed to broadcast location:', error);
+      console.error('Failed to send location to backend:', error);
+      throw error; // Re-throw to handle in calling function
     }
   };
 
@@ -542,18 +667,27 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
   
     const options = {
       enableHighAccuracy: true,
-      timeout: 15000,
+      timeout: 10000, // Reduced timeout for faster updates
       maximumAge: 0
     };
   
-    console.log('Starting real-time location tracking with dynamic route updates...');
+    console.log('Starting continuous real-time location tracking...');
+  
+    let lastSentTime = 0;
+    const MIN_UPDATE_INTERVAL = 5000; // Send updates every 5 seconds minimum
   
     locationWatcherRef.current = navigator.geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         const currentPos = [longitude, latitude];
+        const currentTime = Date.now();
         
-        console.log('Location updated:', {
+        // Throttle updates to prevent excessive API calls
+        if (currentTime - lastSentTime < MIN_UPDATE_INTERVAL) {
+          return;
+        }
+  
+        console.log('Sending location update to backend:', {
           lat: latitude,
           lng: longitude,
           accuracy: accuracy
@@ -561,23 +695,22 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         
         try {
           await sendLocationToReverb(latitude, longitude, accuracy);
+          lastSentTime = currentTime;
         } catch (error) {
-          console.error('Failed to send location to Reverb:', error);
+          console.error('Failed to send location to backend:', error);
         }
         
         setCurrentLocation(currentPos);
         setLocationAccuracy(accuracy);
         setLastLocationUpdate(new Date());
         
-        // ✅ Enhanced smooth update with route recalculation
+        // Enhanced smooth update with route recalculation
         smoothUpdateUserLocation(latitude, longitude);
         
-        // ✅ Auto-complete sites when close
+        // Auto-complete sites when close
         if (siteLocations.length > 0) {
           checkSiteProximity(currentPos, siteLocations);
         }
-        
-        // ✅ Auto-follow map (now handled in smoothUpdateUserLocation)
       },
       (error) => {
         console.error('Error in real-time location tracking:', error);
@@ -586,6 +719,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       options
     );
   
+    // Add user interaction tracking for map following
     if (map.current) {
       map.current.hasUserInteracted = () => false;
       map.current.on('movestart', () => {
@@ -1225,6 +1359,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
 
     return () => {
       stopRealtimeLocationTracking();
+      stopFakeLocationTest(); // Stop fake location when component unmounts
       clearUserLocationLayers();
       if (map.current) {
         map.current.remove();
@@ -2006,8 +2141,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     updateSiteMarkers();
   };
 
-  
-
   return {
     mapContainer,
     siteMarkersRef,
@@ -2034,6 +2167,8 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     lastLocationUpdate,
     completedSites,
     currentSiteIndex,
+    isTaskActive,
+    isFakeLocationActive,
 
     formatDuration,
     getCurrentLocation,
@@ -2048,5 +2183,11 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     startTaskAndBroadcast,
     completeTaskAndBroadcast,
     sendLocationToReverb,
+
+    // Fake location testing functions
+    startFakeLocationTest,
+    stopFakeLocationTest,
+    sendTestLocation,
+    simulateRouteFollowing,
   };
 };
