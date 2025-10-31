@@ -2,6 +2,9 @@ import { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { IoRefresh, IoWarning, IoNavigate, IoList } from "react-icons/io5";
 import axios from 'axios';
+import { PiTrashSimpleDuotone } from "react-icons/pi";
+import { BsTruck } from "react-icons/bs";
+import { IoHome, IoCheckmarkDone } from "react-icons/io5";
 
 import { initEcho, getEcho } from '@/echo'; 
 
@@ -118,27 +121,51 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   }, []);
 
   useEffect(() => {
-    const existingLink = document.querySelector('link[href*="mapbox-gl.css"]');
-    if (existingLink) {
-      setCssLoaded(true);
+    const checkCSSLoaded = () => {
+      // Check if Mapbox CSS is already loaded
+      const mapboxCSS = document.querySelector('link[href*="mapbox-gl.css"]');
+      if (mapboxCSS && mapboxCSS.sheet) {
+        console.log('Mapbox CSS already loaded');
+        setCssLoaded(true);
+        return true;
+      }
+      return false;
+    };
+
+    if (checkCSSLoaded()) {
       return;
     }
 
     const link = document.createElement('link');
     link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css';
     link.rel = 'stylesheet';
+    link.type = 'text/css';
     
-    link.onload = () => {
-      console.log('Mapbox CSS loaded');
+    let loadTimeout;
+    
+    const onLoad = () => {
+      clearTimeout(loadTimeout);
+      console.log('Mapbox CSS loaded successfully');
       setCssLoaded(true);
     };
     
-    link.onerror = () => {
-      console.error('Failed to load Mapbox CSS');
-      setCssLoaded(true);
+    const onError = () => {
+      clearTimeout(loadTimeout);
+      console.warn('Mapbox CSS failed to load, continuing anyway');
+      setCssLoaded(true); // Continue even if CSS fails
     };
+    
+    link.onload = onLoad;
+    link.onerror = onError;
     
     document.head.appendChild(link);
+    
+    // Fallback timeout
+    loadTimeout = setTimeout(() => {
+      console.warn('Mapbox CSS load timeout, continuing anyway');
+      setCssLoaded(true);
+    }, 5000);
+
   }, []);
 
   // Route calculation functions
@@ -936,6 +963,22 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     }
   }, [routeCoordinates, mapInitialized]);
 
+  // FIXED: Force marker updates when critical states change
+  useEffect(() => {
+    if (mapInitialized && siteLocations.length > 0) {
+      console.log('Force updating site markers due to state change');
+      updateSiteMarkers(siteLocations);
+    }
+  }, [mapInitialized, siteLocations, isMobile, realTimeRouteEnabled, nearestSite]);
+
+  // FIXED: Force driver marker updates
+  useEffect(() => {
+    if (mapInitialized && driverLocation) {
+      console.log('Force updating driver marker');
+      updateDriverMarker(driverLocation, {});
+    }
+  }, [mapInitialized, driverLocation, isMobile]);
+
   useEffect(() => {
     if (!barangayId) return;
 
@@ -1057,28 +1100,28 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     if (!map.current || !mapInitialized) {
       return;
     }
-
+  
     if (driverMarker) {
       driverMarker.remove();
     }
-
+  
     const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
     const iconSize = isMobile ? 'w-6 h-6' : 'w-5 h-5';
-
+  
     const markerElement = document.createElement('div');
     markerElement.className = 'driver-location-marker';
     markerElement.innerHTML = `
       <div class="relative">
         <div class="${markerSize} bg-blue-600 border-3 border-white rounded-full shadow-lg flex items-center justify-center">
-          <svg class="${iconSize} text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
-            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+          <svg class="${iconSize} text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
+            <path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
           </svg>
         </div>
         <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-30"></div>
       </div>
     `;
-
+  
     try {
       const newMarker = new mapboxgl.Marker({
         element: markerElement,
@@ -1086,7 +1129,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       })
       .setLngLat(coordinates)
       .addTo(map.current);
-
+  
       setDriverMarker(newMarker);
     } catch (error) {
       console.error('Error creating driver marker:', error);
@@ -1101,7 +1144,8 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     if (!map.current || !mapInitialized) {
       return;
     }
-
+  
+    // Clear existing markers
     siteMarkers.forEach(marker => {
       if (marker && marker.remove) {
         marker.remove();
@@ -1111,7 +1155,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     const newMarkers = sites.map((site, index) => {
       if (!site.longitude || !site.latitude) {
         return null;
-      }
+    }
 
       try {
         const markerElement = document.createElement('div');
@@ -1130,10 +1174,29 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           return '#6B7280';
         };
 
+        // Use simple SVG icons instead of React Icons
         const getMarkerIcon = () => {
-          if (isStation) return `<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />`;
-          if (isCompleted) return `<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />`;
-          return `<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />`;
+          if (isStation) {
+            return `
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              </svg>
+            `;
+          } else if (isCompleted) {
+            return `
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+            `;
+          } else {
+            return `
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              </svg>
+            `;
+          }
         };
 
         const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
@@ -1141,10 +1204,11 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         
         markerElement.innerHTML = `
           <div class="relative ${isCurrent || isTargetSite ? 'animate-pulse' : ''}">
-            <div class="${markerSize} rounded-full border-3 border-white flex items-center justify-center shadow-lg" style="background-color: ${getMarkerColor()}; ${isCompleted ? 'opacity: 0.7;' : ''}">
-              <svg class="${iconSize} text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="${markerSize} rounded-full border-3 border-white flex items-center justify-center shadow-lg" 
+                  style="background-color: ${getMarkerColor()}; ${isCompleted ? 'opacity: 0.7;' : ''}">
+              <div class="${iconSize} text-white">
                 ${getMarkerIcon()}
-              </svg>
+              </div>
             </div>
             ${isCurrent ? `<div class="absolute inset-0 rounded-full border-3 border-yellow-500 animate-ping"></div>` : ''}
             ${isTargetSite && !isCurrent ? `<div class="absolute inset-0 rounded-full border-3 border-green-500 animate-ping"></div>` : ''}
@@ -1197,6 +1261,17 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     }
   };
 
+  // Refresh icons manually
+  const refreshIcons = () => {
+    console.log('Manually refreshing icons');
+    if (siteLocations.length > 0) {
+      updateSiteMarkers(siteLocations);
+    }
+    if (driverLocation) {
+      updateDriverMarker(driverLocation, {});
+    }
+  };
+
   // Toggle route info panel
   const toggleRouteInfo = () => {
     setShowRouteInfo(!showRouteInfo);
@@ -1212,6 +1287,18 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       return '600px';
     }
   };
+
+  // Debug effect - remove after fixing
+  useEffect(() => {
+    console.log('Current state:', {
+      cssLoaded,
+      mapInitialized,
+      containerReady,
+      siteLocationsCount: siteLocations.length,
+      siteMarkersCount: siteMarkers.length,
+      driverLocation: !!driverLocation
+    });
+  }, [cssLoaded, mapInitialized, containerReady, siteLocations, siteMarkers, driverLocation]);
 
   if (mapError) {
     return (
@@ -1309,6 +1396,17 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
             {/* Enhanced Control Buttons - Responsive */}
             <div className={`absolute ${isMobile ? 'top-2 right-2' : 'top-4 right-4'} flex flex-col gap-2 z-10`}>
+              {/* Refresh Icons Button */}
+              <button
+                onClick={refreshIcons}
+                className={`bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
+                  isMobile ? 'p-2' : 'p-3'
+                }`}
+                title="Refresh icons"
+              >
+                <IoRefresh className={`text-gray-700 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+              </button>
+
               {/* Real-time Route Toggle */}
               <button
                 onClick={toggleRealTimeRouting}
