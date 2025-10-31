@@ -171,7 +171,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
       />
 
       {/* Fake Location Test Panel - Only show in development */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* {process.env.NODE_ENV === 'development' && (
         <FakeLocationTestPanel 
           startFakeLocationTest={startFakeLocationTest}
           stopFakeLocationTest={stopFakeLocationTest}
@@ -181,7 +181,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
           isMobile={isMobile}
           routeCoordinates={routeCoordinates}
         />
-      )}
+      )} */}
 
       {activeSchedule && (
         <ScheduleInfoPanel 
@@ -456,7 +456,7 @@ const ControlButtons = ({
     isMobile && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100'
   }`}>
     {/* NEW: Start Task Button */}
-    {activeSchedule && !isTaskActive && (
+    {/* {activeSchedule && !isTaskActive && (
       <ControlButton 
         onClick={onTaskStart}
         icon={<IoPlay className="w-6 h-6" />}
@@ -464,26 +464,26 @@ const ControlButtons = ({
         className="bg-green-500 hover:bg-green-600 text-white"
         showLabel={!isMobile}
       />
-    )}
+    )} */}
 
-    <ControlButton 
+    {/* <ControlButton 
       onClick={getAIOptimizedRoute}
       icon={<IoSparkles className="w-6 h-6" />}
       label="AI Route"
       className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
       showLabel={!isMobile}
-    />
+    /> */}
     
-    <ControlButton 
+    {/* <ControlButton 
       onClick={getCurrentLocation}
       icon={<IoNavigate className="w-6 h-6 text-blue-600" />}
       label="Location"
       className="bg-white hover:bg-gray-50"
       showLabel={!isMobile}
       indicator={currentLocation}
-    />
+    /> */}
 
-    {completedSites.size > 0 && (
+    {/* {completedSites.size > 0 && (
       <ControlButton 
         onClick={resetCompletedSites}
         icon={<IoRefresh className="w-6 h-6" />}
@@ -491,23 +491,23 @@ const ControlButtons = ({
         className="bg-orange-500 hover:bg-orange-600 text-white"
         showLabel={!isMobile}
       />
-    )}
+    )} */}
     
-    <ControlButton 
+    {/* <ControlButton 
       onClick={onTaskComplete}
       icon={<IoCheckmark className="w-6 h-6" />}
       label="Complete"
       className="bg-green-500 hover:bg-green-600 text-white"
       showLabel={!isMobile}
-    />
+    /> */}
     
-    <ControlButton 
+    {/* <ControlButton 
       onClick={onTaskCancel}
       icon={<IoClose className="w-6 h-6" />}
       label="Cancel"
       className="bg-red-500 hover:bg-red-600 text-white"
       showLabel={!isMobile}
-    />
+    /> */}
   </div>
 );
 
@@ -536,8 +536,8 @@ const FakeLocationTestPanel = ({
   isMobile,
   routeCoordinates
 }) => {
-  const [testLat, setTestLat] = useState('8.4830');
-  const [testLng, setTestLng] = useState('125.9485');
+  const [testLat, setTestLat] = useState('8.502');
+  const [testLng, setTestLng] = useState('126.015');
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSendTestLocation = () => {
