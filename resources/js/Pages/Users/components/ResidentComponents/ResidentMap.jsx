@@ -832,14 +832,14 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           zoom: isMobile ? 11 : 10.5,
           attributionControl: false,
           interactive: true,
-          scrollZoom: !isMobile,
+          scrollZoom: true,
           dragPan: true,
           dragRotate: false,
           keyboard: false,
           doubleClickZoom: !isMobile,
           touchZoomRotate: true,
           touchPitch: false,
-          cooperativeGestures: isMobile,
+          // cooperativeGestures: isMobile,
           failIfMajorPerformanceCaveat: false,
           preserveDrawingBuffer: true
         });
