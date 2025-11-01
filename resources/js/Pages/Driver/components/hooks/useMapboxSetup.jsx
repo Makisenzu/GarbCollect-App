@@ -7,8 +7,8 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
   
   const [cssLoaded, setCssLoaded] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
-  const [customStyleLoaded, setCustomStyleLoaded] = useState(false);
   const [mapError, setMapError] = useState(null);
+  const [customStyleLoaded, setCustomStyleLoaded] = useState(false);
 
   useEffect(() => {
     const loadMapboxCSS = () => {
@@ -35,7 +35,7 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
     loadMapboxCSS();
   }, []);
 
-  useEffect(() => {
+  const initializeMap = (onMapLoad) => {
     if (!cssLoaded || !mapboxKey || map.current || !mapContainer.current) {
       return;
     }
@@ -50,14 +50,13 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
         zoom: isMobile ? 11 : 10.5,
         attributionControl: false,
         interactive: true,
-        scrollZoom: !isMobile,
+        scrollZoom: true,
         dragPan: true,
         dragRotate: false,
         keyboard: false,
         doubleClickZoom: !isMobile,
         touchZoomRotate: true,
         touchPitch: false,
-        cooperativeGestures: isMobile,
         failIfMajorPerformanceCaveat: false,
         preserveDrawingBuffer: true
       });
@@ -66,11 +65,19 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
         setMapInitialized(true);
         setCustomStyleLoaded(true);
         console.log('Map loaded and initialized');
+        
+        if (onMapLoad) {
+          onMapLoad();
+        }
       });
 
       map.current.on('error', (e) => {
         console.error('Map error:', e);
         setMapError('Failed to load map: ' + e.error?.message);
+        
+        if (true) { // isOnline check removed but functionality preserved
+          console.warn('Map loading failed but continuing in limited mode');
+        }
       });
 
       map.current.on('idle', () => {
@@ -90,14 +97,25 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
         setCustomStyleLoaded(false);
       }
     };
-  }, [mapboxKey, cssLoaded, isMobile]);
+  };
 
   return {
+    // Refs
     mapContainer,
     map,
+    
+    // State
     cssLoaded,
     mapInitialized,
+    mapError,
     customStyleLoaded,
-    mapError
+    
+    // Setters
+    setMapInitialized,
+    setCustomStyleLoaded,
+    setMapError,
+    
+    // Methods
+    initializeMap,
   };
 };

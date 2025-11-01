@@ -1,175 +1,177 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState } from 'react';
 import axios from 'axios';
 
 export const useLocationTracking = ({ 
-  map, 
   scheduleId, 
   activeSchedule, 
-  isTaskActive, 
-  isMobile,
-  siteLocations,
-  completedSites,
+  siteLocations, 
+  completedSites, 
   optimizedSiteOrder,
-  onTaskComplete 
+  currentSiteIndex,
+  isTaskActive,
+  onTaskComplete,
+  map,
+  isMobile,
+  currentLocation,
+  routeCoordinates,
+  routeInfo,
+  smoothUpdateUserLocation,
+  checkSiteProximity,
+  recalculateRouteFromCurrentPosition,
+  shouldRecalculateRoute,
+  updateUserLocationSource,
+  animatePulse,
+  clearUserLocationLayers,
+  updateCurrentLocationMarker,
+  handleLocationError,
+  sendLocationToReverb
 }) => {
   const locationWatcherRef = useRef(null);
+  const fakeLocationIntervalRef = useRef(null);
+  const animationFrameRef = useRef(null);
   const currentLocationMarkerRef = useRef(null);
   const userLocationSourceRef = useRef(null);
   const userLocationLayerRef = useRef(null);
-  const animationFrameRef = useRef(null);
   
-  const [currentLocation, setCurrentLocation] = useState(null);
+  const [isFakeLocationActive, setIsFakeLocationActive] = useState(false);
+  const [currentLocationState, setCurrentLocationState] = useState(null);
   const [locationAccuracy, setLocationAccuracy] = useState(null);
   const [lastLocationUpdate, setLastLocationUpdate] = useState(null);
 
-  const sendLocationToReverb = async (latitude, longitude, accuracy = null) => {
-    if (!scheduleId) {
-      console.error('No schedule ID available');
+  // ==================== FAKE LOCATION TESTING FUNCTIONS ====================
+
+  const startFakeLocationTest = (updateInterval = 5000) => {
+    if (isFakeLocationActive) {
+      console.log('Fake location test already running');
       return;
     }
-  
-    try {
-      const barangayId = activeSchedule?.barangay_id || 'unknown';
-  
-      const response = await axios.post('/driver/location/update', {
-        latitude: latitude,
-        longitude: longitude,
-        accuracy: accuracy,
-        schedule_id: scheduleId,
-        barangay_id: barangayId,
-      });
-  
-      if (response.data.success) {
-        console.log('Location broadcasted via Reverb');
+
+    console.log('🚀 Starting fake location test');
+    setIsFakeLocationActive(true);
+
+    const testCoordinates = [
+      { lat: 8.4830, lng: 125.9485, name: "Start Point" },
+      { lat: 8.4900, lng: 125.9550, name: "Point A" },
+      { lat: 8.4950, lng: 125.9600, name: "Point B" },
+      { lat: 8.5000, lng: 125.9650, name: "Point C" },
+      { lat: 8.5050, lng: 125.9700, name: "Point D" },
+    ];
+
+    let currentIndex = 0;
+
+    fakeLocationIntervalRef.current = setInterval(async () => {
+      const location = testCoordinates[currentIndex];
+      
+      try {
+        console.log(`📍 Sending fake location: ${location.lat}, ${location.lng} (${location.name})`);
+        
+        // Send to Reverb
+        await sendLocationToReverb(location.lat, location.lng, 10);
+        
+        // Update local state with smooth animation
+        smoothUpdateUserLocation(location.lat, location.lng);
+        
+        // Check site proximity and recalculate if needed
+        if (siteLocations.length > 0) {
+          const siteReached = checkSiteProximity([location.lng, location.lat], siteLocations);
+          if (siteReached) {
+            console.log('Site completed in fake location test, recalculating route');
+            // Use current fake location for recalculation
+            recalculateRouteFromCurrentPosition([location.lng, location.lat]);
+          } else if (shouldRecalculateRoute([location.lng, location.lat])) {
+            recalculateRouteFromCurrentPosition([location.lng, location.lat]);
+          }
+        }
+        
+        console.log(`✅ Fake location sent: ${location.name}`);
+        
+        // Move to next point
+        currentIndex = (currentIndex + 1) % testCoordinates.length;
+        
+      } catch (error) {
+        console.error('❌ Failed to send fake location:', error);
       }
-    } catch (error) {
-      console.error('Failed to broadcast location:', error);
+    }, updateInterval);
+  };
+
+  const stopFakeLocationTest = () => {
+    if (fakeLocationIntervalRef.current) {
+      clearInterval(fakeLocationIntervalRef.current);
+      fakeLocationIntervalRef.current = null;
+      setIsFakeLocationActive(false);
+      console.log('🛑 Fake location test stopped');
     }
   };
 
-  const updateUserLocationSource = useCallback((lng, lat) => {
-    if (!map.current) return;
+  const sendTestLocation = async (lat, lng) => {
+    try {
+      console.log(`📍 Sending test location: ${lat}, ${lng}`);
+      await sendLocationToReverb(lat, lng, 10);
+      smoothUpdateUserLocation(lat, lng);
+      console.log('✅ Test location sent successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send test location:', error);
+      return false;
+    }
+  };
 
-    const geojson = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [lng, lat]
-          },
-          properties: {
-            description: 'Driver current location'
+  const simulateRouteFollowing = async (updateInterval = 3000) => {
+    if (!routeCoordinates || routeCoordinates.length === 0) {
+      console.error('No route coordinates available for simulation');
+      return;
+    }
+
+    if (isFakeLocationActive) {
+      console.log('Fake location simulation already running');
+      return;
+    }
+
+    console.log('🛣️ Starting route following simulation');
+    setIsFakeLocationActive(true);
+
+    let currentIndex = 0;
+
+    fakeLocationIntervalRef.current = setInterval(async () => {
+      if (currentIndex >= routeCoordinates.length) {
+        console.log('🏁 Route simulation completed');
+        stopFakeLocationTest();
+        return;
+      }
+
+      const [lng, lat] = routeCoordinates[currentIndex];
+      
+      try {
+        console.log(`📍 Route point ${currentIndex + 1}/${routeCoordinates.length}: ${lat}, ${lng}`);
+        
+        await sendLocationToReverb(lat, lng, 5);
+        smoothUpdateUserLocation(lat, lng);
+        
+        // Enhanced site proximity check that triggers route recalculation
+        if (siteLocations.length > 0) {
+          const siteReached = checkSiteProximity([lng, lat], siteLocations);
+          // If a site was reached and completed, force immediate route recalculation
+          if (siteReached) {
+            console.log('Site completed during simulation, forcing immediate route recalculation');
+            // Use the current fake location for recalculation
+            setTimeout(() => {
+              recalculateRouteFromCurrentPosition([lng, lat]);
+            }, 100);
           }
         }
-      ]
-    };
-
-    if (!map.current.getSource('driver-location')) {
-      map.current.addSource('driver-location', {
-        type: 'geojson',
-        data: geojson
-      });
-
-      map.current.addLayer({
-        id: 'driver-location-layer',
-        type: 'circle',
-        source: 'driver-location',
-        paint: {
-          'circle-radius': 8,
-          'circle-color': '#2563eb',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
-          'circle-opacity': 0.9
-        }
-      });
-
-      map.current.addLayer({
-        id: 'driver-location-pulse',
-        type: 'circle',
-        source: 'driver-location',
-        paint: {
-          'circle-radius': {
-            'base': 8,
-            'stops': [
-              [0, 8],
-              [20, 25]
-            ]
-          },
-          'circle-color': '#2563eb',
-          'circle-opacity': {
-            'base': 0.4,
-            'stops': [
-              [0, 0.4],
-              [1, 0]
-            ]
-          },
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#2563eb'
-        }
-      });
-
-      userLocationSourceRef.current = map.current.getSource('driver-location');
-      userLocationLayerRef.current = 'driver-location-layer';
-    } else {
-      const source = map.current.getSource('driver-location');
-      if (source) {
-        source.setData(geojson);
+        
+        currentIndex++;
+        
+      } catch (error) {
+        console.error('❌ Failed to send route location:', error);
       }
-    }
+    }, updateInterval);
 
-    animatePulse();
-  }, [map]);
+    return fakeLocationIntervalRef.current;
+  };
 
-  const animatePulse = useCallback(() => {
-    if (!map.current || !map.current.getLayer('driver-location-pulse')) return;
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-
-    const startTime = Date.now();
-    const duration = 2000;
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = (elapsed % duration) / duration;
-
-      const pulseRadius = 8 + (progress * 17);
-      map.current.setPaintProperty('driver-location-pulse', 'circle-radius', pulseRadius);
-      map.current.setPaintProperty('driver-location-pulse', 'circle-opacity', 0.4 * (1 - progress));
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-  }, [map]);
-
-  const smoothUpdateUserLocation = useCallback((lat, lng) => {
-    if (!map.current) return;
-
-    const coordinates = [lng, lat];
-    
-    updateUserLocationSource(lng, lat);
-
-    if (currentLocationMarkerRef.current) {
-      currentLocationMarkerRef.current.setLngLat(coordinates);
-    }
-
-    if (isTaskActive && map.current && !map.current.hasUserInteracted()) {
-      map.current.flyTo({
-        center: coordinates,
-        zoom: isMobile ? 16 : 15,
-        speed: 0.8,
-        curve: 1,
-        essential: true,
-        duration: 1000
-      });
-    }
-  }, [map, isTaskActive, isMobile, updateUserLocationSource]);
-
-  const startRealtimeLocationTracking = useCallback(() => {
+  // NEW: Updated startRealtimeLocationTracking to use the enhanced system
+  const startRealtimeLocationTracking = () => {
     if (!navigator.geolocation) {
       console.error('Geolocation is not supported by this browser');
       return;
@@ -179,18 +181,27 @@ export const useLocationTracking = ({
   
     const options = {
       enableHighAccuracy: true,
-      timeout: 15000,
+      timeout: 10000, // Reduced timeout for faster updates
       maximumAge: 0
     };
   
-    console.log('Starting real-time location tracking with dynamic route updates...');
+    console.log('Starting continuous real-time location tracking...');
+  
+    let lastSentTime = 0;
+    const MIN_UPDATE_INTERVAL = 5000; // Send updates every 5 seconds minimum
   
     locationWatcherRef.current = navigator.geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         const currentPos = [longitude, latitude];
+        const currentTime = Date.now();
         
-        console.log('Location updated:', {
+        // Throttle updates to prevent excessive API calls
+        if (currentTime - lastSentTime < MIN_UPDATE_INTERVAL) {
+          return;
+        }
+  
+        console.log('Sending location update to backend:', {
           lat: latitude,
           lng: longitude,
           accuracy: accuracy
@@ -198,18 +209,21 @@ export const useLocationTracking = ({
         
         try {
           await sendLocationToReverb(latitude, longitude, accuracy);
+          lastSentTime = currentTime;
         } catch (error) {
-          console.error('Failed to send location to Reverb:', error);
+          console.error('Failed to send location to backend:', error);
         }
         
-        setCurrentLocation(currentPos);
+        setCurrentLocationState(currentPos);
         setLocationAccuracy(accuracy);
         setLastLocationUpdate(new Date());
         
+        // Enhanced smooth update with route recalculation
         smoothUpdateUserLocation(latitude, longitude);
         
+        // Auto-complete sites when close
         if (siteLocations.length > 0) {
-          // checkSiteProximity would be called here from parent hook
+          checkSiteProximity(currentPos, siteLocations);
         }
       },
       (error) => {
@@ -219,109 +233,105 @@ export const useLocationTracking = ({
       options
     );
   
+    // Add user interaction tracking for map following
     if (map.current) {
       map.current.hasUserInteracted = () => false;
       map.current.on('movestart', () => {
         map.current.hasUserInteracted = () => true;
       });
     }
-  }, [map, scheduleId, activeSchedule, siteLocations, smoothUpdateUserLocation]);
+  };
 
-  const stopRealtimeLocationTracking = useCallback(() => {
+  const stopRealtimeLocationTracking = () => {
     if (locationWatcherRef.current !== null) {
       navigator.geolocation.clearWatch(locationWatcherRef.current);
       locationWatcherRef.current = null;
     }
     clearUserLocationLayers();
-  }, []);
-
-  const clearUserLocationLayers = useCallback(() => {
-    if (!map.current) return;
-
-    ['driver-location-layer', 'driver-location-pulse'].forEach(layerId => {
-      if (map.current.getLayer(layerId)) {
-        map.current.removeLayer(layerId);
-      }
-    });
-
-    if (map.current.getSource('driver-location')) {
-      map.current.removeSource('driver-location');
-    }
-
-    userLocationSourceRef.current = null;
-    userLocationLayerRef.current = null;
-    
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-  }, [map]);
-
-  const handleLocationError = (error) => {
-    let errorMessage = 'Location tracking error: ';
-    
-    switch (error.code) {
-      case error.PERMISSION_DENIED:
-        errorMessage += 'Location access denied. Please enable location permissions.';
-        break;
-      case error.POSITION_UNAVAILABLE:
-        errorMessage += 'Location unavailable. Using last known position.';
-        break;
-      case error.TIMEOUT:
-        errorMessage += 'Location request timeout. Retrying...';
-        setTimeout(startRealtimeLocationTracking, 5000);
-        break;
-      default:
-        errorMessage += 'Unknown location error.';
-        break;
-    }
-    
-    console.warn(errorMessage);
   };
 
-  const updateCurrentLocationMarker = useCallback((coordinates) => {
-    if (!map.current) return;
-
-    if (currentLocationMarkerRef.current) {
-      currentLocationMarkerRef.current.remove();
+  const startRealtimeLocationSharing = async (scheduleId) => {
+    if (!navigator.geolocation) {
+        console.error('Geolocation not supported');
+        return;
     }
 
-    const markerElement = document.createElement('div');
-    markerElement.className = 'current-location-marker';
-    const markerSize = isMobile ? 'w-8 h-8' : 'w-6 h-6';
-    markerElement.innerHTML = `
-      <div class="relative">
-        <div class="${markerSize} bg-blue-600 border-2 border-white rounded-full shadow-lg z-50"></div>
-        <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping"></div>
-      </div>
-    `;
+    // Start watching position
+    const watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            
+            try {
+                // Send location to server
+                const response = await axios.post('/driver/location/update', {
+                    latitude: latitude,
+                    longitude: longitude,
+                    schedule_id: scheduleId
+                });
 
-    currentLocationMarkerRef.current = new mapboxgl.Marker({
-      element: markerElement,
-      draggable: false
-    })
-    .setLngLat(coordinates)
-    .addTo(map.current);
-  }, [map, isMobile]);
+                if (response.data.success) {
+                    console.log('Location updated and broadcasted');
+                    
+                    // Update local state with smooth animation
+                    setCurrentLocationState([longitude, latitude]);
+                    smoothUpdateUserLocation(latitude, longitude);
+                    
+                    // Check site proximity
+                    if (siteLocations.length > 0) {
+                        checkSiteProximity([longitude, latitude], siteLocations);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update location:', error);
+            }
+        },
+        (error) => {
+            console.error('Location tracking error:', error);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
 
-  const updateLocationManually = useCallback((latitude, longitude) => {
-    const currentPos = [longitude, latitude];
-    setCurrentLocation(currentPos);
-    smoothUpdateUserLocation(latitude, longitude);
-  }, [smoothUpdateUserLocation]);
+    return watchId;
+  };
 
   return {
-    currentLocation,
+    // Refs
+    locationWatcherRef,
+    fakeLocationIntervalRef,
+    animationFrameRef,
+    currentLocationMarkerRef,
+    userLocationSourceRef,
+    userLocationLayerRef,
+    
+    // State
+    isFakeLocationActive,
+    currentLocation: currentLocationState,
     locationAccuracy,
     lastLocationUpdate,
-    currentLocationMarkerRef,
     
+    // Setters
+    setCurrentLocation: setCurrentLocationState,
+    setLocationAccuracy,
+    setLastLocationUpdate,
+    setIsFakeLocationActive,
+    
+    // Methods
+    startFakeLocationTest,
+    stopFakeLocationTest,
+    sendTestLocation,
+    simulateRouteFollowing,
     startRealtimeLocationTracking,
     stopRealtimeLocationTracking,
-    updateLocationManually,
-    smoothUpdateUserLocation,
-    updateCurrentLocationMarker,
+    startRealtimeLocationSharing,
     sendLocationToReverb,
-    clearUserLocationLayers
+    handleLocationError,
+    updateCurrentLocationMarker,
+    updateUserLocationSource,
+    animatePulse,
+    clearUserLocationLayers,
   };
 };
