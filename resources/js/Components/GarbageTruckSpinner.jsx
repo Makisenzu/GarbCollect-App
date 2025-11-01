@@ -468,7 +468,7 @@ const GarbageTruckSpinnerTailwind = ({
 export const useGarbageTruckSpinner = () => {
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const startLoading = (duration = 5000) => {
+  const startLoading = (duration = 51000) => {
     setIsLoading(true);
     if (duration) {
       setTimeout(() => setIsLoading(false), duration);

@@ -2255,7 +2255,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     completeTaskAndBroadcast,
     sendLocationToReverb,
 
-    // Fake location testing functions
     startFakeLocationTest,
     stopFakeLocationTest,
     sendTestLocation,
