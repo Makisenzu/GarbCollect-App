@@ -11,6 +11,7 @@ class Report extends Model
         'garbage_id',
         'report_picture',
         'sack_count',
+        'additional_notes'
     ];
 
     public function garbage () {

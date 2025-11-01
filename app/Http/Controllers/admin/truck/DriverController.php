@@ -10,15 +10,13 @@ use App\Models\Schedule;
 use App\Models\Baranggay;
 use App\Events\NewSchedule;
 use Illuminate\Http\Request;
+use App\Models\CollectionQue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
 class DriverController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(){
         $drivers = Driver::with('user', 'barangay')->paginate(6);
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
@@ -99,7 +97,6 @@ class DriverController extends Controller
             }
     
             $data = Schedule::create($assignData);
-
             event(new NewSchedule($data));
     
             return response()->json([
@@ -203,7 +200,6 @@ class DriverController extends Controller
             
         } catch (\Exception $e) {
             DB::rollBack();
-
             return back()->withErrors([
                 'message' => 'Failed to add driver: ' . $e->getMessage()
             ]);
@@ -270,7 +266,7 @@ class DriverController extends Controller
     public function getUserInfo(){
         try {
             $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email', 'phone_num')
-                        ->whereNotIn('role', ['admin', 'employee'])
+                        ->whereNotIn('roles', ['admin', 'employee'])
                         ->orderBy('id', 'asc')
                         ->get();
             return response()->json([
@@ -287,55 +283,163 @@ class DriverController extends Controller
         }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+    public function initializeCollectionQue(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'schedule_id' => 'required|exists:schedules,id',
+                'site_id' => 'required|array',
+                'site_id.*' => 'exists:sites,id'
+            ]);
+
+            DB::beginTransaction();
+
+            // Delete existing entries to avoid duplicates
+            CollectionQue::where('schedule_id', $validatedData['schedule_id'])->delete();
+
+            // Insert all sites as unfinished
+            $collectionQueEntries = [];
+            foreach ($validatedData['site_id'] as $siteId) {
+                $collectionQueEntries[] = [
+                    'schedule_id' => $validatedData['schedule_id'],
+                    'site_id' => $siteId,
+                    'status' => 'unfinished',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ];
+            }
+
+            CollectionQue::insert($collectionQueEntries);
+
+            // Update schedule status to 'in_progress'
+            Schedule::where('id', $validatedData['schedule_id'])
+                    ->update(['status' => 'in_progress']);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Collection queue initialized successfully',
+                'total_sites' => count($validatedData['site_id'])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to initialize collection queue: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to initialize collection queue: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function markSiteCompleted(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'schedule_id' => 'required|exists:schedules,id',
+                'site_id' => 'required|exists:sites,id'
+            ]);
+
+            DB::beginTransaction();
+
+            // Find and update the collection que entry
+            $collectionQue = CollectionQue::where('schedule_id', $validatedData['schedule_id'])
+                                        ->where('site_id', $validatedData['site_id'])
+                                        ->firstOrFail();
+
+            $collectionQue->markAsFinished();
+
+            // Check if all sites are completed
+            $allCompleted = CollectionQue::allSitesCompleted($validatedData['schedule_id']);
+
+            if ($allCompleted) {
+                // Update schedule status to completed
+                Schedule::where('id', $validatedData['schedule_id'])
+                        ->update(['status' => 'completed']);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Site marked as completed. All sites finished!',
+                    'all_completed' => true,
+                    'schedule_completed' => true
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Site marked as completed',
+                'all_completed' => false,
+                'completed_sites' => CollectionQue::where('schedule_id', $validatedData['schedule_id'])
+                                                ->where('status', 'finished')
+                                                ->count(),
+                'total_sites' => CollectionQue::where('schedule_id', $validatedData['schedule_id'])->count()
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to mark site as completed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark site as completed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCollectionProgress($scheduleId)
+    {
+        try {
+            $progress = CollectionQue::where('schedule_id', $scheduleId)->get();
+
+            $completed = $progress->where('status', 'finished')->count();
+            $total = $progress->count();
+
+            return response()->json([
+                'success' => true,
+                'progress' => $progress,
+                'summary' => [
+                    'completed' => $completed,
+                    'total' => $total,
+                    'percentage' => $total > 0 ? round(($completed / $total) * 100) : 0,
+                    'all_completed' => $completed === $total && $total > 0
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in getCollectionProgress: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch collection progress: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function create()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        // Remove this or keep for API if needed
+        //
     }
 
-    /**
-     * Add driver using Inertia form submission
-     */
-
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(string $id)
     {
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
         //
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-
-    /**
-     * Keep these for API if needed, but remove if using pure Inertia
-     */
 }

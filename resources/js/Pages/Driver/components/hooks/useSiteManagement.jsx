@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { router } from '@inertiajs/react';
 
 export const useSiteManagement = ({ 
   scheduleId, 
@@ -21,7 +22,6 @@ export const useSiteManagement = ({
   const [isTaskActive, setIsTaskActive] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Find the site that is nearest to the station
   const findNearestSiteToStation = (station, sites) => {
     if (!station || sites.length === 0) return null;
 
@@ -74,56 +74,106 @@ export const useSiteManagement = ({
     return siteReached;
   };
 
-  // FIXED: Updated markSiteAsCompleted function to immediately recalculate route for both real and fake locations
-  const markSiteAsCompleted = (site, index) => {
+  const generateAccessTokenAndRedirect = async () => {
+    try {
+        console.log('Generating access token for schedule:', scheduleId);
+        
+        const response = await axios.post('/generate-report-token', {
+            schedule_id: scheduleId
+        });
+
+        if (response.data.success && response.data.access_token) {
+            console.log('Access token generated, redirecting to report form');
+            
+            router.visit(`/driver/report/${scheduleId}?token=${response.data.access_token}`);
+        } else {
+            console.error('Failed to generate access token:', response.data.message);
+            alert('Failed to generate report access. Please contact support.');
+        }
+    } catch (error) {
+        console.error('Error generating access token:', error);
+        alert('Error generating report access. Please try again.');
+    }
+  };
+
+  const initializeCollectionQueue = async () => {
+    try {
+      if (!siteLocations.length) {
+        console.log('No sites available to initialize collection queue');
+        return;
+      }
+
+      const siteIds = siteLocations.map(site => site.id);
+      console.log('Initializing collection queue with sites:', siteIds);
+
+      const response = await axios.post('/initialize', {
+        schedule_id: scheduleId,
+        site_id: siteIds
+      });
+      
+      if (response.data.success) {
+        console.log('Collection queue initialized with', response.data.total_sites, 'sites');
+      } else {
+        console.error('Failed to initialize collection queue:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error initializing collection queue:', error);
+      console.error('Error details:', error.response?.data);
+    }
+  };
+
+  const markSiteAsCompleted = async (site, index) => {
     console.log(`Site reached: ${site.site_name}`);
     
-    // Add site to completed set
-    setCompletedSites(prev => {
-      const newCompleted = new Set(prev).add(site.id);
-      
-      // Check if all sites are completed
-      if (newCompleted.size === siteLocations.length) {
-        console.log('🎉 All sites completed! Task finished.');
-        if (onTaskComplete) {
-          onTaskComplete(site);
-        }
-      } else {
-        console.log(`Progress: ${newCompleted.size}/${siteLocations.length} sites completed`);
-      }
-      
-      return newCompleted;
-    });
-    
-    // Update current site index and IMMEDIATELY recalculate route to next site
-    if (optimizedSiteOrder.length > 0) {
-      const currentIndex = optimizedSiteOrder.findIndex(s => s.id === site.id);
-      if (currentIndex !== -1 && currentIndex < optimizedSiteOrder.length - 1) {
-        const nextSiteIndex = currentIndex + 1;
-        setCurrentSiteIndex(nextSiteIndex);
+    try {
+      const response = await axios.post('/mark-completed', {
+        schedule_id: scheduleId,
+        site_id: site.id
+      });
+
+      if (response.data.success) {
+        setCompletedSites(prev => {
+          const newCompleted = new Set(prev).add(site.id);
+          
+          if (response.data.all_completed) {
+            console.log('🎉 All sites completed! Task finished.');
+            generateAccessTokenAndRedirect();
+            
+            if (onTaskComplete) {
+              onTaskComplete(site);
+            }
+          } else {
+            console.log(`Progress: ${response.data.completed_sites}/${response.data.total_sites} sites completed`);
+          }
+          
+          return newCompleted;
+        });
         
-        const nextSite = optimizedSiteOrder[nextSiteIndex];
-        console.log(`Moving to next site: ${nextSite.site_name}`);
-        
-        // IMMEDIATELY recalculate route when a site is completed
-        // For both real AND fake locations
-        if (currentLocation) {
-          console.log('Immediately recalculating route from current location to next site');
-          recalculateRouteFromCurrentPosition(currentLocation);
-        } else {
-          console.log('No current location available for immediate route recalculation');
+        if (optimizedSiteOrder.length > 0) {
+          const currentIndex = optimizedSiteOrder.findIndex(s => s.id === site.id);
+          if (currentIndex !== -1 && currentIndex < optimizedSiteOrder.length - 1) {
+            const nextSiteIndex = currentIndex + 1;
+            setCurrentSiteIndex(nextSiteIndex);
+            
+            const nextSite = optimizedSiteOrder[nextSiteIndex];
+            console.log(`Moving to next site: ${nextSite.site_name}`);
+            
+            if (currentLocation) {
+              console.log('Immediately recalculating route from current location to next site');
+              recalculateRouteFromCurrentPosition(currentLocation);
+            }
+          } else if (currentIndex === optimizedSiteOrder.length - 1) {
+            console.log('🏁 Last site reached!');
+            setCurrentSiteIndex(currentIndex);
+          }
         }
-      } else if (currentIndex === optimizedSiteOrder.length - 1) {
-        console.log('🏁 Last site reached!');
-        setCurrentSiteIndex(currentIndex);
+        
+        updateSiteMarkers();
+        showCompletionNotification(site.site_name);
       }
+    } catch (error) {
+      console.error('Error marking site as completed:', error);
     }
-    
-    // Update markers to reflect completion status
-    updateSiteMarkers();
-    
-    // Show completion notification for individual site
-    showCompletionNotification(site.site_name);
   };
 
   const startTaskAndBroadcast = async () => {
@@ -143,6 +193,10 @@ export const useSiteManagement = ({
       if (response.data.success) {
         console.log('Task started and broadcasted to residents');
         setIsTaskActive(true);
+
+        if (siteLocations.length > 0) {
+          await initializeCollectionQueue();
+        }
         
         if (response.data.data) {
           setActiveSchedule(prev => ({
@@ -181,7 +235,6 @@ export const useSiteManagement = ({
     }
   };
 
-  // NEW: Reset completed sites (useful for testing)
   const resetCompletedSites = () => {
     setCompletedSites(new Set());
     setCurrentSiteIndex(0);
@@ -198,7 +251,6 @@ export const useSiteManagement = ({
     try {
       let scheduleData = null;
       
-      // Try to fetch schedule details
       try {
         const scheduleResponse = await axios.get(`/schedules/${scheduleId}`);
         if (scheduleResponse.data.success && scheduleResponse.data.data) {
@@ -210,7 +262,6 @@ export const useSiteManagement = ({
         }
       } catch (scheduleError) {
         console.warn('Could not fetch schedule details:', scheduleError);
-        // Create a minimal schedule object if API fails
         scheduleData = {
           id: scheduleId,
           barangay_id: 'unknown',
@@ -219,7 +270,6 @@ export const useSiteManagement = ({
         setActiveSchedule(scheduleData);
       }
   
-      // Then fetch sites if we have a valid barangay_id
       if (scheduleData?.barangay_id && scheduleData.barangay_id !== 'unknown') {
         try {
           const sitesResponse = await axios.get(`/barangay/${scheduleData.barangay_id}/sites?status=active`);
@@ -255,7 +305,7 @@ export const useSiteManagement = ({
       } else {
         console.warn('No valid barangay_id available to fetch sites');
       }
-  
+
     } catch (error) {
       console.error('Error in schedule and sites setup: ', error);
     } finally {
@@ -320,8 +370,14 @@ export const useSiteManagement = ({
     fetchScheduleAndSites();
   }, [scheduleId]);
 
+  useEffect(() => {
+    if (siteLocations.length > 0 && scheduleId) {
+      console.log('Sites loaded, initializing collection queue...');
+      initializeCollectionQueue();
+    }
+  }, [siteLocations, scheduleId]);
+
   return {
-    // State
     siteLocations,
     stationLocation,
     activeSchedule,
@@ -331,8 +387,6 @@ export const useSiteManagement = ({
     currentSiteIndex,
     isTaskActive,
     loading,
-    
-    // Setters
     setSiteLocations,
     setStationLocation,
     setActiveSchedule,
@@ -342,8 +396,6 @@ export const useSiteManagement = ({
     setCurrentSiteIndex,
     setIsTaskActive,
     setLoading,
-    
-    // Methods
     findNearestSiteToStation,
     checkSiteProximity,
     markSiteAsCompleted,

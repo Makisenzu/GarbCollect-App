@@ -43,4 +43,8 @@ class Schedule extends Model
     public function reports () {
         return $this->hasMany(Report::class);
     }
+
+    public function collections(){
+        return $this->hasMany(CollectionQue::class);
+    }
 }

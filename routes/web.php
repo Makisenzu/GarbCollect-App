@@ -1,26 +1,27 @@
 <?php
 
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Http;
 use App\Models\Schedule;
 use function Pest\Laravel\get;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\User\PublicSchedule;
+use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\ComplaintsController;
+
+use App\Http\Controllers\DriverReportController;
+
+use App\Http\Controllers\truck\EmployeeController;
 use App\Http\Controllers\admin\Ai\ReviewController;
 use App\Http\Controllers\admin\truck\DriverController;
-
 use App\Http\Controllers\admin\resident\AreaController;
-
+use App\Http\Controllers\truck\DriverTrackerController;
+use App\Http\Controllers\User\PublicScheduleController;
 use App\Http\Controllers\admin\truck\ScheduleController;
 use App\Http\Controllers\admin\dashboard\DashboardController;
 use App\Http\Controllers\admin\LocationRoute\RouteController;
-use App\Http\Controllers\truck\DriverTrackerController;
-use App\Http\Controllers\truck\EmployeeController;
-use App\Http\Controllers\User\PublicSchedule;
-use App\Http\Controllers\User\PublicScheduleController;
-use App\Http\Controllers\User\UserController;
 
 Route::get('/', function () {
     return Inertia::render('Users/Home');
@@ -80,6 +81,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/driver/location/update', [DriverTrackerController::class, 'updateLocation']);
         Route::post('/schedule/start', [DriverTrackerController::class, 'startSchedule']);
         Route::post('/schedule/complete', [DriverTrackerController::class, 'completeSchedule']);
+
+
+        Route::post('/generate-report-token', [DriverReportController::class, 'generateToken']);
+        Route::post('/validate-report-token', [DriverReportController::class, 'validateToken']);
+        Route::post('/invalidate-report-token', [DriverReportController::class, 'invalidateToken']);
+        Route::get('/garbage-types', [DriverReportController::class, 'getGarbageTypes']);
+        Route::post('/submit-report', [DriverReportController::class, 'submitReport']);
+
+        Route::post('/initialize', [DriverController::class, 'initializeCollectionQue']);
+        Route::post('/mark-completed', [DriverController::class, 'markSiteCompleted']);
+        Route::get('/progress/{scheduleId}', [DriverController::class, 'getCollectionProgress']);
+
+        Route::get('/driver/report/{scheduleId}', function ($scheduleId) {
+            $token = request()->query('token');
+            
+            return inertia('Driver/components/DriverReportForm', [
+                'scheduleId' => $scheduleId,
+                'token' => $token
+            ]);
+        })->name('driver.report.form');
     });
     
 
