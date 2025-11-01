@@ -19,8 +19,7 @@ class DriverController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
+    public function index(){
         $drivers = Driver::with('user', 'barangay')->paginate(6);
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
         $barangays = Baranggay::all();
@@ -63,8 +62,7 @@ class DriverController extends Controller
         ]);
     }
 
-    public function assignDriver(Request $request) 
-    {
+    public function assignDriver(Request $request) {
         try {
             $assignData = $request->validate([
                 'barangay_id' => ['required', 'exists:baranggays,id'],
@@ -177,27 +175,7 @@ class DriverController extends Controller
         }
     } 
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        // Remove this or keep for API if needed
-    }
-
-    /**
-     * Add driver using Inertia form submission
-     */
-    public function addDriver(Request $request)
-    {
+    public function addDriver(Request $request){
         $validatedData = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
             'barangay_id' => ['required', 'exists:baranggays,id'],
@@ -232,35 +210,7 @@ class DriverController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
+    public function destroy($id){
         try {
             $driver = Driver::with('user')->findOrFail($id);
             
@@ -300,11 +250,7 @@ class DriverController extends Controller
         }
     }
 
-    /**
-     * Keep these for API if needed, but remove if using pure Inertia
-     */
-    public function getDriverInfo()
-    {
+    public function getDriverInfo(){
         try {
             $drivers = Driver::with('user')->get();
             return response()->json([
@@ -321,8 +267,7 @@ class DriverController extends Controller
         }
     }
 
-    public function getUserInfo()
-    {
+    public function getUserInfo(){
         try {
             $users = User::select('id', 'picture', 'name', 'middlename', 'lastname', 'gender', 'email', 'phone_num')
                         ->whereNotIn('role', ['admin', 'employee'])
@@ -341,4 +286,56 @@ class DriverController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        // Remove this or keep for API if needed
+    }
+
+    /**
+     * Add driver using Inertia form submission
+     */
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+
+    /**
+     * Keep these for API if needed, but remove if using pure Inertia
+     */
 }
