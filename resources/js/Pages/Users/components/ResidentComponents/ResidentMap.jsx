@@ -5,6 +5,7 @@ import axios from 'axios';
 import { PiTrashSimpleDuotone } from "react-icons/pi";
 import { BsTruck } from "react-icons/bs";
 import { IoHome, IoCheckmarkDone } from "react-icons/io5";
+import GarbageTruckSpinner from '@/Components/GarbageTruckSpinner';
 
 import { initEcho, getEcho } from '@/echo'; 
 
@@ -56,6 +57,19 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   const [mapError, setMapError] = useState(null);
   const [containerReady, setContainerReady] = useState(false);
 
+  // Spinner state - ONLY GarbageTruckSpinner
+  const [showSpinner, setShowSpinner] = useState(false);
+  const [spinnerMessage, setSpinnerMessage] = useState('Loading map data...');
+
+  const showLoadingSpinner = (message = 'Loading map data...') => {
+    setSpinnerMessage(message);
+    setShowSpinner(true);
+  };
+
+  const hideLoadingSpinner = () => {
+    setShowSpinner(false);
+  };
+
   // Enhanced Route-related state
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [routeInfo, setRouteInfo] = useState(null);
@@ -74,7 +88,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   const [lastUserInteraction, setLastUserInteraction] = useState(Date.now());
   const hasUserInteractedWithMap = () => {
-    // Consider map as "interacted" if user has interacted in the last 30 seconds
     return Date.now() - lastUserInteraction < 30000;
   };
 
@@ -150,7 +163,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   useEffect(() => {
     const checkCSSLoaded = () => {
-      // Check if Mapbox CSS is already loaded
       const mapboxCSS = document.querySelector('link[href*="mapbox-gl.css"]');
       if (mapboxCSS && mapboxCSS.sheet) {
         console.log('Mapbox CSS already loaded');
@@ -180,7 +192,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     const onError = () => {
       clearTimeout(loadTimeout);
       console.warn('Mapbox CSS failed to load, continuing anyway');
-      setCssLoaded(true); // Continue even if CSS fails
+      setCssLoaded(true);
     };
     
     link.onload = onLoad;
@@ -188,7 +200,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     
     document.head.appendChild(link);
     
-    // Fallback timeout
     loadTimeout = setTimeout(() => {
       console.warn('Mapbox CSS load timeout, continuing anyway');
       setCssLoaded(true);
@@ -276,7 +287,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     return optimizedOrder;
   };
 
-  // NEW: Calculate route from driver's current location to first site
   const calculateDriverToSiteRoute = async (driverCoords, targetSite) => {
     if (!mapboxKey || !driverCoords || !targetSite) {
       console.log('Missing data for driver route calculation');
@@ -330,11 +340,11 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     return null;
   };
 
-  // NEW: Enhanced route calculation with driver integration
   const calculateOptimalRoute = async (sites, station, includeDriverRoute = false) => {
     if (!mapboxKey || sites.length < 1) return;
 
     setRouteLoading(true);
+    showLoadingSpinner('Calculating optimal route...');
     setRouteError(null);
 
     try {
@@ -358,7 +368,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         setNearestSite(optimizedSites[0]);
       }
 
-      // If we have driver location and real-time routing is enabled, calculate from driver to first site
       if (includeDriverRoute && driverLocation && optimizedSites.length > 0) {
         const driverRoute = await calculateDriverToSiteRoute(driverLocation, optimizedSites[0]);
         
@@ -382,7 +391,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         }
       }
       
-      // Fallback to original station-based route calculation
       let coordinates = [];
       
       if (station) {
@@ -449,7 +457,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       console.error('Error calculating route:', error);
       setRouteError(`Route calculation failed: ${error.message}`);
       
-      // Fallback to straight line route
       const validSites = sites.filter(site => 
         site.latitude && site.longitude && 
         !isNaN(parseFloat(site.latitude)) && !isNaN(parseFloat(site.longitude))
@@ -475,6 +482,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       }
     } finally {
       setRouteLoading(false);
+      hideLoadingSpinner();
     }
   };
 
@@ -488,19 +496,16 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     return totalDistance;
   };
 
-  // NEW: Real-time route update function
   const updateRealTimeRoute = async () => {
     if (!realTimeRouteEnabled || !driverLocation || !optimizedSiteOrder.length) {
       return;
     }
 
-    // Check if driver has moved significantly (more than 50 meters)
     if (lastDriverLocationRef.current) {
       const [prevLon, prevLat] = lastDriverLocationRef.current;
       const [currentLon, currentLat] = driverLocation;
-      const distanceMoved = calculateDistance(prevLat, prevLon, currentLat, currentLon) * 1000; // Convert to meters
+      const distanceMoved = calculateDistance(prevLat, prevLon, currentLat, currentLon) * 1000;
       
-      // Only update route if driver moved more than 50 meters
       if (distanceMoved < 50) {
         return;
       }
@@ -534,7 +539,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     }
   };
 
-  // NEW: Start real-time route updates
   const startRealTimeRouteUpdates = () => {
     if (routeUpdateIntervalRef.current) {
       clearInterval(routeUpdateIntervalRef.current);
@@ -544,12 +548,11 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       if (realTimeRouteEnabled && driverLocation && optimizedSiteOrder.length > 0) {
         updateRealTimeRoute();
       }
-    }, 2000); // Update every 2 seconds
+    }, 2000);
 
     console.log('Started real-time route updates');
   };
 
-  // NEW: Stop real-time route updates
   const stopRealTimeRouteUpdates = () => {
     if (routeUpdateIntervalRef.current) {
       clearInterval(routeUpdateIntervalRef.current);
@@ -558,7 +561,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     console.log('Stopped real-time route updates');
   };
 
-  // NEW: Toggle real-time routing
   const toggleRealTimeRouting = () => {
     const newState = !realTimeRouteEnabled;
     setRealTimeRouteEnabled(newState);
@@ -570,7 +572,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     }
   };
 
-  // Enhanced route layer
   const addRouteLayer = () => {
     if (!map.current || routeCoordinates.length === 0) {
       return;
@@ -583,7 +584,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       return;
     }
 
-    // Clear all existing route layers and sources
     [
       'route', 'route-glow', 'route-direction', 
       'route-start', 'route-end', 'route-waypoints',
@@ -633,7 +633,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       const lineWidth = isMobile ? 6 : 5;
       const glowWidth = isMobile ? 14 : 12;
 
-      // Route glow layer
       map.current.addLayer({
         id: glowLayerId,
         type: 'line',
@@ -650,7 +649,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         }
       });
 
-      // Main route layer
       map.current.addLayer({
         id: routeLayerId,
         type: 'line',
@@ -667,7 +665,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         }
       });
 
-      // Direction arrows
       map.current.addLayer({
         id: 'route-direction',
         type: 'symbol',
@@ -683,7 +680,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         }
       });
   
-      // Add waypoints (station and sites)
       const waypoints = [];
 
       if (stationLocation && stationLocation.latitude && stationLocation.longitude && !routeInfo?.isRealTime) {
@@ -750,7 +746,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         });
       }
   
-      // Add start and end markers (only for non-real-time routes)
       if (!routeInfo?.isRealTime && routeCoordinates.length >= 2) {
         map.current.addSource('route-start-marker', {
           type: 'geojson',
@@ -805,7 +800,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         });
       }
   
-      // Fit map to show the entire route
       setTimeout(() => {
         fitMapToRoute();
       }, 200);
@@ -824,24 +818,20 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
     const bounds = new mapboxgl.LngLatBounds();
 
-    // Include all route coordinates
     routeCoordinates.forEach(coord => {
       bounds.extend(coord);
     });
 
-    // Include station
     if (stationLocation) {
       bounds.extend([parseFloat(stationLocation.longitude), parseFloat(stationLocation.latitude)]);
     }
     
-    // Include all site locations
     siteLocations.forEach(site => {
       if (site.longitude && site.latitude) {
         bounds.extend([parseFloat(site.longitude), parseFloat(site.latitude)]);
       }
     });
 
-    // Include driver location if available
     if (driverLocation) {
       bounds.extend(driverLocation);
     }
@@ -861,7 +851,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     }
   };
 
-  // Find station in sites
   const findStation = (sites) => {
     return sites.find(site => site.type === 'station') || null;
   };
@@ -876,6 +865,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       }
 
       console.log('Starting map initialization...');
+      showLoadingSpinner('Initializing map...');
 
       try {
         mapboxgl.accessToken = mapboxKey;
@@ -894,7 +884,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           doubleClickZoom: !isMobile,
           touchZoomRotate: true,
           touchPitch: false,
-          // cooperativeGestures: isMobile,
           failIfMajorPerformanceCaveat: false,
           preserveDrawingBuffer: true
         });
@@ -918,16 +907,18 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
             }, 500);
           }
 
-          // Start real-time route updates if enabled
           if (realTimeRouteEnabled) {
             startRealTimeRouteUpdates();
           }
+
+          hideLoadingSpinner();
         };
 
         const handleMapError = (e) => {
           console.error('Map error:', e);
           setMapError(`Map error: ${e.error?.message || 'Unknown error'}`);
           setMapInitialized(true);
+          hideLoadingSpinner();
         };
 
         map.current.once('load', handleMapLoad);
@@ -937,6 +928,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           if (!mapInitialized) {
             console.warn('Map load timeout - continuing anyway');
             setMapInitialized(true);
+            hideLoadingSpinner();
           }
         }, 10000);
 
@@ -946,6 +938,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         console.error('Error creating map:', error);
         setMapError(`Failed to create map: ${error.message}`);
         setMapInitialized(true);
+        hideLoadingSpinner();
       }
     };
 
@@ -964,19 +957,15 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     };
   }, [cssLoaded, mapboxKey, containerReady, isMobile]);
 
-  // Enhanced route calculation when data is available
   useEffect(() => {
     if (siteLocations.length > 0 && stationLocation && mapboxKey && mapInitialized) {
       console.log('All data available, calculating optimal route...');
-      // Calculate route with driver integration if real-time routing is enabled
       calculateOptimalRoute(siteLocations, stationLocation, realTimeRouteEnabled);
     }
   }, [siteLocations, stationLocation, mapboxKey, mapInitialized]);
 
-  // NEW: Update real-time route when driver location changes significantly
   useEffect(() => {
     if (realTimeRouteEnabled && driverLocation && optimizedSiteOrder.length > 0) {
-      // Debounced route update when driver moves
       const timeoutId = setTimeout(() => {
         updateRealTimeRoute();
       }, 1000);
@@ -991,7 +980,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     }
   }, [routeCoordinates, mapInitialized]);
 
-  // FIXED: Force marker updates when critical states change
   useEffect(() => {
     if (mapInitialized && siteLocations.length > 0) {
       console.log('Force updating site markers due to state change');
@@ -999,7 +987,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     }
   }, [mapInitialized, siteLocations, isMobile, realTimeRouteEnabled, nearestSite]);
 
-  // FIXED: Force driver marker updates
   useEffect(() => {
     if (mapInitialized && driverLocation) {
       console.log('Force updating driver marker');
@@ -1021,7 +1008,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           throw new Error('Echo not initialized');
         }
   
-        // Listen for driver location updates
         echo.channel(`driver-locations.${barangayId}`)
           .listen('DriverLocationUpdated', (e) => {
             console.log('Real-time driver location update received:', e);
@@ -1029,7 +1015,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
             updateDriverLocation(e);
           });
   
-        // Listen for schedule updates
         echo.channel(`schedule-updates.${barangayId}`)
           .listen('ScheduleStatusUpdated', (e) => {
             console.log('Schedule update received:', e);
@@ -1039,7 +1024,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         setConnectionStatus('connected');
         await loadInitialData();
   
-        // Start polling as backup if WebSocket fails
         startPollingBackup();
   
       } catch (error) {
@@ -1050,7 +1034,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     };
   
     const startPollingBackup = () => {
-      // Poll for location updates every 10 seconds as backup
       const pollInterval = setInterval(() => {
         pollDriverLocation();
       }, 10000);
@@ -1082,17 +1065,10 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     };
   }, [barangayId, scheduleId]);
 
-  const startPolling = () => {
-    const pollInterval = setInterval(() => {
-      loadInitialData();
-    }, 10000);
-
-    return () => clearInterval(pollInterval);
-  };
-
   const loadInitialData = async () => {
     try {
       setLoading(true);
+      showLoadingSpinner('Loading collection sites...');
       
       const scheduleResponse = await axios.get(`/barangay/${barangayId}/current-schedule`);
       
@@ -1123,8 +1099,10 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           }
         }
       }
+      hideLoadingSpinner();
     } catch (error) {
       console.error('Error loading initial data:', error);
+      hideLoadingSpinner();
     } finally {
       setLoading(false);
     }
@@ -1140,26 +1118,21 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     
     console.log('Updating driver location on map:', newLocation);
     
-    // Update driver location state
     setDriverLocation(newLocation);
     
     if (mapInitialized && map.current) {
-      // Update driver marker with smooth transition
       updateDriverMarker(newLocation, locationData);
       
-      // Only follow driver if user hasn't interacted with map recently
       if (!hasUserInteractedWithMap()) {
-        // Smooth fly to driver location
         map.current.flyTo({
           center: newLocation,
           zoom: isMobile ? 16 : 15,
           duration: 2000,
           essential: true,
-          offset: [0, isMobile ? -100 : 0] // Adjust offset for better visibility
+          offset: [0, isMobile ? -100 : 0]
         });
       }
       
-      // Update real-time route if enabled
       if (realTimeRouteEnabled) {
         updateRealTimeRoute();
       }
@@ -1171,7 +1144,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       return;
     }
   
-    // Remove existing marker
     if (driverMarker) {
       driverMarker.remove();
     }
@@ -1182,11 +1154,10 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     const markerElement = document.createElement('div');
     markerElement.className = 'driver-location-marker';
     
-    // Calculate age of location data for freshness indicator
     const locationAge = locationData.timestamp ? 
       (new Date() - new Date(locationData.timestamp)) / 1000 : 0;
     
-    const isFresh = locationAge < 30; // Less than 30 seconds old
+    const isFresh = locationAge < 30;
     
     markerElement.innerHTML = `
       <div class="relative">
@@ -1214,8 +1185,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       })
       .setLngLat(coordinates)
       .addTo(map.current);
-  
-      // Add popup with driver info
+
       const popup = new mapboxgl.Popup({
         offset: 25,
         closeButton: false,
@@ -1245,29 +1215,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       console.error('Error creating driver marker:', error);
     }
   };
-  const ConnectionStatus = () => (
-    <div className={`absolute ${isMobile ? 'top-2 left-2' : 'top-4 left-4'} bg-white rounded-lg shadow-lg border border-gray-200 ${
-      isMobile ? 'px-2 py-1' : 'px-3 py-2'
-    } z-10`}>
-      <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${
-          connectionStatus === 'connected' ? 'bg-green-500' : 
-          connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
-        } ${connectionStatus === 'connected' ? 'animate-pulse' : ''}`}></div>
-        <span className={`font-medium text-gray-700 capitalize ${
-          isMobile ? 'text-xs' : 'text-sm'
-        }`}>
-          {connectionStatus}
-          {connectionStatus === 'connected' && ' • Live'}
-        </span>
-      </div>
-      {driverLocation && (
-        <div className={`text-gray-500 ${isMobile ? 'text-xs mt-1' : 'text-sm mt-1'}`}>
-          Last update: {lastLocationUpdate ? lastLocationUpdate.toLocaleTimeString() : 'Never'}
-        </div>
-      )}
-    </div>
-  );
 
   const updateScheduleData = (scheduleData) => {
     setCurrentSchedule(scheduleData);
@@ -1278,7 +1225,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       return;
     }
   
-    // Clear existing markers
     siteMarkers.forEach(marker => {
       if (marker && marker.remove) {
         marker.remove();
@@ -1307,7 +1253,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           return '#6B7280';
         };
 
-        // Use simple SVG icons instead of React Icons
         const getMarkerIcon = () => {
           if (isStation) {
             return `
@@ -1387,14 +1332,13 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     setSiteMarkers(newMarkers);
   };
 
-  // Enhanced route refresh
   const refreshRoute = async () => {
     if (siteLocations.length > 0 && stationLocation) {
+      showLoadingSpinner('Refreshing route...'); 
       await calculateOptimalRoute(siteLocations, stationLocation, realTimeRouteEnabled);
     }
   };
 
-  // Refresh icons manually
   const refreshIcons = () => {
     console.log('Manually refreshing icons');
     if (siteLocations.length > 0) {
@@ -1405,23 +1349,20 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     }
   };
 
-  // Toggle route info panel
   const toggleRouteInfo = () => {
     setShowRouteInfo(!showRouteInfo);
   };
 
-  // Responsive height calculation
   const getMapHeight = () => {
-    if (windowSize.width < 640) { // sm breakpoint
+    if (windowSize.width < 640) {
       return '400px';
-    } else if (windowSize.width < 768) { // md breakpoint
+    } else if (windowSize.width < 768) {
       return '500px';
     } else {
       return '600px';
     }
   };
 
-  // Debug effect - remove after fixing
   useEffect(() => {
     console.log('Current state:', {
       cssLoaded,
@@ -1446,35 +1387,19 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="w-full h-96 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mx-auto mb-3"></div>
-          <p className="text-sm text-gray-600">Loading map data...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* ONLY GarbageTruckSpinner remains */}
+      <GarbageTruckSpinner 
+        isLoading={showSpinner}
+        message={spinnerMessage}
+        size={isMobile ? "medium" : "large"}
+        variant="default"
+      />
+
       {/* Map Container */}
       <div className="relative w-full" style={{ height: getMapHeight() }}>
-        {!mapInitialized && (
-          <div className="absolute inset-0 bg-gray-50 flex items-center justify-center z-20">
-            <div className="text-center p-6">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-3"></div>
-              <p className="text-sm text-gray-600">Initializing map...</p>
-              <p className="text-xs text-gray-500 mt-2">
-                {!containerReady ? 'Setting up container...' : 
-                 !cssLoaded ? 'Loading styles...' : 
-                 !mapboxKey ? 'Waiting for API key...' : 
-                 'Loading Mapbox...'}
-              </p>
-            </div>
-          </div>
-        )}
+        {/* REMOVED: The loading spinner div that was here */}
         
         <div 
           ref={mapContainer} 
@@ -1513,7 +1438,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
                     <span className="text-gray-700">Target Site</span>
                   </div>
                 )}
-                {/* Route legend */}
                 {routeInfo && (
                   <div className="flex items-center gap-2 pt-1 border-t border-gray-200">
                     <div className="w-4 h-1 rounded-full flex-shrink-0" style={{
@@ -1529,7 +1453,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
             {/* Enhanced Control Buttons - Responsive */}
             <div className={`absolute ${isMobile ? 'top-2 right-2' : 'top-4 right-4'} flex flex-col gap-2 z-10`}>
-              {/* Refresh Icons Button */}
               <button
                 onClick={refreshIcons}
                 className={`bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
@@ -1540,7 +1463,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
                 <IoRefresh className={`text-gray-700 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
               </button>
 
-              {/* Real-time Route Toggle */}
               <button
                 onClick={toggleRealTimeRouting}
                 className={`rounded-lg shadow-lg border transition-colors flex items-center justify-center ${
@@ -1552,12 +1474,9 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
                 }`}
                 title={realTimeRouteEnabled ? 'Disable real-time routing' : 'Enable real-time routing'}
               >
-                <div className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} ${realTimeRouteEnabled ? 'animate-pulse' : ''}`}>
-                  {/* {realTimeRouteEnabled ? '🎯' : '📍'} */}
-                </div>
+                <div className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} ${realTimeRouteEnabled ? 'animate-pulse' : ''}`}></div>
               </button>
 
-              {/* Refresh Route Button */}
               <button
                 onClick={refreshRoute}
                 disabled={routeLoading}
@@ -1575,7 +1494,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
                 )}
               </button>
 
-              {/* Toggle Route Info Button */}
               <button
                 onClick={toggleRouteInfo}
                 className={`bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
@@ -1586,7 +1504,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
                 <IoList className={`text-gray-700 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
               </button>
 
-              {/* Fit to Route Button */}
               <button
                 onClick={fitMapToRoute}
                 className={`bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
