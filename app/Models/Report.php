@@ -9,6 +9,7 @@ class Report extends Model
     protected $fillable = [
         'schedule_id',
         'garbage_id',
+        'report_picture',
         'sack_count',
     ];
 
