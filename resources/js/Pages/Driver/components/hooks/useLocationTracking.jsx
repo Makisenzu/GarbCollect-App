@@ -45,10 +45,10 @@ export const useLocationTracking = ({
       console.log('Fake location test already running');
       return;
     }
-
+  
     console.log('🚀 Starting fake location test');
     setIsFakeLocationActive(true);
-
+  
     const testCoordinates = [
       { lat: 8.4830, lng: 125.9485, name: "Start Point" },
       { lat: 8.4900, lng: 125.9550, name: "Point A" },
@@ -56,30 +56,35 @@ export const useLocationTracking = ({
       { lat: 8.5000, lng: 125.9650, name: "Point C" },
       { lat: 8.5050, lng: 125.9700, name: "Point D" },
     ];
-
+  
     let currentIndex = 0;
-
+  
     fakeLocationIntervalRef.current = setInterval(async () => {
       const location = testCoordinates[currentIndex];
       
       try {
         console.log(`📍 Sending fake location: ${location.lat}, ${location.lng} (${location.name})`);
         
+        // CRITICAL FIX: Update the actual currentLocation state, not just the visual marker
+        const newLocation = [location.lng, location.lat];
+        
+        // Update the actual state that proximity checking uses
+        setCurrentLocationState(newLocation);
+        
         // Send to Reverb
         await sendLocationToReverb(location.lat, location.lng, 10);
         
-        // Update local state with smooth animation
+        // Update local state with smooth animation (visual only)
         smoothUpdateUserLocation(location.lat, location.lng);
         
-        // Check site proximity and recalculate if needed
+        // Check site proximity and recalculate if needed - NOW USING UPDATED STATE
         if (siteLocations.length > 0) {
-          const siteReached = checkSiteProximity([location.lng, location.lat], siteLocations);
+          const siteReached = checkSiteProximity(newLocation, siteLocations);
           if (siteReached) {
             console.log('Site completed in fake location test, recalculating route');
-            // Use current fake location for recalculation
-            recalculateRouteFromCurrentPosition([location.lng, location.lat]);
-          } else if (shouldRecalculateRoute([location.lng, location.lat])) {
-            recalculateRouteFromCurrentPosition([location.lng, location.lat]);
+            recalculateRouteFromCurrentPosition(newLocation);
+          } else if (shouldRecalculateRoute(newLocation)) {
+            recalculateRouteFromCurrentPosition(newLocation);
           }
         }
         
@@ -106,8 +111,19 @@ export const useLocationTracking = ({
   const sendTestLocation = async (lat, lng) => {
     try {
       console.log(`📍 Sending test location: ${lat}, ${lng}`);
+      
+      // CRITICAL FIX: Update the actual currentLocation state
+      const newLocation = [lng, lat];
+      setCurrentLocationState(newLocation);
+      
       await sendLocationToReverb(lat, lng, 10);
       smoothUpdateUserLocation(lat, lng);
+      
+      // Trigger proximity check with the new fake location
+      if (siteLocations.length > 0) {
+        checkSiteProximity(newLocation, siteLocations);
+      }
+      
       console.log('✅ Test location sent successfully');
       return true;
     } catch (error) {
@@ -121,41 +137,45 @@ export const useLocationTracking = ({
       console.error('No route coordinates available for simulation');
       return;
     }
-
+  
     if (isFakeLocationActive) {
       console.log('Fake location simulation already running');
       return;
     }
-
+  
     console.log('🛣️ Starting route following simulation');
     setIsFakeLocationActive(true);
-
+  
     let currentIndex = 0;
-
+  
     fakeLocationIntervalRef.current = setInterval(async () => {
       if (currentIndex >= routeCoordinates.length) {
         console.log('🏁 Route simulation completed');
         stopFakeLocationTest();
         return;
       }
-
+  
       const [lng, lat] = routeCoordinates[currentIndex];
       
       try {
         console.log(`📍 Route point ${currentIndex + 1}/${routeCoordinates.length}: ${lat}, ${lng}`);
+        
+        // CRITICAL FIX: Update the actual currentLocation state
+        const newLocation = [lng, lat];
+        setCurrentLocationState(newLocation);
         
         await sendLocationToReverb(lat, lng, 5);
         smoothUpdateUserLocation(lat, lng);
         
         // Enhanced site proximity check that triggers route recalculation
         if (siteLocations.length > 0) {
-          const siteReached = checkSiteProximity([lng, lat], siteLocations);
+          const siteReached = checkSiteProximity(newLocation, siteLocations);
           // If a site was reached and completed, force immediate route recalculation
           if (siteReached) {
             console.log('Site completed during simulation, forcing immediate route recalculation');
             // Use the current fake location for recalculation
             setTimeout(() => {
-              recalculateRouteFromCurrentPosition([lng, lat]);
+              recalculateRouteFromCurrentPosition(newLocation);
             }, 100);
           }
         }
@@ -166,7 +186,7 @@ export const useLocationTracking = ({
         console.error('❌ Failed to send route location:', error);
       }
     }, updateInterval);
-
+  
     return fakeLocationIntervalRef.current;
   };
 

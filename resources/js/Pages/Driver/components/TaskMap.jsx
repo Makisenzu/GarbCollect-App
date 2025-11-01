@@ -171,7 +171,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
       />
 
       {/* Fake Location Test Panel - Only show in development */}
-      {/* {process.env.NODE_ENV === 'development' && (
+      {process.env.NODE_ENV === 'development' && (
         <FakeLocationTestPanel 
           startFakeLocationTest={startFakeLocationTest}
           stopFakeLocationTest={stopFakeLocationTest}
@@ -181,7 +181,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
           isMobile={isMobile}
           routeCoordinates={routeCoordinates}
         />
-      )} */}
+      )}
 
       {activeSchedule && (
         <ScheduleInfoPanel 

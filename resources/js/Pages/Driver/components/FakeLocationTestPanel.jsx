@@ -9,8 +9,8 @@ const FakeLocationTestPanel = ({
   isFakeLocationActive,
   isMobile 
 }) => {
-  const [testLat, setTestLat] = useState('8.502');
-  const [testLng, setTestLng] = useState('126.015');
+  const [testLat, setTestLat] = useState('8.50679937');
+  const [testLng, setTestLng] = useState('126.00992222');
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSendTestLocation = () => {
