@@ -218,7 +218,7 @@ class DriverTrackerController extends Controller
     public function getCurrentSchedule($barangayId){
     try {
         $currentSchedule = Schedule::where('barangay_id', $barangayId)
-            ->where('status', 'progress')
+            ->where('status', 'in_progress')
             ->orWhere(function($query) use ($barangayId) {
                 $query->where('barangay_id', $barangayId)
                       ->where('collection_date', today())

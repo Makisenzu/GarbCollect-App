@@ -117,7 +117,7 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
     const canStartSchedule = (schedule) => {
         const isToday = isScheduleToday(schedule);
         const isTimeValid = isTimeToStart(schedule);
-        const isStatusValid = schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'in_progress';
+        const isStatusValid = schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'in_progress' || schedule.status === 'progress';
         return isToday && isTimeValid && isStatusValid;
     };
 

@@ -65,13 +65,11 @@ Route::get('/public/driver-locations/{barangayId?}', [DriverTrackerController::c
 Route::get('/public/active-schedules/{barangayId?}', [DriverTrackerController::class, 'getActiveSchedules']);
 
 
-Route::get('/barangay/{id}/current-schedule', [DriverTrackerController::class, 'getCurrentSchedule']);
-Route::get('/schedule/{id}/sites', [DriverTrackerController::class, 'getScheduleSites']);
-Route::get('/schedule/{id}/driver-location', [DriverTrackerController::class, 'getDriverLocation']);
+Route::get('/barangay/{barangayId}/current-schedule', [DriverTrackerController::class, 'getCurrentSchedule']);
+Route::get('/schedule/{scheduleId}/sites', [DriverTrackerController::class, 'getScheduleSites']);
+Route::get('/schedule/{scheduleId}/driver-location', [DriverTrackerController::class, 'getDriverLocation']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    
-
     //Employee routes
     Route::middleware('roles:employee')->group(function () {
         Route::get('/dashboard', [EmployeeController::class, 'index'])->name('dashboard');
