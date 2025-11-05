@@ -1,61 +1,246 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# GarbCollect - Waste Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A comprehensive web-based garbage collection management system designed to streamline waste collection operations, improve communication between residents and waste management services, and enhance overall efficiency in municipal waste management.
 
-## About Laravel
+## Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+GarbCollect is a full-stack application that facilitates the coordination of garbage collection activities across municipalities, barangays, and puroks. The system provides real-time tracking, scheduling, and reporting capabilities for efficient waste management operations.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Technology Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Backend
+- **Framework:** Laravel 12.0 (PHP 8.2+)
+- **Authentication:** Laravel Sanctum
+- **Real-time Communication:** Laravel Reverb, Pusher
+- **API Integration:** Guzzle HTTP Client
+- **Testing:** Pest PHP
 
-## Learning Laravel
+### Frontend
+- **Framework:** React 18.2 with Inertia.js 2.0
+- **UI Components:** Headless UI, Lucide React Icons, React Icons
+- **Styling:** Tailwind CSS 3.2 with Forms Plugin
+- **Build Tool:** Vite 6.2
+- **Mapping:** Mapbox GL 3.13
+- **Charts:** Recharts 3.1
+- **Notifications:** SweetAlert2
+- **Date Management:** date-fns 4.1
+- **Form Components:** React Select 5.10
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Additional Tools
+- **Real-time Echo:** Laravel Echo with React integration
+- **Content Moderation:** OpenAI API integration
+- **Development:** Concurrently, Laravel Pail
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Key Features
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### User Management
+- Multi-role system (Admin, Driver, Resident, Applicant)
+- User authentication and authorization
+- Profile management with photo support
+- Account activation/deactivation
 
-## Laravel Sponsors
+### Geographic Organization
+- Hierarchical location structure:
+  - Municipalities (City/Municipality types)
+  - Barangays (Urban/Rural types)
+  - Puroks (neighborhoods)
+- Site management for collection points
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Garbage Collection Operations
+- **Schedule Management:** Create and manage collection schedules by barangay
+- **Driver Assignment:** Assign drivers to specific collection routes
+- **Collection Queue:** Track collection sites in sequential order
+- **Real-time Tracking:** Monitor driver locations with GPS coordinates
+- **Status Tracking:** Track collection progress (pending, active, finished)
 
-### Premium Partners
+### Driver Features
+- License verification system
+- Real-time location updates
+- Active schedule tracking
+- On-duty status management
+- Mobile-friendly driver interface
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Reporting System
+- Photo-based garbage reports
+- Sack count tracking
+- Schedule-linked reporting
+- Garbage type categorization
+- Report validation with tokens
 
-## Contributing
+### Review and Feedback
+- Category-based review system
+- Rating system (1-5 stars)
+- Content moderation using AI (OpenAI)
+- Review status workflow (pending, approved, rejected)
+- Reply functionality for administrators
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Fleet Management
+- Truck registration and tracking
+- Plate number management
+- Availability status monitoring
+- Assignment to collection schedules
 
-## Code of Conduct
+### Real-time Features
+- Live driver location tracking
+- Collection status updates
+- Real-time notifications using Laravel Reverb
+- WebSocket integration with Pusher
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Database Architecture
 
-## Security Vulnerabilities
+### Core Entities
+1. **Users** - System users with role-based access
+2. **Drivers** - Extended user profiles for collection drivers
+3. **Municipalities** - Top-level geographic divisions
+4. **Barangays** - Municipal subdivisions
+5. **Puroks** - Neighborhood-level divisions
+6. **Sites** - Specific collection locations with coordinates
+7. **Schedules** - Collection appointments and routes
+8. **Collection Queue** - Ordered list of sites to visit
+9. **Reports** - Photo and data reports from collections
+10. **Reviews** - Public feedback and ratings
+11. **Categories** - Classification for reviews/reports
+12. **Garbage Types** - Waste classification system
+13. **Trucks** - Fleet vehicle management
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## System Workflows
+
+### Collection Process
+1. Admin creates collection schedule for a barangay
+2. Driver is assigned to the schedule
+3. Collection queue is generated with site sequence
+4. Driver starts collection and updates location in real-time
+5. At each site, driver marks completion
+6. Reports are submitted with photos and sack counts
+7. Schedule is marked finished when all sites are completed
+
+### Review Moderation
+1. Residents submit reviews with ratings and suggestions
+2. AI moderation service screens content for inappropriate material
+3. Admin reviews flagged content
+4. Reviews are approved or rejected
+5. Approved reviews are visible to the public
+6. Admin can reply to approved reviews
+
+### Driver Management
+1. Users apply to become drivers
+2. Admin verifies license information
+3. Driver account is activated
+4. Driver is assigned to specific barangay
+5. Driver receives daily schedules
+6. Location tracking during on-duty hours
+
+## Development Setup
+
+### Prerequisites
+- PHP 8.2 or higher
+- Composer
+- Node.js and NPM
+- MySQL/PostgreSQL/SQLite database
+- OpenAI API key (for content moderation)
+- Mapbox API key (for mapping features)
+
+### Installation
+
+1. Clone the repository
+2. Install PHP dependencies:
+   ```bash
+   composer install
+   ```
+
+3. Install JavaScript dependencies:
+   ```bash
+   npm install
+   ```
+
+4. Copy environment file and configure:
+   ```bash
+   cp .env.example .env
+   ```
+
+5. Generate application key:
+   ```bash
+   php artisan key:generate
+   ```
+
+6. Run database migrations:
+   ```bash
+   php artisan migrate
+   ```
+
+7. Seed the database (optional):
+   ```bash
+   php artisan db:seed
+   ```
+
+### Running the Application
+
+#### Development Mode
+Run all services concurrently:
+```bash
+composer dev
+```
+
+This starts:
+- Laravel development server
+- Queue listener
+- Log monitoring (Pail)
+- Vite dev server
+
+#### Individual Services
+```bash
+# Backend server
+php artisan serve
+
+# Frontend build
+npm run dev
+
+# Queue worker
+php artisan queue:listen
+
+# Logs
+php artisan pail
+```
+
+### Building for Production
+```bash
+npm run build
+```
+
+## Testing
+
+Run the test suite:
+```bash
+composer test
+```
+
+Or directly with Pest:
+```bash
+php artisan test
+```
+
+## Security Features
+
+- Laravel Sanctum API authentication
+- Password hashing and secure storage
+- CSRF protection
+- Content moderation for user-generated content
+- Role-based access control
+- Secure API token management for mobile integration
+
+## Configuration
+
+Key configuration files:
+- `config/database.php` - Database connections
+- `config/services.php` - Third-party service credentials
+- `config/broadcasting.php` - Real-time broadcasting setup
+- `config/queue.php` - Background job processing
+- `config/reverb.php` - WebSocket server configuration
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is proprietary software developed as a capstone project. All rights reserved.
+
+## Support
+
+For system-related inquiries, please contact the development team through your institution's designated channels.
