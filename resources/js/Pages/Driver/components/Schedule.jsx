@@ -117,7 +117,7 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
     const canStartSchedule = (schedule) => {
         const isToday = isScheduleToday(schedule);
         const isTimeValid = isTimeToStart(schedule);
-        const isStatusValid = schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'progress';
+        const isStatusValid = schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'in_progress';
         return isToday && isTimeValid && isStatusValid;
     };
 
@@ -149,7 +149,7 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
 
     const getStatusBadge = (status) => {
         const statusConfig = {
-            progress: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'In Progress' },
+            in_progress: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'In Progress' },
             active: { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Active' },
             inactive: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Inactive' },
             completed: { color: 'bg-green-100 text-green-800 border-green-200', label: 'Completed' },
