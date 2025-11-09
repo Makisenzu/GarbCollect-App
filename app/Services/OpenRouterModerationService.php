@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class OpenRouterModerationService
 {
@@ -107,11 +108,70 @@ class OpenRouterModerationService
 
     private function basicContentFilter(string $content): array
     {
-        $toxicWords = [
-            'fuck', 'shit', 'asshole', 'bastard', 'bitch', 'cunt', 
-            'nigger', 'retard', 'fag', 'faggot', 'kill', 'hate', 
-            'stupid', 'idiot', 'terrorist', 'suicide', 'murder'
+        $result = $this->useBadWordsPackage($content);
+        
+        if (isset($result['error'])) {
+            Log::warning('bad-words package failed, falling back to wordlist', ['error' => $result['error']]);
+            return $this->fallbackWordlistFilter($content);
+        }
+        
+        if ($result['flagged']) {
+            Log::info('Content flagged by bad-words package');
+            
+            return [
+                'flagged' => true,
+                'categories' => ['profanity' => true],
+                'category_scores' => ['profanity' => 0.9],
+                'filter_type' => 'bad-words',
+                'cleaned' => $result['cleaned'] ?? '',
+                'reason' => 'Contains inappropriate language'
+            ];
+        }
+
+        return [
+            'flagged' => false,
+            'categories' => [],
+            'category_scores' => [],
+            'filter_type' => 'bad-words',
+            'reason' => 'Content appears appropriate'
         ];
+    }
+
+    private function useBadWordsPackage(string $content): array
+    {
+        try {
+            $scriptPath = base_path('moderate-content.js');
+            
+            if (!file_exists($scriptPath)) {
+                return ['error' => 'Script not found'];
+            }
+            
+            $escapedContent = escapeshellarg($content);
+            $command = "node \"{$scriptPath}\" {$escapedContent} 2>&1";
+            
+            $output = shell_exec($command);
+            
+            if ($output === null) {
+                return ['error' => 'Command execution failed'];
+            }
+            
+            $result = json_decode(trim($output), true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('Failed to parse bad-words output', ['output' => $output]);
+                return ['error' => 'Invalid JSON response'];
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('bad-words package error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    private function fallbackWordlistFilter(string $content): array
+    {
+        $toxicWords = $this->loadProfanityWordlist();
         
         $contentLower = strtolower($content);
         $flagged = false;
@@ -136,7 +196,7 @@ class OpenRouterModerationService
         }
 
         if ($flagged) {
-            Log::info('Content flagged by basic filter', [
+            Log::info('Content flagged by fallback wordlist filter', [
                 'found_words' => $foundWords,
                 'categories' => $categories
             ]);
@@ -145,7 +205,7 @@ class OpenRouterModerationService
                 'flagged' => true,
                 'categories' => $categories,
                 'category_scores' => array_fill_keys(array_keys($categories), 0.9),
-                'filter_type' => 'basic',
+                'filter_type' => 'wordlist',
                 'found_words' => $foundWords,
                 'reason' => 'Contains inappropriate language: ' . implode(', ', $foundWords)
             ];
@@ -155,7 +215,7 @@ class OpenRouterModerationService
             'flagged' => false,
             'categories' => [],
             'category_scores' => [],
-            'filter_type' => 'basic',
+            'filter_type' => 'wordlist',
             'reason' => 'Content appears appropriate'
         ];
     }
@@ -174,6 +234,26 @@ class OpenRouterModerationService
         } catch (\Exception $e) {
             Log::error('Error fetching OpenRouter models: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    private function loadProfanityWordlist(): array
+    {
+        try {
+            $wordlistPath = storage_path('app/profanity-wordlist.txt');
+            
+            if (!file_exists($wordlistPath)) {
+                Log::warning('Profanity wordlist file not found, using default words');
+                return ['fuck', 'shit', 'asshole', 'bastard', 'bitch'];
+            }
+            
+            $content = file_get_contents($wordlistPath);
+            $words = array_filter(array_map('trim', explode("\n", $content)));
+            
+            return array_values($words);
+        } catch (\Exception $e) {
+            Log::error('Error loading profanity wordlist: ' . $e->getMessage());
+            return ['fuck', 'shit', 'asshole', 'bastard', 'bitch'];
         }
     }
 }
