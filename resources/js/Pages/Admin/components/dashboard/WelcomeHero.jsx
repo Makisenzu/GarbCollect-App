@@ -151,23 +151,6 @@ const CalendarWidget = ({ schedules }) => {
             <div className="grid grid-cols-7 gap-2">
                 {days}
             </div>
-
-            <div className="mt-5 pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        <span className="text-gray-600">Active</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span className="text-gray-600">Completed</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                        <span className="text-gray-600">Failed</span>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };
@@ -227,8 +210,6 @@ export function WelcomeHero({ schedules }) {
                 const filename = `GarbCollect_Report_${reportConfig.type}_${timestamp}.csv`;
                 
                 downloadCSV(csv, filename);
-                
-                alert(`Report generated successfully!\n\nSummary:\n- Total Schedules: ${response.data.summary.total_schedules}\n- Total Sacks: ${response.data.summary.total_sacks}\n- Completed: ${response.data.summary.completed}\n- Active: ${response.data.summary.active}\n- Failed: ${response.data.summary.failed}`);
                 
                 setShowModal(false);
                 setReportConfig({ type: 'all', start_date: '', end_date: '' });
