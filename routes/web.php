@@ -22,6 +22,8 @@ use App\Http\Controllers\User\PublicScheduleController;
 use App\Http\Controllers\admin\truck\ScheduleController;
 use App\Http\Controllers\admin\dashboard\DashboardController;
 use App\Http\Controllers\admin\LocationRoute\RouteController;
+use App\Mail\Gmail;
+use Illuminate\Support\Facades\Mail;
 
 Route::get('/', function () {
     return Inertia::render('Users/Home');
@@ -44,6 +46,15 @@ Route::get('/employee/login', function () {
 
 Route::get('/testMap', function () {
     return Inertia::render('Users/TestingMap');
+});
+
+
+Route::get('/testRoute', function () {
+    $name = "GARBCOLLECT";
+
+    Mail::to('denmarkbarbarona13@gmail.com')->send(new Gmail($name));
+    
+    return "Email sent successfully!";
 });
 
 //Public route
