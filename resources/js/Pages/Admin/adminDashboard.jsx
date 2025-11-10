@@ -22,7 +22,6 @@ export default function AdminDashboard() {
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Active Drivers</p>
                                     <p className="text-3xl font-semibold text-gray-900 mt-2">{driverCount}</p>
-                                    <p className="text-xs text-green-600 mt-2">+2 from yesterday</p>
                                 </div>
                                 <div className="p-3 bg-blue-50 rounded-lg">
                                     <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,7 +36,6 @@ export default function AdminDashboard() {
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Collection Sites</p>
                                     <p className="text-3xl font-semibold text-gray-900 mt-2">{siteCount}</p>
-                                    <p className="text-xs text-green-600 mt-2">+5 this week</p>
                                 </div>
                                 <div className="p-3 bg-green-50 rounded-lg">
                                     <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,7 +51,6 @@ export default function AdminDashboard() {
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
                                     <p className="text-3xl font-semibold text-gray-900 mt-2">{pendingCount}</p>
-                                    <p className="text-xs text-green-600 mt-2">+12% this month</p>
                                 </div>
                                 <div className="p-3 bg-purple-50 rounded-lg">
                                     <FaCommentDots className="w-6 h-6 text-purple-600"/>
@@ -66,7 +63,6 @@ export default function AdminDashboard() {
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Average Rating</p>
                                     <p className="text-3xl font-semibold text-gray-900 mt-2">4.8</p>
-                                    <p className="text-xs text-green-600 mt-2">+0.2 from last month</p>
                                 </div>
                                 <div className="p-3 bg-amber-50 rounded-lg">
                                     <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

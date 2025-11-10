@@ -124,8 +124,6 @@ class DriverController extends Controller
     
             $data = Schedule::create($assignData);
             event(new NewSchedule($data));
-    
-            // Send email notification to the driver
             $this->sendDriverAssignmentEmail($driver, $data);
     
             return response()->json([

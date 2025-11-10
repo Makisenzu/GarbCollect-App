@@ -48,15 +48,6 @@ Route::get('/testMap', function () {
     return Inertia::render('Users/TestingMap');
 });
 
-
-Route::get('/testRoute', function () {
-    $name = "GARBCOLLECT";
-
-    Mail::to('denmarkbarbarona13@gmail.com')->send(new Gmail($name));
-    
-    return "Email sent successfully!";
-});
-
 //Public route
 Route::post('/reviews', [ReviewController::class, 'store']);
 
