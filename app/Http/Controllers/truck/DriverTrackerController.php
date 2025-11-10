@@ -249,7 +249,7 @@ class DriverTrackerController extends Controller
 
 public function getScheduleSites($scheduleId){
     try {
-        $schedule = Schedule::with(['barangay.puroks.sites'])->find($scheduleId);
+        $schedule = Schedule::with(['barangay.puroks.sites', 'collections.site'])->find($scheduleId);
         
         if (!$schedule) {
             return response()->json([
@@ -258,15 +258,21 @@ public function getScheduleSites($scheduleId){
             ], 404);
         }
 
-        $sites = $schedule->barangay->puroks->flatMap(function($purok) {
-            return $purok->sites->map(function($site) {
+        // Get collection queue for this schedule
+        $collectionQueue = $schedule->collections->keyBy('site_id');
+
+        $sites = $schedule->barangay->puroks->flatMap(function($purok) use ($collectionQueue) {
+            return $purok->sites->map(function($site) use ($collectionQueue) {
+                $queueEntry = $collectionQueue->get($site->id);
+                
                 return [
                     'id' => $site->id,
                     'site_name' => $site->site_name,
                     'latitude' => $site->latitude,
                     'longitude' => $site->longitude,
                     'type' => $site->type,
-                    'status' => $site->status,
+                    'status' => $queueEntry ? $queueEntry->status : 'unfinished',
+                    'completed_at' => $queueEntry && $queueEntry->completed_at ? $queueEntry->completed_at->toISOString() : null,
                     'purok' => $site->purok->purok_name
                 ];
             });

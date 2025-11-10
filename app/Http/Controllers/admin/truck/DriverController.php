@@ -5,6 +5,7 @@ namespace App\Http\Controllers\admin\truck;
 use Exception;
 use App\Models\User;
 use Inertia\Inertia;
+use App\Models\Site;
 use App\Models\Driver;
 use App\Models\Schedule;
 use App\Models\Baranggay;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\DriverAssignment;
+use App\Events\SiteCompletionUpdated;
 
 class DriverController extends Controller
 {
@@ -321,8 +323,20 @@ class DriverController extends Controller
 
             DB::beginTransaction();
 
-            // Delete existing entries to avoid duplicates
-            CollectionQue::where('schedule_id', $validatedData['schedule_id'])->delete();
+            // Check if collection queue already exists for this schedule
+            $existingQueueCount = CollectionQue::where('schedule_id', $validatedData['schedule_id'])->count();
+            
+            if ($existingQueueCount > 0) {
+                Log::info('Collection queue already initialized for schedule: ' . $validatedData['schedule_id']);
+                DB::commit();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Collection queue already initialized',
+                    'total_sites' => $existingQueueCount,
+                    'already_exists' => true
+                ]);
+            }
 
             // Insert all sites as unfinished
             $collectionQueEntries = [];
@@ -347,7 +361,8 @@ class DriverController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Collection queue initialized successfully',
-                'total_sites' => count($validatedData['site_id'])
+                'total_sites' => count($validatedData['site_id']),
+                'already_exists' => false
             ]);
 
         } catch (\Exception $e) {
@@ -376,6 +391,31 @@ class DriverController extends Controller
                                         ->firstOrFail();
 
             $collectionQue->markAsFinished();
+
+            // Get site and schedule details for broadcasting
+            $site = Site::find($validatedData['site_id']);
+            $schedule = Schedule::find($validatedData['schedule_id']);
+
+            // Broadcast site completion event
+            if ($site && $schedule) {
+                broadcast(new SiteCompletionUpdated(
+                    $site->id,
+                    $schedule->id,
+                    $schedule->barangay_id,
+                    'finished',
+                    now()->toISOString(),
+                    $site->site_name,
+                    $site->latitude,
+                    $site->longitude
+                ));
+
+                Log::info('Site completion broadcasted', [
+                    'site_id' => $site->id,
+                    'site_name' => $site->site_name,
+                    'schedule_id' => $schedule->id,
+                    'barangay_id' => $schedule->barangay_id
+                ]);
+            }
 
             // Check if all sites are completed
             $allCompleted = CollectionQue::allSitesCompleted($validatedData['schedule_id']);

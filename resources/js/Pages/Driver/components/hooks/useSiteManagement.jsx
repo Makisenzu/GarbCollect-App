@@ -277,27 +277,73 @@ export const useSiteManagement = ({
             const activeSites = sitesResponse.data.data;
             console.log('Sites loaded:', activeSites.length);
             
-            const station = activeSites.find(site => site.type === 'station');
-            const regularSites = activeSites.filter(site => site.type !== 'station');
-            
-            if (station) {
-              setStationLocation({
-                ...station,
-                coordinates: [parseFloat(station.longitude), parseFloat(station.latitude)]
-              });
-              
-              if (regularSites.length > 0) {
-                const nearestToStation = findNearestSiteToStation(station, regularSites);
-                setNearestSiteToStation(nearestToStation);
-                console.log('Nearest site to station found:', nearestToStation?.site_name);
+            // Fetch collection queue progress to get completion status
+            try {
+              const progressResponse = await axios.get(`/progress/${scheduleId}`);
+              if (progressResponse.data.success) {
+                const queueData = progressResponse.data.progress;
+                const completedSiteIds = new Set(
+                  queueData
+                    .filter(q => q.status === 'finished')
+                    .map(q => q.site_id)
+                );
                 
-                const optimizedOrder = optimizeSiteOrderFromStation(station, regularSites);
-                setOptimizedSiteOrder(optimizedOrder);
-                setCurrentSiteIndex(0);
+                console.log('Collection queue loaded, completed sites:', completedSiteIds.size);
+                setCompletedSites(completedSiteIds);
+                
+                // Merge completion status with site data
+                const sitesWithStatus = activeSites.map(site => ({
+                  ...site,
+                  collectionStatus: queueData.find(q => q.site_id === site.id)?.status || 'unfinished'
+                }));
+                
+                const station = sitesWithStatus.find(site => site.type === 'station');
+                const regularSites = sitesWithStatus.filter(site => site.type !== 'station');
+                
+                if (station) {
+                  setStationLocation({
+                    ...station,
+                    coordinates: [parseFloat(station.longitude), parseFloat(station.latitude)]
+                  });
+                  
+                  if (regularSites.length > 0) {
+                    const nearestToStation = findNearestSiteToStation(station, regularSites);
+                    setNearestSiteToStation(nearestToStation);
+                    console.log('Nearest site to station found:', nearestToStation?.site_name);
+                    
+                    const optimizedOrder = optimizeSiteOrderFromStation(station, regularSites);
+                    setOptimizedSiteOrder(optimizedOrder);
+                    setCurrentSiteIndex(0);
+                  }
+                }
+                
+                setSiteLocations(regularSites);
               }
+            } catch (progressError) {
+              console.warn('Could not fetch collection queue progress, using default statuses');
+              
+              const station = activeSites.find(site => site.type === 'station');
+              const regularSites = activeSites.filter(site => site.type !== 'station');
+              
+              if (station) {
+                setStationLocation({
+                  ...station,
+                  coordinates: [parseFloat(station.longitude), parseFloat(station.latitude)]
+                });
+                
+                if (regularSites.length > 0) {
+                  const nearestToStation = findNearestSiteToStation(station, regularSites);
+                  setNearestSiteToStation(nearestToStation);
+                  console.log('Nearest site to station found:', nearestToStation?.site_name);
+                  
+                  const optimizedOrder = optimizeSiteOrderFromStation(station, regularSites);
+                  setOptimizedSiteOrder(optimizedOrder);
+                  setCurrentSiteIndex(0);
+                }
+              }
+              
+              setSiteLocations(regularSites);
             }
-            
-            setSiteLocations(regularSites);
           }
         } catch (sitesError) {
           console.error('Error fetching sites:', sitesError);

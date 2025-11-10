@@ -47,10 +47,18 @@ export const useResidentMap = ({ mapboxKey, barangayId }) => {
         updateScheduleStatus(e);
       });
 
+    // Listen for site completion updates
+    window.Echo.channel(`site-completion.${barangayId}`)
+      .listen('SiteCompletionUpdated', (e) => {
+        console.log('Site completion update received:', e);
+        handleSiteCompletion(e);
+      });
+
     return () => {
       if (window.Echo) {
         window.Echo.leave(`driver-locations.${barangayId}`);
         window.Echo.leave(`schedule-updates.${barangayId}`);
+        window.Echo.leave(`site-completion.${barangayId}`);
       }
     };
   }, [barangayId]);
@@ -116,6 +124,36 @@ export const useResidentMap = ({ mapboxKey, barangayId }) => {
     }
   };
 
+  const handleSiteCompletion = (data) => {
+    console.log('Handling site completion:', data);
+    
+    // Update site locations state with completion status
+    setSiteLocations(prevSites => {
+      return prevSites.map(site => {
+        if (site.id === data.site_id) {
+          return {
+            ...site,
+            status: 'finished',
+            completed_at: data.completed_at
+          };
+        }
+        return site;
+      });
+    });
+
+    // Re-render markers with updated status
+    updateSiteMarkers(siteLocations.map(site => {
+      if (site.id === data.site_id) {
+        return {
+          ...site,
+          status: 'finished',
+          completed_at: data.completed_at
+        };
+      }
+      return site;
+    }));
+  };
+
   const updateSiteMarkers = (sites) => {
     // Clear existing site markers
     siteMarkers.forEach(marker => marker.remove());
@@ -126,7 +164,7 @@ export const useResidentMap = ({ mapboxKey, barangayId }) => {
       const markerElement = document.createElement('div');
       markerElement.className = 'site-marker';
       
-      const isCompleted = site.status === 'completed';
+      const isCompleted = site.status === 'finished';
       const isCurrent = site.status === 'in_progress';
       
       markerElement.innerHTML = `
