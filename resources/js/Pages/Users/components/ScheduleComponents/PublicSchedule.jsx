@@ -257,24 +257,28 @@ const PublicSchedule = () => {
     );
   };
 
-  // UPDATED: Filter week schedule to only show active/ongoing
+  // UPDATED: Get week schedules (show all future schedules, not just active)
   const getWeekSchedule = () => {
     if (!selectedBarangay) return [];
-    return transformScheduleData().filter(s => 
-      isActiveOrOngoingSchedule(s.originalData)
-    );
+    
+    const now = new Date();
+    const oneWeekFromNow = new Date();
+    oneWeekFromNow.setDate(now.getDate() + 7);
+    
+    return transformScheduleData().filter(schedule => {
+      const scheduleDate = new Date(schedule.collection_date);
+      return scheduleDate >= now && scheduleDate <= oneWeekFromNow;
+    });
   };
 
-  // UPDATED: Filter month schedule to only show active/ongoing
+  // UPDATED: Get month schedules (show all schedules in the month)
   const getMonthSchedule = () => {
     if (!selectedBarangay) {
       console.log('No barangay selected');
       return [];
     }
     
-    const transformedData = transformScheduleData().filter(s => 
-      isActiveOrOngoingSchedule(s.originalData)
-    );
+    const transformedData = transformScheduleData();
     
     const currentMonthSchedules = transformedData
       .filter(schedule => {
@@ -292,6 +296,7 @@ const PublicSchedule = () => {
         };
       });
 
+    console.log('Month schedules:', currentMonthSchedules.length);
     return currentMonthSchedules;
   };
 
@@ -413,8 +418,8 @@ const PublicSchedule = () => {
         <div className="max-w-2xl mx-auto mb-12">
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">Find Active Collections</h2>
-              <p className="text-gray-600 text-lg">Select your barangay to view ongoing collection schedules</p>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">Find Collection Schedules</h2>
+              <p className="text-gray-600 text-lg">Select your barangay to view collection schedules</p>
             </div>
             <Select
               value={selectedBarangay}
@@ -537,8 +542,8 @@ const PublicSchedule = () => {
                 {activeTab === "week" && (
                   <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                     <div className="p-6 border-b border-gray-100">
-                      <h2 className="text-2xl font-bold text-gray-800">Active Collections - {selectedBarangay.label}</h2>
-                      <p className="text-gray-600">Ongoing and active collection schedules</p>
+                      <h2 className="text-2xl font-bold text-gray-800">This Week's Collections - {selectedBarangay.label}</h2>
+                      <p className="text-gray-600">Schedules for the next 7 days</p>
                     </div>
                     <div className="p-6">
                       {getWeekSchedule().length > 0 ? (
@@ -554,17 +559,27 @@ const PublicSchedule = () => {
                                       Start - {schedule.time}
                                     </p>
                                     <span className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${getStatusStyles(schedule.status)}`}>
-                                      {schedule.status === 'progress' ? 'In Progress' : 'Active'}
+                                      {schedule.status === 'progress' ? 'In Progress' : 
+                                       schedule.status === 'active' ? 'Active' :
+                                       schedule.status === 'upcoming' ? 'Upcoming' :
+                                       schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                                     </span>
                                   </div>
                                   <div className="text-right">
-                                    <button 
-                                      onClick={() => handleTrackSchedule(schedule)}
-                                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
-                                    >
-                                      <MapPin className="h-4 w-4" />
-                                      Track Live
-                                    </button>
+                                    {(schedule.status === 'active' || schedule.status === 'progress') ? (
+                                      <button 
+                                        onClick={() => handleTrackSchedule(schedule)}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
+                                      >
+                                        <MapPin className="h-4 w-4" />
+                                        Track Live
+                                      </button>
+                                    ) : (
+                                      <div className="text-gray-500 text-sm">
+                                        {schedule.timeRemaining.days > 0 && `${schedule.timeRemaining.days}d `}
+                                        {schedule.timeRemaining.hours}h {schedule.timeRemaining.minutes}m
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -578,8 +593,9 @@ const PublicSchedule = () => {
                         </>
                       ) : (
                         <div className="text-center py-12">
-                          <p className="text-xl font-semibold text-gray-600">No active collections this week</p>
-                          <p className="text-gray-500 mt-2">Check the today tab for current collections</p>
+                          <CalendarDays className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                          <p className="text-xl font-semibold text-gray-600">No collections scheduled this week</p>
+                          <p className="text-gray-500 mt-2">Check the month view for upcoming schedules</p>
                         </div>
                       )}
                     </div>
@@ -591,7 +607,7 @@ const PublicSchedule = () => {
                     <div className="p-6 border-b border-gray-100">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h2 className="text-2xl font-bold text-gray-800">Active Collections - {selectedBarangay.label}</h2>
+                          <h2 className="text-2xl font-bold text-gray-800">Monthly Schedule - {selectedBarangay.label}</h2>
                           <p className="text-gray-600">{monthNames[viewMonth]} {viewYear}</p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -617,7 +633,7 @@ const PublicSchedule = () => {
                       </div>
                       
                       <div className="mt-8">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4">Active Collection Details for {monthNames[viewMonth]} {viewYear}</h3>
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Collection Schedule for {monthNames[viewMonth]} {viewYear}</h3>
                         {getMonthSchedule().length > 0 ? (
                           <div className="space-y-4">
                             {getMonthSchedule().map((schedule, index) => (
@@ -630,17 +646,27 @@ const PublicSchedule = () => {
                                       Start - {schedule.time}
                                     </p>
                                     <span className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${getStatusStyles(schedule.status)}`}>
-                                      {schedule.status === 'progress' ? 'In Progress' : 'Active'}
+                                      {schedule.status === 'progress' ? 'In Progress' : 
+                                       schedule.status === 'active' ? 'Active' :
+                                       schedule.status === 'upcoming' ? 'Upcoming' :
+                                       schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                                     </span>
                                   </div>
                                   <div className="text-right">
-                                    <button 
-                                      onClick={() => handleTrackSchedule(schedule)}
-                                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
-                                    >
-                                      <MapPin className="h-4 w-4" />
-                                      Track Live
-                                    </button>
+                                    {(schedule.status === 'active' || schedule.status === 'progress') ? (
+                                      <button 
+                                        onClick={() => handleTrackSchedule(schedule)}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
+                                      >
+                                        <MapPin className="h-4 w-4" />
+                                        Track Live
+                                      </button>
+                                    ) : (
+                                      <div className="text-gray-500 text-sm">
+                                        {schedule.timeRemaining.days > 0 && `${schedule.timeRemaining.days}d `}
+                                        {schedule.timeRemaining.hours}h {schedule.timeRemaining.minutes}m
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -649,8 +675,8 @@ const PublicSchedule = () => {
                         ) : (
                           <div className="text-center py-8">
                             <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-lg font-semibold text-gray-600">No active collections for {monthNames[viewMonth]} {viewYear}</p>
-                            <p className="text-gray-500 mt-2">Check the today tab for current collections</p>
+                            <p className="text-lg font-semibold text-gray-600">No collections scheduled for {monthNames[viewMonth]} {viewYear}</p>
+                            <p className="text-gray-500 mt-2">Try navigating to other months</p>
                           </div>
                         )}
                       </div>
