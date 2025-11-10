@@ -1,6 +1,6 @@
 // File: Resident.jsx (Resident Map Tracking Component)
 import { useRef, useEffect } from 'react';
-import { useResidentMap } from './useResidentMap';
+import { useResidentMap } from './useResident';
 import { 
   MapPin, 
   Clock, 
