@@ -21,8 +21,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Broadcast::routes(['middleware' => ['web']]);
-        require base_path('routes/channels.php');
         Vite::prefetch(concurrency: 3);
     }
 }
