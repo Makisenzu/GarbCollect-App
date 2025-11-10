@@ -14,6 +14,8 @@ use App\Models\CollectionQue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\DriverAssignment;
 
 class DriverController extends Controller
 {
@@ -60,6 +62,30 @@ class DriverController extends Controller
         ]);
     }
 
+    protected function sendDriverAssignmentEmail($driver, $schedule)
+    {
+        try {
+            $driverUser = $driver->user;
+            $barangay = Baranggay::find($schedule->barangay_id);
+            
+            if ($driverUser && $driverUser->email) {
+                $driverName = $driverUser->name . ' ' . $driverUser->lastname;
+                $barangayName = $barangay->baranggay_name ?? 'N/A';
+                $collectionDate = $schedule->collection_date;
+                $collectionTime = $schedule->collection_time;
+                $notes = $schedule->notes ?? 'No additional notes';
+                
+                Mail::to($driverUser->email)->send(
+                    new DriverAssignment($driverName, $barangayName, $collectionDate, $collectionTime, $notes)
+                );
+                
+                Log::info('Driver assignment email sent to: ' . $driverUser->email);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send driver assignment email: ' . $e->getMessage());
+        }
+    }
+
     public function assignDriver(Request $request) {
         try {
             $assignData = $request->validate([
@@ -98,6 +124,9 @@ class DriverController extends Controller
     
             $data = Schedule::create($assignData);
             event(new NewSchedule($data));
+    
+            // Send email notification to the driver
+            $this->sendDriverAssignmentEmail($driver, $data);
     
             return response()->json([
                 'success' => true,
