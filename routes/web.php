@@ -107,6 +107,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //Admin Routes
     Route::middleware('roles:admin')->group(function () {
         Route::get('Admin/adminDashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+        Route::post('/admin/generate-report', [DashboardController::class, 'generateReport'])->name('admin.generateReport');
 
 
         //Driver Routes
