@@ -5,7 +5,7 @@ import { FaCommentDots } from "react-icons/fa";
 import { WelcomeHero } from './components/dashboard/WelcomeHero';
 
 export default function AdminDashboard() {
-    const {drivers, driverCount, sites, siteCount, driverTotal, pendingCount, schedules} = usePage().props;
+    const {drivers, driverCount, sites, siteCount, driverTotal, pendingCount, schedules, chartData, garbageTypes} = usePage().props;
     
     return (
         <AuthenticatedLayout header="Dashboard">
@@ -75,8 +75,8 @@ export default function AdminDashboard() {
                     
                     {/* Charts Grid */}
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                        <CollectionChart />
-                        <WasteChart />
+                        <CollectionChart chartData={chartData} />
+                        <WasteChart chartData={chartData} garbageTypes={garbageTypes} />
                     </div>
                 </div>
             </div>

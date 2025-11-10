@@ -11,6 +11,7 @@ use App\Models\Review;
 use App\Models\Schedule;
 use App\Models\Report;
 use App\Models\Baranggay;
+use App\Models\Garbage;
 
 class DashboardController extends Controller
 {
@@ -28,6 +29,91 @@ class DashboardController extends Controller
         $sites = Site::with(['purok'])->get();
         $pending = Review::with(['purok', 'category'])->get();
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
+        
+        // Generate weekly collection data (last 7 days)
+        $weeklyData = [];
+        $daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $dayName = $daysOfWeek[$date->dayOfWeek];
+            
+            $count = Schedule::whereDate('collection_date', $date->toDateString())
+                ->whereIn('status', ['completed', 'active', 'in_progress'])
+                ->count();
+            
+            $weeklyData[] = [
+                'name' => $dayName,
+                'collections' => $count
+            ];
+        }
+        
+        // Generate monthly collection data (last 4 weeks)
+        $monthlyData = [];
+        for ($i = 3; $i >= 0; $i--) {
+            $startOfWeek = now()->subWeeks($i)->startOfWeek();
+            $endOfWeek = now()->subWeeks($i)->endOfWeek();
+            
+            $count = Schedule::whereBetween('collection_date', [$startOfWeek, $endOfWeek])
+                ->whereIn('status', ['completed', 'active', 'in_progress'])
+                ->count();
+            
+            $monthlyData[] = [
+                'name' => 'Week ' . (4 - $i),
+                'collections' => $count
+            ];
+        }
+        
+        // Generate weekly waste data by garbage type
+        $garbageTypes = Garbage::all();
+        $weeklyWasteData = [];
+        
+        for ($i = 3; $i >= 0; $i--) {
+            $startOfWeek = now()->subWeeks($i)->startOfWeek();
+            $endOfWeek = now()->subWeeks($i)->endOfWeek();
+            
+            $reports = Report::whereHas('schedule', function($query) use ($startOfWeek, $endOfWeek) {
+                $query->whereBetween('collection_date', [$startOfWeek, $endOfWeek]);
+            })->with('garbage')->get();
+            
+            $weekData = ['name' => 'Week ' . (4 - $i)];
+            
+            foreach ($garbageTypes as $garbageType) {
+                $count = $reports->filter(function($report) use ($garbageType) {
+                    return $report->garbage_id == $garbageType->id;
+                })->sum('sack_count');
+                
+                $weekData[$garbageType->garbage_type] = $count;
+            }
+            
+            $weeklyWasteData[] = $weekData;
+        }
+        
+        // Generate monthly waste data (last 6 months)
+        $monthlyWasteData = [];
+        $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        for ($i = 5; $i >= 0; $i--) {
+            $startOfMonth = now()->subMonths($i)->startOfMonth();
+            $endOfMonth = now()->subMonths($i)->endOfMonth();
+            
+            $reports = Report::whereHas('schedule', function($query) use ($startOfMonth, $endOfMonth) {
+                $query->whereBetween('collection_date', [$startOfMonth, $endOfMonth]);
+            })->with('garbage')->get();
+            
+            $monthData = ['name' => $monthNames[$startOfMonth->month - 1]];
+            
+            foreach ($garbageTypes as $garbageType) {
+                $count = $reports->filter(function($report) use ($garbageType) {
+                    return $report->garbage_id == $garbageType->id;
+                })->sum('sack_count');
+                
+                $monthData[$garbageType->garbage_type] = $count;
+            }
+            
+            $monthlyWasteData[] = $monthData;
+        }
+        
         return Inertia::render('Admin/adminDashboard', [
             'drivers' => $drivers,
             'driverCount' => $drivers->where('status', 'active')->count(),
@@ -36,6 +122,18 @@ class DashboardController extends Controller
             'siteCount' => $sites->count(),
             'pendingCount' => $pending->count(),
             'schedules' => $schedules,
+            'chartData' => [
+                'weekly' => $weeklyData,
+                'monthly' => $monthlyData,
+                'weeklyWaste' => $weeklyWasteData,
+                'monthlyWaste' => $monthlyWasteData,
+            ],
+            'garbageTypes' => $garbageTypes->map(function($type) {
+                return [
+                    'id' => $type->id,
+                    'name' => $type->garbage_type
+                ];
+            })
         ]);
     }
 

@@ -1,27 +1,21 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
-const weeklyData = [
-  { name: "Mon", collections: 45 },
-  { name: "Tue", collections: 52 },
-  { name: "Wed", collections: 48 },
-  { name: "Thu", collections: 61 },
-  { name: "Fri", collections: 55 },
-  { name: "Sat", collections: 38 },
-  { name: "Sun", collections: 28 },
+const COLORS = [
+  '#16a34a', // green
+  '#3b82f6', // blue
+  '#f59e0b', // amber
+  '#ef4444', // red
+  '#8b5cf6', // purple
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#f97316', // orange
 ];
 
-const monthlyData = [
-  { name: "Week 1", collections: 320 },
-  { name: "Week 2", collections: 380 },
-  { name: "Week 3", collections: 410 },
-  { name: "Week 4", collections: 370 },
-];
-
-export function CollectionChart() {
+export function CollectionChart({ chartData }) {
   const [timeRange, setTimeRange] = useState('weekly');
 
-  const data = timeRange === 'weekly' ? weeklyData : monthlyData;
+  const data = timeRange === 'weekly' ? chartData.weekly : chartData.monthly;
   const title = timeRange === 'weekly' ? 'Weekly Collections' : 'Monthly Collections';
 
   return (
@@ -92,44 +86,25 @@ export function CollectionChart() {
   );
 }
 
-const weeklyWasteData = [
-  { name: "Week 1", organic: 340, recyclable: 280, general: 180 },
-  { name: "Week 2", organic: 385, recyclable: 310, general: 220 },
-  { name: "Week 3", organic: 420, recyclable: 340, general: 190 },
-  { name: "Week 4", organic: 390, recyclable: 285, general: 205 },
-];
-
-const monthlyWasteData = [
-  { name: "Jan", organic: 1450, recyclable: 1180, general: 820 },
-  { name: "Feb", organic: 1580, recyclable: 1250, general: 890 },
-  { name: "Mar", organic: 1620, recyclable: 1320, general: 910 },
-  { name: "Apr", organic: 1520, recyclable: 1210, general: 850 },
-  { name: "May", organic: 1680, recyclable: 1350, general: 940 },
-  { name: "Jun", organic: 1720, recyclable: 1420, general: 980 },
-];
-
-const CustomLegend = () => (
-  <div className="flex justify-center gap-6 mt-4">
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-sm bg-green-600"></div>
-      <span className="text-xs font-medium text-gray-700">Organic</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-sm bg-blue-500"></div>
-      <span className="text-xs font-medium text-gray-700">Recyclable</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-sm bg-gray-400"></div>
-      <span className="text-xs font-medium text-gray-700">General</span>
-    </div>
-  </div>
-);
-
-export function WasteChart() {
+export function WasteChart({ chartData, garbageTypes }) {
   const [timeRange, setTimeRange] = useState('weekly');
 
-  const data = timeRange === 'weekly' ? weeklyWasteData : monthlyWasteData;
+  const data = timeRange === 'weekly' ? chartData.weeklyWaste : chartData.monthlyWaste;
   const title = timeRange === 'weekly' ? 'Waste Categories (Weekly)' : 'Waste Categories (Monthly)';
+
+  const CustomLegend = () => (
+    <div className="flex justify-center gap-6 mt-4 flex-wrap">
+      {garbageTypes && garbageTypes.map((type, index) => (
+        <div key={type.id} className="flex items-center gap-2">
+          <div 
+            className="w-3 h-3 rounded-sm" 
+            style={{ backgroundColor: COLORS[index % COLORS.length] }}
+          ></div>
+          <span className="text-xs font-medium text-gray-700">{type.name}</span>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
@@ -185,9 +160,14 @@ export function WasteChart() {
             }}
             labelStyle={{ color: '#374151', fontWeight: 600 }}
           />
-          <Bar dataKey="organic" fill="#16a34a" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="recyclable" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="general" fill="#9ca3af" radius={[4, 4, 0, 0]} />
+          {garbageTypes && garbageTypes.map((type, index) => (
+            <Bar 
+              key={type.id}
+              dataKey={type.name} 
+              fill={COLORS[index % COLORS.length]} 
+              radius={[4, 4, 0, 0]} 
+            />
+          ))}
         </BarChart>
       </ResponsiveContainer>
       <CustomLegend />
