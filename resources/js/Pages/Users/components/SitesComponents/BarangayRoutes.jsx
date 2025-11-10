@@ -69,16 +69,16 @@ const BarangayRoutes = ({ mapboxToken }) => {
           </svg>
         </Link>
 
-        {/* Barangay Select Container */}
-        <div className="absolute top-4 left-20 z-40 bg-white rounded-lg shadow-lg p-4 min-w-64">
-          <label htmlFor="barangay_id" className="block text-sm font-medium text-gray-700 mb-2">
+        {/* Barangay Select Container - Responsive */}
+        <div className="absolute top-4 md:left-20 left-4 right-4 md:right-auto z-40 bg-white rounded-lg shadow-lg p-3 md:p-4 md:min-w-64 max-w-md">
+          <label htmlFor="barangay_id" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
             Select Barangay
           </label>
           {renderBarangaySelect(formData, setData)}
           
           {/* Selection Info */}
           {selectedBarangay && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-2 md:mt-3 space-y-2">
               <div className="p-2 bg-blue-50 rounded border border-blue-200">
                 <div className="text-xs text-blue-800">
                   {loadingSites ? (
