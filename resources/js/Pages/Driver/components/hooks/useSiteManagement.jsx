@@ -132,23 +132,42 @@ export const useSiteManagement = ({
       });
 
       if (response.data.success) {
+        console.log('Site marked as completed in database:', site.site_name);
+        
+        // Update completed sites set
         setCompletedSites(prev => {
-          const newCompleted = new Set(prev).add(site.id);
-          
-          if (response.data.all_completed) {
-            console.log('🎉 All sites completed! Task finished.');
-            generateAccessTokenAndRedirect();
-            
-            if (onTaskComplete) {
-              onTaskComplete(site);
-            }
-          } else {
-            console.log(`Progress: ${response.data.completed_sites}/${response.data.total_sites} sites completed`);
-          }
-          
+          const newCompleted = new Set(prev);
+          newCompleted.add(site.id);
+          console.log('Updated completed sites:', Array.from(newCompleted));
           return newCompleted;
         });
         
+        // Update site locations with completion status
+        setSiteLocations(prev => prev.map(s => {
+          if (s.id === site.id) {
+            return {
+              ...s,
+              collectionStatus: 'finished',
+              status: 'finished',
+              completed_at: new Date().toISOString()
+            };
+          }
+          return s;
+        }));
+        
+        // Check for all completed
+        if (response.data.all_completed) {
+          console.log('🎉 All sites completed! Task finished.');
+          generateAccessTokenAndRedirect();
+          
+          if (onTaskComplete) {
+            onTaskComplete(site);
+          }
+        } else {
+          console.log(`Progress: ${response.data.completed_sites}/${response.data.total_sites} sites completed`);
+        }
+        
+        // Handle next site navigation
         if (optimizedSiteOrder.length > 0) {
           const currentIndex = optimizedSiteOrder.findIndex(s => s.id === site.id);
           if (currentIndex !== -1 && currentIndex < optimizedSiteOrder.length - 1) {
@@ -168,11 +187,13 @@ export const useSiteManagement = ({
           }
         }
         
+        // Update markers to show completion
         updateSiteMarkers();
         showCompletionNotification(site.site_name);
       }
     } catch (error) {
       console.error('Error marking site as completed:', error);
+      console.error('Error details:', error.response?.data);
     }
   };
 
@@ -422,6 +443,82 @@ export const useSiteManagement = ({
       initializeCollectionQueue();
     }
   }, [siteLocations, scheduleId]);
+
+  // Listen for site completion updates from other sources (e.g., admin updates)
+  useEffect(() => {
+    if (!activeSchedule?.barangay_id || !scheduleId) return;
+
+    console.log('Setting up site completion listener for barangay:', activeSchedule.barangay_id);
+
+    const channelName = `site-completion.${activeSchedule.barangay_id}`;
+    const scheduleChannelName = `site-completion-schedule.${scheduleId}`;
+
+    window.Echo.channel(channelName)
+      .listen('SiteCompletionUpdated', (e) => {
+        console.log('Site completion update received:', e);
+        
+        if (e.schedule_id === scheduleId) {
+          // Update completed sites
+          setCompletedSites(prev => {
+            const newSet = new Set(prev);
+            newSet.add(e.site_id);
+            console.log('Site completion broadcast received, updated completed sites:', Array.from(newSet));
+            return newSet;
+          });
+          
+          // Update site locations with completion status
+          setSiteLocations(prev => prev.map(site => {
+            if (site.id === e.site_id) {
+              return {
+                ...site,
+                collectionStatus: 'finished',
+                status: 'finished',
+                completed_at: e.completed_at
+              };
+            }
+            return site;
+          }));
+          
+          // Update markers
+          updateSiteMarkers();
+        }
+      });
+
+    window.Echo.channel(scheduleChannelName)
+      .listen('SiteCompletionUpdated', (e) => {
+        console.log('Schedule-specific site completion update:', e);
+        
+        // Update completed sites
+        setCompletedSites(prev => {
+          const newSet = new Set(prev);
+          newSet.add(e.site_id);
+          return newSet;
+        });
+        
+        // Update site locations
+        setSiteLocations(prev => prev.map(site => {
+          if (site.id === e.site_id) {
+            return {
+              ...site,
+              collectionStatus: 'finished',
+              status: 'finished',
+              completed_at: e.completed_at
+            };
+          }
+          return site;
+        }));
+        
+        updateSiteMarkers();
+      });
+
+    return () => {
+      if (window.Echo) {
+        window.Echo.leave(channelName);
+        window.Echo.leave(scheduleChannelName);
+        console.log('Left site completion channels');
+      }
+    };
+  }, [activeSchedule?.barangay_id, scheduleId]);
 
   return {
     siteLocations,

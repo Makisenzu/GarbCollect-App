@@ -10,6 +10,7 @@ class CollectionQue extends Model
         'schedule_id',
         'site_id',
         'status',
+        'completed_at',
     ];
 
     protected $casts = [
