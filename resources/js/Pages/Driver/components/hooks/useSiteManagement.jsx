@@ -125,14 +125,10 @@ export const useSiteManagement = ({
   const markSiteAsCompleted = async (site, index) => {
     console.log(`Site reached: ${site.site_name}`);
     
-    if (!site.collection_id) {
-      console.error('Cannot mark site as completed: missing collection_id');
-      return;
-    }
-    
     try {
-      const response = await axios.post('/schedule/site/complete', {
-        collection_id: site.collection_id
+      const response = await axios.post('/mark-completed', {
+        schedule_id: scheduleId,
+        site_id: site.id
       });
 
       if (response.data.success) {
@@ -153,7 +149,7 @@ export const useSiteManagement = ({
               ...s,
               collectionStatus: 'finished',
               status: 'finished',
-              completed_at: response.data.data.completed_at || new Date().toISOString()
+              completed_at: new Date().toISOString()
             };
           }
           return s;

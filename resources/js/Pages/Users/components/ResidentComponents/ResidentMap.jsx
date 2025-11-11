@@ -1020,13 +1020,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
             console.log('Schedule update received:', e);
             updateScheduleData(e.schedule);
           });
-
-        // NEW: Listen for site completion updates
-        echo.channel(`site-completion.${barangayId}`)
-          .listen('SiteCompletionUpdated', (e) => {
-            console.log('Site completion update received:', e);
-            updateSiteCompletion(e);
-          });
   
         setConnectionStatus('connected');
         await loadInitialData();
@@ -1068,7 +1061,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       if (echo) {
         echo.leave(`driver-locations.${barangayId}`);
         echo.leave(`schedule-updates.${barangayId}`);
-        echo.leave(`site-completion.${barangayId}`);
       }
     };
   }, [barangayId, scheduleId]);
@@ -1228,31 +1220,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     setCurrentSchedule(scheduleData);
   };
 
-  const updateSiteCompletion = (completionData) => {
-    console.log('Updating site completion status:', completionData);
-    
-    // Update the site in the siteLocations array
-    setSiteLocations(prevSites => 
-      prevSites.map(site => {
-        if (site.id === completionData.site_id) {
-          return {
-            ...site,
-            status: completionData.status,
-            completed_at: completionData.completed_at
-          };
-        }
-        return site;
-      })
-    );
-
-    // Force update the markers
-    if (mapInitialized) {
-      setTimeout(() => {
-        updateSiteMarkers(siteLocations);
-      }, 100);
-    }
-  };
-
   const updateSiteMarkers = (sites) => {
     if (!map.current || !mapInitialized) {
       return;
@@ -1273,7 +1240,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         const markerElement = document.createElement('div');
         markerElement.className = 'site-marker';
         
-        const isCompleted = site.status === 'finished' || site.status === 'completed';
+        const isCompleted = site.status === 'completed';
         const isCurrent = site.status === 'in_progress';
         const isStation = site.type === 'station';
         const purokName = site.purok_name || site.site_name || 'Site';

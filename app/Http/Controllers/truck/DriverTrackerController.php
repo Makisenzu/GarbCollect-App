@@ -7,7 +7,6 @@ use App\Models\Driver;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
 use App\Events\DriverLocation;
-use App\Events\SiteCompletionUpdated;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -270,7 +269,6 @@ public function getScheduleSites($scheduleId){
                 'status' => $collection->status,
                 'completed_at' => $collection->completed_at ? $collection->completed_at->toISOString() : null,
                 'purok' => $collection->site->purok->purok_name ?? 'N/A',
-                'purok_name' => $collection->site->purok->purok_name ?? 'N/A',
                 'collection_id' => $collection->id
             ];
         });
@@ -285,58 +283,6 @@ public function getScheduleSites($scheduleId){
         return response()->json([
             'success' => false,
             'message' => 'Error fetching sites: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-public function markSiteAsCompleted(Request $request){
-    $request->validate([
-        'collection_id' => 'required|exists:collection_ques,id',
-    ]);
-
-    try {
-        $collection = \App\Models\CollectionQue::findOrFail($request->collection_id);
-        
-        $collection->markAsFinished();
-
-        // Load the site and schedule relationships
-        $collection->load(['site', 'schedule']);
-
-        Log::info('Site marked as completed', [
-            'collection_id' => $collection->id,
-            'site_id' => $collection->site_id,
-            'schedule_id' => $collection->schedule_id
-        ]);
-
-        // Broadcast the site completion to residents
-        broadcast(new SiteCompletionUpdated(
-            $collection->site_id,
-            $collection->schedule_id,
-            $collection->schedule->barangay_id,
-            $collection->status,
-            $collection->completed_at->toISOString(),
-            $collection->site->site_name,
-            $collection->site->latitude,
-            $collection->site->longitude
-        ));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Site marked as completed',
-            'data' => [
-                'collection_id' => $collection->id,
-                'site_id' => $collection->site_id,
-                'status' => $collection->status,
-                'completed_at' => $collection->completed_at->toISOString()
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Failed to mark site as completed: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to mark site as completed: ' . $e->getMessage()
         ], 500);
     }
 }
