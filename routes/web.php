@@ -70,6 +70,7 @@ Route::get('/public/active-schedules/{barangayId?}', [DriverTrackerController::c
 Route::get('/barangay/{barangayId}/current-schedule', [DriverTrackerController::class, 'getCurrentSchedule']);
 Route::get('/schedule/{scheduleId}/sites', [DriverTrackerController::class, 'getScheduleSites']);
 Route::get('/schedule/{scheduleId}/driver-location', [DriverTrackerController::class, 'getDriverLocation']);
+Route::post('/schedule/site/complete', [DriverTrackerController::class, 'markSiteAsCompleted']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     //Employee routes
