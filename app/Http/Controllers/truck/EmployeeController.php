@@ -71,45 +71,16 @@ class EmployeeController extends Controller
 
 public function getActiveSites($barangayId)
 {
-    // Get current active schedule for this barangay
-    $schedule = Schedule::where('barangay_id', $barangayId)
-        ->whereIn('status', ['active', 'in_progress', 'progress'])
-        ->whereDate('collection_date', today())
-        ->with(['collections.site.purok'])
-        ->first();
-
-    if (!$schedule) {
-        return response()->json([
-            'success' => false,
-            'message' => 'No active schedule found for this barangay',
-            'data' => []
-        ]);
-    }
-
-    // Get sites from collection queue
-    $sites = $schedule->collections->map(function($collection) {
-        return [
-            'id' => $collection->site->id,
-            'site_name' => $collection->site->site_name,
-            'latitude' => $collection->site->latitude,
-            'longitude' => $collection->site->longitude,
-            'type' => $collection->site->type,
-            'status' => $collection->status,
-            'completed_at' => $collection->completed_at ? $collection->completed_at->toISOString() : null,
-            'purok' => [
-                'purok_name' => $collection->site->purok->purok_name ?? 'N/A',
-                'baranggay' => [
-                    'baranggay_name' => $collection->site->purok->baranggay->baranggay_name ?? 'N/A'
-                ]
-            ],
-            'collection_id' => $collection->id
-        ];
-    });
+    $sites = Site::whereHas('purok.baranggay', function($query) use ($barangayId) {
+        $query->where('id', $barangayId);
+    })
+    ->where('status', 'active')
+    ->with(['purok.baranggay'])
+    ->get();
 
     return response()->json([
         'success' => true,
-        'data' => $sites,
-        'schedule_id' => $schedule->id
+        'data' => $sites
     ]);
 }
 

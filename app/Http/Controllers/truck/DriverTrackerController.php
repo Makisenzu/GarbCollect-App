@@ -249,7 +249,7 @@ class DriverTrackerController extends Controller
 
 public function getScheduleSites($scheduleId){
     try {
-        $schedule = Schedule::with(['collections.site.purok'])->find($scheduleId);
+        $schedule = Schedule::with(['barangay.puroks.sites', 'collections.site'])->find($scheduleId);
         
         if (!$schedule) {
             return response()->json([
@@ -258,19 +258,24 @@ public function getScheduleSites($scheduleId){
             ], 404);
         }
 
-        // Get sites only from collection queue
-        $sites = $schedule->collections->map(function($collection) {
-            return [
-                'id' => $collection->site->id,
-                'site_name' => $collection->site->site_name,
-                'latitude' => $collection->site->latitude,
-                'longitude' => $collection->site->longitude,
-                'type' => $collection->site->type,
-                'status' => $collection->status,
-                'completed_at' => $collection->completed_at ? $collection->completed_at->toISOString() : null,
-                'purok' => $collection->site->purok->purok_name ?? 'N/A',
-                'collection_id' => $collection->id
-            ];
+        // Get collection queue for this schedule
+        $collectionQueue = $schedule->collections->keyBy('site_id');
+
+        $sites = $schedule->barangay->puroks->flatMap(function($purok) use ($collectionQueue) {
+            return $purok->sites->map(function($site) use ($collectionQueue) {
+                $queueEntry = $collectionQueue->get($site->id);
+                
+                return [
+                    'id' => $site->id,
+                    'site_name' => $site->site_name,
+                    'latitude' => $site->latitude,
+                    'longitude' => $site->longitude,
+                    'type' => $site->type,
+                    'status' => $queueEntry ? $queueEntry->status : 'unfinished',
+                    'completed_at' => $queueEntry && $queueEntry->completed_at ? $queueEntry->completed_at->toISOString() : null,
+                    'purok' => $site->purok->purok_name
+                ];
+            });
         });
 
         return response()->json([
@@ -279,10 +284,9 @@ public function getScheduleSites($scheduleId){
         ]);
 
     } catch (\Exception $e) {
-        Log::error('Error fetching schedule sites: ' . $e->getMessage());
         return response()->json([
             'success' => false,
-            'message' => 'Error fetching sites: ' . $e->getMessage()
+            'message' => 'Error fetching sites'
         ], 500);
     }
 }
