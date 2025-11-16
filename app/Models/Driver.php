@@ -12,7 +12,6 @@ class Driver extends Model
 
     protected $fillable = [
         'user_id',
-        'barangay_id',
         'license_number',
         'status', 
         'current_latitude',
@@ -27,10 +26,6 @@ class Driver extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function barangay() {
-        return $this->belongsTo(Baranggay::class, 'barangay_id');
     }
 
     public function schedules()

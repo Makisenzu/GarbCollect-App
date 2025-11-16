@@ -8,6 +8,14 @@ import { showAlert, confirmDialog } from '@/SweetAlert';
 const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = false }) => {
   if (!show || !driver) return null;
   
+  // Debug: Log schedules to check barangay data
+  useEffect(() => {
+    if (show && schedules) {
+      console.log('Schedules data:', schedules);
+      console.log('First schedule barangay:', schedules[0]?.barangay);
+    }
+  }, [show, schedules]);
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [isSchedulesLoading, setIsSchedulesLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -195,6 +203,21 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
     }
   };
 
+  const getBarangayName = (schedule) => {
+    if (!schedule) return 'N/A';
+    
+    // Try multiple ways to get barangay name
+    if (schedule.barangay?.baranggay_name) {
+      return schedule.barangay.baranggay_name;
+    }
+    if (schedule.baranggay_name) {
+      return schedule.baranggay_name;
+    }
+    
+    console.log('Could not find barangay name for schedule:', schedule);
+    return 'N/A';
+  };
+
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
@@ -376,13 +399,12 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">Barangay Assigned</p>
-                    <p className="font-medium">{driver.barangay?.baranggay_name || 'N/A'}</p>
-                  </div>
-
-                  <div>
                     <p className="text-sm text-gray-500">Employment Date</p>
                     <p className="font-medium">{formatDate(driver.created_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Status</p>
+                    <p className="font-medium capitalize">{driver.status}</p>
                   </div>
                 </div>
               </div>
@@ -417,6 +439,9 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                             Date
                           </th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Barangay
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Collection Time
                           </th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -438,7 +463,7 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                           if (item.type === 'month-header') {
                             return (
                               <tr key={`month-${item.monthYear}`} className="bg-gray-50">
-                                <td colSpan="6" className="px-6 py-3">
+                                <td colSpan="7" className="px-6 py-3">
                                   <h5 className="font-semibold text-gray-900 text-sm">
                                     {item.monthYear}
                                   </h5>
@@ -451,6 +476,9 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                               <tr key={schedule.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                   {formatDate(schedule.collection_date)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {getBarangayName(schedule)}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                   {formatTimeTo12Hour(schedule.collection_time)}

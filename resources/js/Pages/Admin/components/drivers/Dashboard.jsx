@@ -45,19 +45,6 @@ const Dashboard = () => {
       placeholder: 'Enter license number'
     },
     {
-      name: 'barangay_id',
-      label: 'Assigned Barangay',
-      type: 'select',
-      required: true,
-      options: barangays && barangays.length > 0 
-        ? barangays.map(barangay => ({
-            value: barangay.id,
-            label: barangay.baranggay_name
-          }))
-        : [{ value: '', label: 'No barangays available' }],
-      placeholder: 'Select a barangay'
-    },
-    {
       name: 'status',
       label: 'Status',
       type: 'select',

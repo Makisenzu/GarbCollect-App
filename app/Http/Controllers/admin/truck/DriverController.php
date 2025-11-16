@@ -22,7 +22,7 @@ use App\Events\SiteCompletionUpdated;
 class DriverController extends Controller
 {
     public function index(){
-        $drivers = Driver::with('user', 'barangay')->paginate(6);
+        $drivers = Driver::with('user')->paginate(6);
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
         $barangays = Baranggay::all();
         
@@ -204,7 +204,6 @@ class DriverController extends Controller
     public function addDriver(Request $request){
         $validatedData = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
-            'barangay_id' => ['required', 'exists:baranggays,id'],
             'license_number' => ['required', 'string', 'unique:drivers,license_number', 'max:255'],
             'status' => ['required', 'in:active,inactive,pending,onduty,resigned'],
             'current_latitude' => ['numeric', 'nullable'],
