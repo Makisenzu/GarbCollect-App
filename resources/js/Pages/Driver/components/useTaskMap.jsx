@@ -35,38 +35,137 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     onTaskCancel,
     calculateDistance: routeCalculations.calculateDistance,
     showCompletionNotification: (siteName) => {
-      // Show completion notification logic from original hook
+      // Show enhanced completion notification
       console.log(`Site completed: ${siteName}`);
       
       if (isMobile) {
-        // Show mobile-friendly notification
+        // Show mobile-friendly animated notification
         const notification = document.createElement('div');
-        notification.className = 'fixed top-4 left-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 text-center';
+        notification.className = 'fixed top-20 left-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 text-center transform transition-all duration-500 animate-bounce';
+        notification.style.animation = 'slideInDown 0.5s ease-out, fadeOut 0.5s ease-in 2.5s';
         notification.innerHTML = `
-          <div class="font-semibold">✅ ${siteName} Completed!</div>
-          <div class="text-sm opacity-90">Progress: ${siteManagement.completedSites.size + 1}/${siteManagement.siteLocations.length} sites</div>
+          <div class="flex items-center justify-center gap-3">
+            <span class="text-3xl">✅</span>
+            <div class="text-left">
+              <div class="font-bold text-lg">${siteName} Completed!</div>
+              <div class="text-sm opacity-90">Progress: ${siteManagement.completedSites.size + 1}/${siteManagement.siteLocations.length} sites collected</div>
+            </div>
+          </div>
+          <div class="mt-2 h-2 bg-white bg-opacity-30 rounded-full overflow-hidden">
+            <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: ${((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100}%"></div>
+          </div>
         `;
         document.body.appendChild(notification);
         
+        // Play success sound if available
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGAg+ltryxnMpBSuBzvLaiTUIGGe77OmfTgwOUKbk8LdjHQU2kdby0HwqBSp3x/DdkUELEl+06OyqVRUKRp7g8r5wIgU0h9H004IzBh1tv+/mnEkODlat6O+xXBkIP5Xa8sV0KgUrgc7y2YszCBdnvOzpnk4MDU+m5O+5ZBwGNpHX8s98Kgcrc8fv3ZJCCxFftOjuq1YUDD6f4fK/cCMGNYfR89OCMwYcbb/v5JxKDg5VrOjusVwZCj6U2vLGdSoGK4HO8tmLMwgXZ7vs6J5PDA1Ppubw...');
+          audio.volume = 0.3;
+          audio.play().catch(() => {});
+        } catch (e) {}
+        
         setTimeout(() => {
           if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+              if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+              }
+            }, 500);
           }
         }, 3000);
       } else {
+        // Desktop notification with celebration effect
         const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.className = 'fixed top-4 right-4 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 min-w-[320px] transform transition-all duration-500';
+        notification.style.animation = 'slideInRight 0.5s ease-out';
         notification.innerHTML = `
-          <div class="font-semibold">✅ ${siteName}</div>
-          <div class="text-xs opacity-90">${siteManagement.completedSites.size + 1}/${siteManagement.siteLocations.length} sites</div>
+          <div class="flex items-start gap-3">
+            <div class="text-4xl animate-bounce">🎉</div>
+            <div class="flex-1">
+              <div class="font-bold text-lg mb-1">✅ ${siteName}</div>
+              <div class="text-sm opacity-90 mb-2">Collection completed successfully!</div>
+              <div class="flex items-center gap-2 text-xs">
+                <span class="font-semibold">${siteManagement.completedSites.size + 1}/${siteManagement.siteLocations.length} sites</span>
+                <span class="opacity-75">•</span>
+                <span>${Math.round(((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100)}% complete</span>
+              </div>
+              <div class="mt-2 h-2 bg-white bg-opacity-30 rounded-full overflow-hidden">
+                <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: ${((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100}%"></div>
+              </div>
+            </div>
+          </div>
         `;
+        
+        // Add close button
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'absolute top-2 right-2 text-white opacity-75 hover:opacity-100 transition-opacity';
+        closeBtn.innerHTML = '×';
+        closeBtn.style.fontSize = '24px';
+        closeBtn.onclick = () => {
+          if (document.body.contains(notification)) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+              if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+              }
+            }, 300);
+          }
+        };
+        notification.appendChild(closeBtn);
+        
         document.body.appendChild(notification);
         
         setTimeout(() => {
           if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+              if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+              }
+            }, 300);
           }
-        }, 3000);
+        }, 4000);
+      }
+      
+      // Add CSS animations if not already added
+      if (!document.getElementById('completion-animations')) {
+        const style = document.createElement('style');
+        style.id = 'completion-animations';
+        style.textContent = `
+          @keyframes slideInRight {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          @keyframes slideInDown {
+            from {
+              transform: translateY(-100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          @keyframes fadeOut {
+            from {
+              opacity: 1;
+            }
+            to {
+              opacity: 0;
+            }
+          }
+        `;
+        document.head.appendChild(style);
       }
     },
     updateSiteMarkers: () => {}, // Will be set from mapLayers
@@ -237,18 +336,39 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     siteManagement.completedSites
   ]);
 
-  // Route calculation when location and nearest site are available
+  // Route calculation when location and sites are available
   useEffect(() => {
     if (locationTracking.currentLocation && 
-        siteManagement.nearestSiteToStation && 
+        siteManagement.siteLocations.length > 0 && 
         mapboxSetup.mapInitialized) {
-      console.log('All data available, calculating route automatically');
-      routeCalculations.calculateRouteToNearestSiteFromStation(
-        locationTracking.currentLocation, 
-        siteManagement.nearestSiteToStation
-      );
+      console.log('All data available, calculating sequential route through all sites');
+      
+      // Calculate ONE route through ALL sites in sequence
+      const calculateSequentialRoute = async () => {
+        const aiResult = await routeCalculations.analyzeAndOptimizeRouteFromCurrentLocation(
+          locationTracking.currentLocation,
+          siteManagement.siteLocations
+        );
+        
+        if (aiResult) {
+          routeCalculations.setRouteCoordinates(aiResult.route);
+          routeCalculations.setRouteInfo({
+            duration: aiResult.duration,
+            distance: aiResult.distance,
+            formattedDuration: aiResult.formattedDuration
+          });
+          
+          setTimeout(() => {
+            if (mapboxSetup.map.current && aiResult.route.length > 0) {
+              mapLayers.addRouteLayer();
+            }
+          }, 300);
+        }
+      };
+      
+      calculateSequentialRoute();
     }
-  }, [locationTracking.currentLocation, siteManagement.nearestSiteToStation, mapboxSetup.mapInitialized]);
+  }, [locationTracking.currentLocation, siteManagement.siteLocations, mapboxSetup.mapInitialized]);
 
   // Combined methods from original hook
   const getCurrentLocation = () => {
@@ -267,9 +387,10 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
           // Use smooth update instead of basic marker
           mapLayers.smoothUpdateUserLocation(latitude, longitude);
 
-          if (siteManagement.stationLocation && siteManagement.siteLocations.length > 0) {
-            const aiResult = await routeCalculations.analyzeAndOptimizeRouteFromStation(
-              siteManagement.stationLocation, 
+          if (siteManagement.siteLocations.length > 0) {
+            // Calculate ONE sequential route from current position through ALL sites
+            const aiResult = await routeCalculations.analyzeAndOptimizeRouteFromCurrentLocation(
+              currentPos,
               siteManagement.siteLocations
             );
             
@@ -278,6 +399,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
               routeCalculations.setRouteInfo({
                 duration: aiResult.duration,
                 distance: aiResult.distance,
+                formattedDuration: aiResult.formattedDuration,
                 toSite: aiResult.nearestSite?.site_name
               });
               
@@ -385,6 +507,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     currentSiteIndex: siteManagement.currentSiteIndex,
     isTaskActive: siteManagement.isTaskActive,
     isFakeLocationActive: locationTracking.isFakeLocationActive,
+    allSiteRoutes: routeCalculations.allSiteRoutes,
 
     // Methods
     formatDuration: routeCalculations.formatDuration,

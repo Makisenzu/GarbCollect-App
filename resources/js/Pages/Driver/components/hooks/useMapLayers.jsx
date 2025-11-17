@@ -278,10 +278,20 @@ export const useMapLayers = ({
       }
     });
 
-    // Remove route layers
-    ['route', 'route-glow', 'route-direction', 'route-recalculated'].forEach(layerId => {
+    // Remove route layers (including completed segments)
+    ['route', 'route-glow', 'route-direction', 'route-recalculated', 'route-completed', 'route-completed-glow'].forEach(layerId => {
       if (map.current.getLayer(layerId)) {
         map.current.removeLayer(layerId);
+      }
+    });
+
+    // Remove all-site route layers (find all layers starting with 'route-to-site-')
+    const layers = map.current.getStyle().layers;
+    layers.forEach(layer => {
+      if (layer.id.startsWith('route-to-site-')) {
+        if (map.current.getLayer(layer.id)) {
+          map.current.removeLayer(layer.id);
+        }
       }
     });
 
@@ -292,6 +302,19 @@ export const useMapLayers = ({
     if (map.current.getSource('route')) {
       map.current.removeSource('route');
     }
+    if (map.current.getSource('route-completed')) {
+      map.current.removeSource('route-completed');
+    }
+
+    // Remove all-site route sources
+    const sources = Object.keys(map.current.getStyle().sources);
+    sources.forEach(sourceId => {
+      if (sourceId.startsWith('route-to-site-')) {
+        if (map.current.getSource(sourceId)) {
+          map.current.removeSource(sourceId);
+        }
+      }
+    });
 
     userLocationSourceRef.current = null;
     userLocationLayerRef.current = null;
@@ -328,7 +351,7 @@ export const useMapLayers = ({
     .addTo(map.current);
   };
 
-  // NEW: Enhanced route layer that shows recalculation status
+  // NEW: Enhanced route layer that shows recalculation status and completed segments
   const addRouteLayer = () => {
     if (!map.current || routeCoordinates.length === 0) {
       console.log('Cannot add route layer - missing map or route coordinates');
@@ -344,7 +367,7 @@ export const useMapLayers = ({
     }
 
     // Clear existing route layers
-    ['route', 'route-glow', 'route-direction', 'route-recalculated'].forEach(layerId => {
+    ['route', 'route-glow', 'route-direction', 'route-recalculated', 'route-completed', 'route-completed-glow'].forEach(layerId => {
       if (map.current.getLayer(layerId)) {
         map.current.removeLayer(layerId);
       }
@@ -353,24 +376,13 @@ export const useMapLayers = ({
     if (map.current.getSource('route')) {
       map.current.removeSource('route');
     }
+    if (map.current.getSource('route-completed')) {
+      map.current.removeSource('route-completed');
+    }
 
     try {
       console.log('Adding route layer to map with coordinates:', routeCoordinates.length);
       
-      map.current.addSource('route', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {
-            recalculated: routeInfo?.recalculated || false
-          },
-          geometry: {
-            type: 'LineString',
-            coordinates: routeCoordinates
-          }
-        }
-      });
-
       const barangayName = activeSchedule?.barangay_name || 'San Francisco';
       const routeColor = barangayColors[barangayName] || barangayColors['_default'];
       
@@ -380,59 +392,105 @@ export const useMapLayers = ({
       const lineWidth = isMobile ? 6 : 5;
       const glowWidth = isMobile ? 14 : 12;
 
-      // Route glow layer
-      map.current.addLayer({
-        id: 'route-glow',
-        type: 'line',
-        source: 'route',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
-        },
-        paint: {
-          'line-color': actualRouteColor,
-          'line-width': glowWidth,
-          'line-opacity': 0.4,
-          'line-blur': 8
-        }
-      });
+      // Calculate completed portion of route based on optimized site order and completed sites
+      let completedRouteCoordinates = [];
+      let remainingRouteCoordinates = routeCoordinates;
 
-      // Main route layer
-      map.current.addLayer({
-        id: 'route',
-        type: 'line',
-        source: 'route',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
-        },
-        paint: {
-          'line-color': actualRouteColor,
-          'line-width': lineWidth,
-          'line-opacity': 0.9
+      if (optimizedSiteOrder.length > 0 && completedSites.size > 0) {
+        // Find the index of the last completed site in route coordinates
+        let lastCompletedSiteIndex = -1;
+        
+        for (let i = optimizedSiteOrder.length - 1; i >= 0; i--) {
+          if (completedSites.has(optimizedSiteOrder[i].id)) {
+            lastCompletedSiteIndex = i;
+            break;
+          }
         }
-      });
 
-      // Direction arrows
-      map.current.addLayer({
-        id: 'route-direction',
-        type: 'symbol',
-        source: 'route',
-        layout: {
-          'symbol-placement': 'line',
-          'text-field': '▶',
-          'text-size': isMobile ? 14 : 12,
-          'symbol-spacing': 100
-        },
-        paint: {
-          'text-color': actualRouteColor
+        if (lastCompletedSiteIndex >= 0) {
+          // Calculate approximate split point in route coordinates
+          const totalSites = optimizedSiteOrder.length;
+          const splitRatio = (lastCompletedSiteIndex + 1) / totalSites;
+          const splitIndex = Math.floor(routeCoordinates.length * splitRatio);
+          
+          completedRouteCoordinates = routeCoordinates.slice(0, splitIndex);
+          remainingRouteCoordinates = routeCoordinates.slice(splitIndex);
+          
+          console.log(`Route split: ${completedRouteCoordinates.length} completed, ${remainingRouteCoordinates.length} remaining`);
         }
-      });
+      }
 
-      // Special layer for recalculated routes
-      if (routeInfo?.recalculated) {
+      // Add completed route segment (if any)
+      if (completedRouteCoordinates.length > 1) {
+        map.current.addSource('route-completed', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {
+              completed: true
+            },
+            geometry: {
+              type: 'LineString',
+              coordinates: completedRouteCoordinates
+            }
+          }
+        });
+
+        // Completed route glow
         map.current.addLayer({
-          id: 'route-recalculated',
+          id: 'route-completed-glow',
+          type: 'line',
+          source: 'route-completed',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': '#10B981', // Green for completed
+            'line-width': glowWidth,
+            'line-opacity': 0.3,
+            'line-blur': 8
+          }
+        });
+
+        // Completed route main line
+        map.current.addLayer({
+          id: 'route-completed',
+          type: 'line',
+          source: 'route-completed',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': '#10B981', // Green for completed
+            'line-width': lineWidth,
+            'line-opacity': 0.7,
+            'line-dasharray': [2, 2] // Dashed to show it's completed
+          }
+        });
+      }
+
+      // Add remaining route segment
+      if (remainingRouteCoordinates.length > 1) {
+        map.current.addSource('route', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {
+              recalculated: routeInfo?.recalculated || false,
+              remaining: true
+            },
+            geometry: {
+              type: 'LineString',
+              coordinates: remainingRouteCoordinates
+            }
+          }
+        });
+
+        // Route glow layer
+        map.current.addLayer({
+          id: 'route-glow',
           type: 'line',
           source: 'route',
           layout: {
@@ -440,12 +498,63 @@ export const useMapLayers = ({
             'line-cap': 'round'
           },
           paint: {
-            'line-color': '#FF6B35',
-            'line-width': lineWidth - 1,
-            'line-dasharray': [2, 2],
-            'line-opacity': 0.7
+            'line-color': actualRouteColor,
+            'line-width': glowWidth,
+            'line-opacity': 0.4,
+            'line-blur': 8
           }
         });
+
+        // Main route layer
+        map.current.addLayer({
+          id: 'route',
+          type: 'line',
+          source: 'route',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': actualRouteColor,
+            'line-width': lineWidth,
+            'line-opacity': 0.9
+          }
+        });
+
+        // Direction arrows
+        map.current.addLayer({
+          id: 'route-direction',
+          type: 'symbol',
+          source: 'route',
+          layout: {
+            'symbol-placement': 'line',
+            'text-field': '▶',
+            'text-size': isMobile ? 14 : 12,
+            'symbol-spacing': 100
+          },
+          paint: {
+            'text-color': actualRouteColor
+          }
+        });
+
+        // Special layer for recalculated routes
+        if (routeInfo?.recalculated) {
+          map.current.addLayer({
+            id: 'route-recalculated',
+            type: 'line',
+            source: 'route',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': '#FF6B35',
+              'line-width': lineWidth - 1,
+              'line-dasharray': [2, 2],
+              'line-opacity': 0.7
+            }
+          });
+        }
       }
 
       console.log('Route layer added successfully');
@@ -461,6 +570,171 @@ export const useMapLayers = ({
       setTimeout(() => {
         addRouteLayer();
       }, 500);
+    }
+  };
+
+  // NEW: Add multiple route layers for all sites
+  const addAllSiteRoutesLayers = (allRoutes) => {
+    if (!map.current || !allRoutes || allRoutes.length === 0) {
+      console.log('Cannot add all site routes - missing map or routes');
+      return;
+    }
+
+    if (!map.current.isStyleLoaded()) {
+      console.log('Map style not loaded yet, waiting...');
+      map.current.once('styledata', () => {
+        setTimeout(() => addAllSiteRoutesLayers(allRoutes), 100);
+      });
+      return;
+    }
+
+    try {
+      console.log(`Adding ${allRoutes.length} individual route layers to map`);
+
+      // Clear any existing all-site route layers
+      allRoutes.forEach((route, index) => {
+        const layerId = `route-to-site-${route.siteId}`;
+        const glowLayerId = `route-to-site-${route.siteId}-glow`;
+        const directionLayerId = `route-to-site-${route.siteId}-direction`;
+        
+        [layerId, glowLayerId, directionLayerId].forEach(id => {
+          if (map.current.getLayer(id)) {
+            map.current.removeLayer(id);
+          }
+        });
+        
+        if (map.current.getSource(layerId)) {
+          map.current.removeSource(layerId);
+        }
+      });
+
+      const barangayName = activeSchedule?.barangay_name || 'San Francisco';
+      const baseRouteColor = barangayColors[barangayName] || barangayColors['_default'];
+
+      // Add each route as a separate layer
+      allRoutes.forEach((route, index) => {
+        const sourceId = `route-to-site-${route.siteId}`;
+        const layerId = `route-to-site-${route.siteId}`;
+        const glowLayerId = `route-to-site-${route.siteId}-glow`;
+        const directionLayerId = `route-to-site-${route.siteId}-direction`;
+
+        // Add source for this route
+        map.current.addSource(sourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {
+              siteId: route.siteId,
+              siteName: route.siteName,
+              sequence: route.sequence,
+              distance: route.distance,
+              duration: route.duration
+            },
+            geometry: {
+              type: 'LineString',
+              coordinates: route.coordinates
+            }
+          }
+        });
+
+        // Calculate color based on sequence (gradient effect)
+        const opacity = 0.3 + (index / allRoutes.length) * 0.4; // Varying opacity
+        const lineWidth = isMobile ? 4 : 3;
+        const glowWidth = isMobile ? 10 : 8;
+
+        // Route glow layer
+        map.current.addLayer({
+          id: glowLayerId,
+          type: 'line',
+          source: sourceId,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': baseRouteColor,
+            'line-width': glowWidth,
+            'line-opacity': opacity * 0.3,
+            'line-blur': 6
+          }
+        });
+
+        // Main route layer
+        map.current.addLayer({
+          id: layerId,
+          type: 'line',
+          source: sourceId,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': baseRouteColor,
+            'line-width': lineWidth,
+            'line-opacity': opacity,
+            'line-dasharray': route.isFallback ? [2, 2] : [1]
+          }
+        });
+
+        // Direction arrows
+        map.current.addLayer({
+          id: directionLayerId,
+          type: 'symbol',
+          source: sourceId,
+          layout: {
+            'symbol-placement': 'line',
+            'text-field': '▶',
+            'text-size': isMobile ? 10 : 8,
+            'symbol-spacing': 120
+          },
+          paint: {
+            'text-color': baseRouteColor,
+            'text-opacity': opacity * 0.8
+          }
+        });
+      });
+
+      console.log(`Successfully added ${allRoutes.length} route layers`);
+
+      // Fit map to show all routes
+      setTimeout(() => {
+        fitMapToAllRoutes(allRoutes);
+      }, 200);
+
+    } catch (error) {
+      console.error('Error adding all site route layers:', error);
+    }
+  };
+
+  // NEW: Fit map to show all routes
+  const fitMapToAllRoutes = (allRoutes) => {
+    if (!map.current || !allRoutes || allRoutes.length === 0) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+    
+    // Include all route coordinates
+    allRoutes.forEach(route => {
+      route.coordinates.forEach(coord => {
+        bounds.extend(coord);
+      });
+    });
+    
+    // Include driver's current position
+    if (currentLocation) {
+      bounds.extend(currentLocation);
+    }
+
+    const padding = isMobile ? 40 : 80;
+
+    try {
+      map.current.fitBounds(bounds, {
+        padding: padding,
+        duration: 1000,
+        essential: true,
+        maxZoom: isMobile ? 15 : 14
+      });
+    } catch (error) {
+      console.error('Error fitting map to all routes:', error);
     }
   };
 
@@ -481,39 +755,56 @@ export const useMapLayers = ({
     
     let sequenceBadge = '';
     if (activeSchedule) {
-      const badgeSize = isMobile ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
+      const badgeSize = isMobile ? 'w-8 h-8 text-sm' : 'w-7 h-7 text-xs';
       let badgeColor = 'bg-blue-500';
+      let badgeContent = sequence;
       
       if (isCompleted) {
-        badgeColor = 'bg-green-500';
+        badgeColor = 'bg-green-600';
+        badgeContent = '<span class="text-lg">✓</span>';
       } else if (isCurrent) {
-        badgeColor = 'bg-yellow-500';
+        badgeColor = 'bg-yellow-500 animate-pulse';
+        badgeContent = sequence;
       } else if (isStation) {
         badgeColor = 'bg-red-500';
+        badgeContent = '🏠';
       }
       
       sequenceBadge = `
         <div class="absolute -top-2 -right-2 ${badgeColor} text-white rounded-full ${badgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white z-20">
-          ${isStation ? '🏠' : (isCompleted ? '✓' : sequence)}
+          ${badgeContent}
         </div>
       `;
     }
   
-    const opacityClass = isCompleted ? 'opacity-50' : 'opacity-100';
-    const completedClass = isCompleted ? 'grayscale' : '';
+    // Enhanced completed visual feedback
+    const opacityClass = isCompleted ? 'opacity-60' : 'opacity-100';
+    const completedClass = isCompleted ? 'grayscale brightness-110' : '';
+    const completedBorder = isCompleted ? 'border-green-600' : '';
     const currentClass = isCurrent && !isCompleted ? 'ring-4 ring-yellow-500 ring-opacity-70' : '';
     const nearestClass = isNearestToStation && !isCompleted && !isCurrent ? 'ring-4 ring-green-500 ring-opacity-70' : '';
+    
+    // Add completion celebration effect
+    const completionEffect = isCompleted ? `
+      <div class="absolute inset-0 rounded-full bg-green-500 bg-opacity-20 animate-ping pointer-events-none z-0"></div>
+    ` : '';
   
     markerElement.innerHTML = `
       <div class="relative ${opacityClass}">
         ${sequenceBadge}
-        <div class="${markerSize} rounded-full border-3 flex items-center justify-center overflow-hidden shadow-lg bg-white relative ${currentClass} ${nearestClass} ${completedClass}" 
-             style="border-color: ${borderColor};">
+        ${completionEffect}
+        <div class="${markerSize} rounded-full border-3 flex items-center justify-center overflow-hidden shadow-lg bg-white relative ${currentClass} ${nearestClass} ${completedClass} ${completedBorder}" 
+             style="border-color: ${isCompleted ? '#16A34A' : borderColor}; border-width: ${isCompleted ? '3px' : '2px'};">
           ${isCurrent && !isCompleted ? `
             <div class="absolute -inset-3 rounded-full border-4 border-yellow-500 border-opacity-70 animate-pulse pointer-events-none z-10"></div>
           ` : ''}
           ${isNearestToStation && !isCompleted && !isCurrent ? `
             <div class="absolute -inset-3 rounded-full border-4 border-green-500 border-opacity-70 animate-pulse pointer-events-none z-10"></div>
+          ` : ''}
+          ${isCompleted ? `
+            <div class="absolute inset-0 bg-green-600 bg-opacity-30 rounded-full z-5 flex items-center justify-center">
+              <span class="text-2xl text-green-700">✓</span>
+            </div>
           ` : ''}
           <img src="${can}" 
                alt="${siteData.site_name}" 
@@ -643,5 +934,7 @@ export const useMapLayers = ({
     addMarker,
     createImageMarker,
     createStationIcon,
+    addAllSiteRoutesLayers,
+    fitMapToAllRoutes,
   };
 };
