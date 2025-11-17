@@ -211,6 +211,20 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
           minHeight: '400px'
         }}
       />
+
+      {/* Completion Report Modal */}
+      <CompletionReportModal
+        isOpen={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        scheduleId={scheduleId}
+        scheduleName={activeSchedule?.barangay_name || 'Collection Schedule'}
+        onSubmitSuccess={() => {
+          setShowCompletionModal(false);
+          if (onTaskComplete) {
+            onTaskComplete(null, true);
+          }
+        }}
+      />
     </div>
   );
 });
@@ -795,20 +809,6 @@ const ScheduleInfoPanel = ({
         </div>
       </div>
     )}
-
-    {/* Completion Report Modal */}
-    <CompletionReportModal
-      isOpen={showCompletionModal}
-      onClose={() => setShowCompletionModal(false)}
-      scheduleId={scheduleId}
-      scheduleName={activeSchedule?.barangay_name || 'Collection Schedule'}
-      onSubmitSuccess={() => {
-        setShowCompletionModal(false);
-        if (onTaskComplete) {
-          onTaskComplete(null, true);
-        }
-      }}
-    />
   </div>
 );
 
