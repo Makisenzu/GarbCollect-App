@@ -395,6 +395,12 @@ class DriverController extends Controller
             $site = Site::find($validatedData['site_id']);
             $schedule = Schedule::find($validatedData['schedule_id']);
 
+            // Get completion statistics
+            $completedCount = CollectionQue::where('schedule_id', $validatedData['schedule_id'])
+                                            ->where('status', 'finished')
+                                            ->count();
+            $totalSites = CollectionQue::where('schedule_id', $validatedData['schedule_id'])->count();
+
             // Broadcast site completion event
             if ($site && $schedule) {
                 broadcast(new SiteCompletionUpdated(
@@ -405,14 +411,18 @@ class DriverController extends Controller
                     now()->toISOString(),
                     $site->site_name,
                     $site->latitude,
-                    $site->longitude
+                    $site->longitude,
+                    $completedCount,
+                    $totalSites
                 ));
 
                 Log::info('Site completion broadcasted', [
                     'site_id' => $site->id,
                     'site_name' => $site->site_name,
                     'schedule_id' => $schedule->id,
-                    'barangay_id' => $schedule->barangay_id
+                    'barangay_id' => $schedule->barangay_id,
+                    'completed' => $completedCount,
+                    'total' => $totalSites
                 ]);
             }
 

@@ -22,11 +22,13 @@ class SiteCompletionUpdated implements ShouldBroadcast
     public $siteName;
     public $latitude;
     public $longitude;
+    public $completedSites;
+    public $totalSites;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($siteId, $scheduleId, $barangayId, $status, $completedAt, $siteName, $latitude, $longitude)
+    public function __construct($siteId, $scheduleId, $barangayId, $status, $completedAt, $siteName, $latitude, $longitude, $completedSites = 0, $totalSites = 0)
     {
         $this->siteId = $siteId;
         $this->scheduleId = $scheduleId;
@@ -36,6 +38,8 @@ class SiteCompletionUpdated implements ShouldBroadcast
         $this->siteName = $siteName;
         $this->latitude = $latitude;
         $this->longitude = $longitude;
+        $this->completedSites = $completedSites;
+        $this->totalSites = $totalSites;
     }
 
     /**
@@ -77,6 +81,8 @@ class SiteCompletionUpdated implements ShouldBroadcast
             'site_name' => $this->siteName,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
+            'completed_sites' => $this->completedSites,
+            'total_sites' => $this->totalSites,
         ];
     }
 }

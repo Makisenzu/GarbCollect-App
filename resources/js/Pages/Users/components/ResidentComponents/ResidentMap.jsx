@@ -369,25 +369,54 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       }
 
       if (includeDriverRoute && driverLocation && optimizedSites.length > 0) {
-        const driverRoute = await calculateDriverToSiteRoute(driverLocation, optimizedSites[0]);
-        
-        if (driverRoute) {
-          setRouteCoordinates(driverRoute.coordinates);
-          setRouteInfo({
-            duration: driverRoute.duration,
-            formattedDuration: formatDuration(driverRoute.duration),
-            distance: driverRoute.distance,
-            targetSite: driverRoute.targetSite,
-            isRealTime: true,
-            totalStops: optimizedSites.length
-          });
-          
-          console.log('Using real-time driver route');
-          
-          if (map.current && mapInitialized) {
-            addRouteLayer();
+        // Calculate complete sequential route from driver through ALL sites
+        const allCoordinates = [
+          `${driverLocation[0].toFixed(6)},${driverLocation[1].toFixed(6)}`,
+          ...optimizedSites.map(site => 
+            `${parseFloat(site.longitude).toFixed(6)},${parseFloat(site.latitude).toFixed(6)}`
+          )
+        ];
+
+        try {
+          const response = await fetch(
+            `https://api.mapbox.com/directions/v5/mapbox/driving/${allCoordinates.join(';')}?` +
+            `access_token=${mapboxKey}` +
+            `&geometries=geojson` +
+            `&overview=full` +
+            `&steps=true` +
+            `&alternatives=false` +
+            `&continue_straight=false` +
+            `&roundabout_exits=true`
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.routes && data.routes.length > 0) {
+              const route = data.routes[0];
+              const durationMinutes = Math.round(route.duration / 60);
+              const distanceKm = (route.distance / 1000).toFixed(1);
+
+              setRouteCoordinates(route.geometry.coordinates);
+              setRouteInfo({
+                duration: durationMinutes,
+                formattedDuration: formatDuration(durationMinutes),
+                distance: distanceKm,
+                targetSite: optimizedSites[0].site_name,
+                isRealTime: true,
+                totalStops: optimizedSites.length
+              });
+              
+              console.log(`Complete sequential route calculated from driver through ${optimizedSites.length} sites`);
+              
+              if (map.current && mapInitialized) {
+                addRouteLayer();
+              }
+              return;
+            }
           }
-          return;
+        } catch (error) {
+          console.error('Error calculating driver sequential route:', error);
+          // Fall through to station-based route
         }
       }
       
@@ -513,25 +542,52 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
     lastDriverLocationRef.current = driverLocation;
 
-    console.log('Updating real-time route from driver location');
+    console.log('Updating complete sequential route from driver location through all sites');
     
     try {
-      const driverRoute = await calculateDriverToSiteRoute(driverLocation, optimizedSiteOrder[0]);
-      
-      if (driverRoute) {
-        setRouteCoordinates(driverRoute.coordinates);
-        setRouteInfo(prev => ({
-          ...prev,
-          duration: driverRoute.duration,
-          formattedDuration: formatDuration(driverRoute.duration),
-          distance: driverRoute.distance,
-          targetSite: driverRoute.targetSite,
-          isRealTime: true,
-          lastUpdated: new Date().toLocaleTimeString()
-        }));
-        
-        if (map.current && mapInitialized) {
-          addRouteLayer();
+      // Calculate complete sequential route from driver through ALL sites
+      const allCoordinates = [
+        `${driverLocation[0].toFixed(6)},${driverLocation[1].toFixed(6)}`,
+        ...optimizedSiteOrder.map(site => 
+          `${parseFloat(site.longitude).toFixed(6)},${parseFloat(site.latitude).toFixed(6)}`
+        )
+      ];
+
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${allCoordinates.join(';')}?` +
+        `access_token=${mapboxKey}` +
+        `&geometries=geojson` +
+        `&overview=full` +
+        `&steps=true` +
+        `&alternatives=false` +
+        `&continue_straight=false` +
+        `&roundabout_exits=true`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          const durationMinutes = Math.round(route.duration / 60);
+          const distanceKm = (route.distance / 1000).toFixed(1);
+
+          setRouteCoordinates(route.geometry.coordinates);
+          setRouteInfo(prev => ({
+            ...prev,
+            duration: durationMinutes,
+            formattedDuration: formatDuration(durationMinutes),
+            distance: distanceKm,
+            targetSite: optimizedSiteOrder[0].site_name,
+            isRealTime: true,
+            totalStops: optimizedSiteOrder.length,
+            lastUpdated: new Date().toLocaleTimeString()
+          }));
+          
+          console.log(`Sequential route updated: Driver through ${optimizedSiteOrder.length} sites (${distanceKm}km, ${durationMinutes}min)`);
+          
+          if (map.current && mapInitialized) {
+            addRouteLayer();
+          }
         }
       }
     } catch (error) {
@@ -1020,6 +1076,13 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
             console.log('Schedule update received:', e);
             updateScheduleData(e.schedule);
           });
+
+        // Listen for site completion events
+        echo.channel(`site-completion.${barangayId}`)
+          .listen('SiteCompletionUpdated', (e) => {
+            console.log('Site completion received:', e);
+            handleSiteCompletion(e);
+          });
   
         setConnectionStatus('connected');
         await loadInitialData();
@@ -1061,6 +1124,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       if (echo) {
         echo.leave(`driver-locations.${barangayId}`);
         echo.leave(`schedule-updates.${barangayId}`);
+        echo.leave(`site-completion.${barangayId}`);
       }
     };
   }, [barangayId, scheduleId]);
@@ -1136,6 +1200,121 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       if (realTimeRouteEnabled) {
         updateRealTimeRoute();
       }
+    }
+  };
+
+  // NEW: Handle site completion events from driver
+  const handleSiteCompletion = (completionData) => {
+    console.log('Handling site completion:', completionData);
+    
+    // Update site locations to mark as completed
+    setSiteLocations(prevSites => 
+      prevSites.map(site => {
+        if (site.id === completionData.site_id || site.id === completionData.siteId) {
+          return {
+            ...site,
+            status: 'completed',
+            collectionStatus: 'finished',
+            completed_at: completionData.completed_at || new Date().toISOString()
+          };
+        }
+        return site;
+      })
+    );
+
+    // Show celebration notification to resident
+    showCompletionNotification(completionData.site_name || 'Collection Site', completionData);
+    
+    // Update markers to reflect completion
+    if (mapInitialized) {
+      setTimeout(() => {
+        updateSiteMarkers(siteLocations);
+        
+        // Recalculate route if needed
+        if (realTimeRouteEnabled && driverLocation) {
+          updateRealTimeRoute();
+        }
+      }, 500);
+    }
+  };
+
+  // NEW: Show celebration notification to residents
+  const showCompletionNotification = (siteName, data) => {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-[9999] min-w-[320px] transform transition-all duration-500';
+    notification.style.animation = 'slideInRight 0.5s ease-out';
+    
+    const completedCount = data.completed_sites || 0;
+    const totalCount = data.total_sites || 0;
+    const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    
+    notification.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="text-4xl">✅</div>
+        <div class="flex-1">
+          <div class="font-bold text-lg mb-1">${siteName} Collected!</div>
+          <div class="text-sm opacity-90 mb-2">Driver has completed this collection point</div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="font-semibold">${completedCount}/${totalCount} sites</span>
+            <span class="opacity-75">•</span>
+            <span>${percentage}% complete</span>
+          </div>
+          <div class="mt-2 h-2 bg-white bg-opacity-30 rounded-full overflow-hidden">
+            <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: ${percentage}%"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Add close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'absolute top-2 right-2 text-white opacity-75 hover:opacity-100 transition-opacity';
+    closeBtn.innerHTML = '×';
+    closeBtn.style.fontSize = '24px';
+    closeBtn.onclick = () => {
+      if (document.body.contains(notification)) {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 300);
+      }
+    };
+    notification.appendChild(closeBtn);
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 300);
+      }
+    }, 5000);
+
+    // Add CSS animations if not already added
+    if (!document.getElementById('resident-completion-animations')) {
+      const style = document.createElement('style');
+      style.id = 'resident-completion-animations';
+      style.textContent = `
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `;
+      document.head.appendChild(style);
     }
   };
 
@@ -1280,8 +1459,17 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
         const iconSize = isMobile ? 'w-6 h-6' : 'w-5 h-5';
         
+        // Get sequence number from optimized site order
+        const sequenceNumber = optimizedSiteOrder.findIndex(s => s.id === site.id) + 1;
+        const hasSequence = sequenceNumber > 0;
+        
         markerElement.innerHTML = `
           <div class="relative ${isCurrent || isTargetSite ? 'animate-pulse' : ''}">
+            ${hasSequence && !isStation ? `
+              <div class="absolute -top-2 -right-2 ${isCompleted ? 'bg-green-600' : 'bg-blue-500'} text-white rounded-full ${isMobile ? 'w-7 h-7 text-sm' : 'w-6 h-6 text-xs'} flex items-center justify-center font-bold shadow-lg border-2 border-white z-20">
+                ${isCompleted ? '✓' : sequenceNumber}
+              </div>
+            ` : ''}
             <div class="${markerSize} rounded-full border-3 border-white flex items-center justify-center shadow-lg" 
                   style="background-color: ${getMarkerColor()}; ${isCompleted ? 'opacity: 0.7;' : ''}">
               <div class="${iconSize} text-white">
