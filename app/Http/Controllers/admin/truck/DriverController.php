@@ -518,4 +518,77 @@ class DriverController extends Controller
     {
         //
     }
+
+    public function getGarbageTypes()
+    {
+        try {
+            $garbageTypes = \App\Models\Garbage::all();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $garbageTypes
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch garbage types'
+            ], 500);
+        }
+    }
+
+    public function submitCompletionReport(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'schedule_id' => 'required|exists:schedules,id',
+                'report_picture' => 'required|image|max:5120', // 5MB max
+                'reports' => 'required|json'
+            ]);
+
+            DB::beginTransaction();
+
+            // Decode reports JSON
+            $reportsData = json_decode($validatedData['reports'], true);
+
+            // Store report picture
+            $picturePath = $request->file('report_picture')->store('reports', 'public');
+
+            // Create report entries for each garbage type
+            foreach ($reportsData as $reportData) {
+                if ($reportData['sack_count'] > 0) {
+                    \App\Models\Report::create([
+                        'schedule_id' => $validatedData['schedule_id'],
+                        'garbage_id' => $reportData['garbage_id'],
+                        'report_picture' => $picturePath,
+                        'sack_count' => $reportData['sack_count']
+                    ]);
+                }
+            }
+
+            // Mark schedule as completed
+            Schedule::where('id', $validatedData['schedule_id'])
+                    ->update(['status' => 'completed']);
+
+            DB::commit();
+
+            Log::info('Completion report submitted successfully', [
+                'schedule_id' => $validatedData['schedule_id'],
+                'total_reports' => count($reportsData)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Completion report submitted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error submitting completion report:', ['error' => $e->getMessage()]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to submit completion report: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

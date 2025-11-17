@@ -157,11 +157,10 @@ export const useSiteManagement = ({
         
         // Check for all completed
         if (response.data.all_completed) {
-          console.log('🎉 All sites completed! Task finished.');
-          generateAccessTokenAndRedirect();
+          console.log('🎉 All sites completed! Show completion report modal.');
           
           if (onTaskComplete) {
-            onTaskComplete(site);
+            onTaskComplete(site, true); // Pass true to indicate all completed
           }
         } else {
           console.log(`Progress: ${response.data.completed_sites}/${response.data.total_sites} sites completed`);

@@ -6,6 +6,7 @@ import { IoClose, IoCheckmark, IoNavigate, IoSparkles, IoChevronDown, IoChevronU
 import axios from 'axios';
 import can from "@/images/can.png";
 import { useTaskMap } from './useTaskMap';
+import CompletionReportModal from './CompletionReportModal';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel, autoGetLocation = false }, ref) => {
@@ -37,6 +38,8 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
     currentSiteIndex,
     isTaskActive,
     isFakeLocationActive,
+    showCompletionModal,
+    setShowCompletionModal,
     
     formatDuration,
     getCurrentLocation,
@@ -778,11 +781,11 @@ const ScheduleInfoPanel = ({
         </div>
       )}
     </div>
-    
+
     {completedSites.size > 0 && (
       <div className="mt-2">
         <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
+          <div
             className="bg-green-500 h-2 rounded-full transition-all duration-300"
             style={{ width: `${(completedSites.size / siteLocations.length) * 100}%` }}
           ></div>
@@ -792,6 +795,20 @@ const ScheduleInfoPanel = ({
         </div>
       </div>
     )}
+
+    {/* Completion Report Modal */}
+    <CompletionReportModal
+      isOpen={showCompletionModal}
+      onClose={() => setShowCompletionModal(false)}
+      scheduleId={scheduleId}
+      scheduleName={activeSchedule?.barangay_name || 'Collection Schedule'}
+      onSubmitSuccess={() => {
+        setShowCompletionModal(false);
+        if (onTaskComplete) {
+          onTaskComplete(null, true);
+        }
+      }}
+    />
   </div>
 );
 

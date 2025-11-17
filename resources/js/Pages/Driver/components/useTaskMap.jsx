@@ -10,6 +10,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   // Initialize all custom hooks
   const mapboxSetup = useMapboxSetup({ mapboxKey, isMobile });
@@ -29,9 +30,20 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     addRouteLayer: () => {} // Will be set from mapLayers
   });
 
+  // Handle task completion with modal
+  const handleTaskComplete = (site, allCompleted = false) => {
+    if (allCompleted) {
+      setShowCompletionModal(true);
+    }
+    
+    if (onTaskComplete) {
+      onTaskComplete(site, allCompleted);
+    }
+  };
+
   const siteManagement = useSiteManagement({ 
     scheduleId, 
-    onTaskComplete, 
+    onTaskComplete: handleTaskComplete, 
     onTaskCancel,
     calculateDistance: routeCalculations.calculateDistance,
     showCompletionNotification: (siteName) => {
@@ -481,7 +493,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     // Refs
     mapContainer: mapboxSetup.mapContainer,
     siteMarkersRef: mapLayers.siteMarkersRef,
-    
+
     // State
     cssLoaded: mapboxSetup.cssLoaded,
     siteLocations: siteManagement.siteLocations,
@@ -508,6 +520,8 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     isTaskActive: siteManagement.isTaskActive,
     isFakeLocationActive: locationTracking.isFakeLocationActive,
     allSiteRoutes: routeCalculations.allSiteRoutes,
+    showCompletionModal,
+    setShowCompletionModal,
 
     // Methods
     formatDuration: routeCalculations.formatDuration,

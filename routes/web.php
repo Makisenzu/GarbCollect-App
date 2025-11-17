@@ -92,6 +92,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/initialize', [DriverController::class, 'initializeCollectionQue']);
         Route::post('/mark-completed', [DriverController::class, 'markSiteCompleted']);
         Route::get('/progress/{scheduleId}', [DriverController::class, 'getCollectionProgress']);
+        Route::post('/submit-completion-report', [DriverController::class, 'submitCompletionReport']);
+        Route::get('/api/garbage-types', [DriverController::class, 'getGarbageTypes']);
 
         Route::get('/driver/report/{scheduleId}', function ($scheduleId) {
             $token = request()->query('token');
