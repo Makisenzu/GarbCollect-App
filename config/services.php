@@ -44,4 +44,10 @@ return [
         ],
     ],
 
+    'semaphore' => [
+        'api_key' => env('SEMAPHORE_API_KEY'),
+        'api_url' => env('SEMAPHORE_API_URL', 'https://api.semaphore.co/api/v4/messages'),
+        'sender_name' => env('SEMAPHORE_SENDER_NAME', 'GarbCollect'),
+    ],
+
 ];

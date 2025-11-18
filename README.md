@@ -29,6 +29,7 @@ GarbCollect is a full-stack application that facilitates the coordination of gar
 ### Additional Tools
 - **Real-time Echo:** Laravel Echo with React integration
 - **Content Moderation:** OpenAI API integration
+- **SMS Gateway:** Semaphore SMS API
 - **Development:** Concurrently, Laravel Pail
 
 ## Key Features
@@ -38,6 +39,11 @@ GarbCollect is a full-stack application that facilitates the coordination of gar
 - User authentication and authorization
 - Profile management with photo support
 - Account activation/deactivation
+
+### Communication System
+- **Email Notifications:** Gmail integration for detailed schedule information
+- **SMS Notifications:** Semaphore SMS for instant mobile alerts to drivers
+- **Real-time Updates:** WebSocket-based live notifications
 
 ### Geographic Organization
 - Hierarchical location structure:
@@ -139,6 +145,7 @@ GarbCollect is a full-stack application that facilitates the coordination of gar
 - MySQL/PostgreSQL/SQLite database
 - OpenAI API key (for content moderation)
 - Mapbox API key (for mapping features)
+- Semaphore API key (for SMS notifications) - [Get it here](https://semaphore.co/)
 
 ### Installation
 
@@ -157,6 +164,13 @@ GarbCollect is a full-stack application that facilitates the coordination of gar
    ```bash
    cp .env.example .env
    ```
+   
+   Configure the following in your `.env` file:
+   - Database credentials
+   - OpenAI API key
+   - Mapbox API key
+   - Semaphore SMS API key (see [SMS_SETUP.md](SMS_SETUP.md) for details)
+   - Mail settings (Gmail credentials)
 
 5. Generate application key:
    ```bash

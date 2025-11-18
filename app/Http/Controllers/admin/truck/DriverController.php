@@ -18,6 +18,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\DriverAssignment;
 use App\Events\SiteCompletionUpdated;
+use App\Services\SmsService;
 
 class DriverController extends Controller
 {
@@ -88,6 +89,34 @@ class DriverController extends Controller
         }
     }
 
+    protected function sendDriverAssignmentSms($driver, $schedule)
+    {
+        try {
+            $driverUser = $driver->user;
+            $barangay = Baranggay::find($schedule->barangay_id);
+            
+            if ($driverUser && $driverUser->phone_num) {
+                $driverName = $driverUser->name . ' ' . $driverUser->lastname;
+                $barangayName = $barangay->baranggay_name ?? 'N/A';
+                $collectionDate = $schedule->collection_date;
+                $collectionTime = $schedule->collection_time;
+                
+                $smsService = new SmsService();
+                $smsService->sendDriverAssignmentSms(
+                    $driverUser->phone_num,
+                    $driverName,
+                    $barangayName,
+                    $collectionDate,
+                    $collectionTime
+                );
+                
+                Log::info('Driver assignment SMS sent to: ' . $driverUser->phone_num);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send driver assignment SMS: ' . $e->getMessage());
+        }
+    }
+
     public function assignDriver(Request $request) {
         try {
             $assignData = $request->validate([
@@ -127,6 +156,7 @@ class DriverController extends Controller
             $data = Schedule::create($assignData);
             event(new NewSchedule($data));
             $this->sendDriverAssignmentEmail($driver, $data);
+            $this->sendDriverAssignmentSms($driver, $data);
     
             return response()->json([
                 'success' => true,
