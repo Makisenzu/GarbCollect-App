@@ -48,34 +48,41 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     calculateDistance: routeCalculations.calculateDistance,
     showCompletionNotification: (siteName) => {
       // Show enhanced completion notification
-      console.log(`Site completed: ${siteName}`);
+      console.log(`✅ Site completed: ${siteName}`);
+      
+      // Play success sound
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGAg+ltryxnMpBSuBzvLaiTUIGGe77OmfTgwOUKbk8LdjHQU2kdby0HwqBSp3x/DdkUELEl+06OyqVRUKRp7g8r5wIgU0h9H004IzBh1tv+/mnEkODlat6O+xXBkIP5Xa8sV0KgUrgc7y2YszCBdnvOzpnk4MDU+m5O+5ZBwGNpHX8s98Kgcrc8fv3ZJCCxFftOjuq1YUDD6f4fK/cCMGNYfR89OCMwYcbb/v5JxKDg5VrOjusVwZCj6U2vLGdSoGK4HO8tmLMwgXZ7vs6J5PDA1Ppubw...');
+        audio.volume = 0.4;
+        audio.play().catch(() => {});
+      } catch (e) {
+        // Ignore audio errors
+      }
       
       if (isMobile) {
-        // Show mobile-friendly animated notification
+        // Enhanced mobile notification with dismiss button
         const notification = document.createElement('div');
-        notification.className = 'fixed top-20 left-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 text-center transform transition-all duration-500 animate-bounce';
-        notification.style.animation = 'slideInDown 0.5s ease-out, fadeOut 0.5s ease-in 2.5s';
+        notification.className = 'fixed top-20 left-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-5 rounded-xl shadow-2xl z-[9999] transform transition-all duration-500';
+        notification.style.animation = 'slideInDown 0.5s ease-out';
         notification.innerHTML = `
-          <div class="flex items-center justify-center gap-3">
-            <span class="text-3xl">✅</span>
-            <div class="text-left">
-              <div class="font-bold text-lg">${siteName} Completed!</div>
-              <div class="text-sm opacity-90">Progress: ${siteManagement.completedSites.size + 1}/${siteManagement.siteLocations.length} sites collected</div>
+          <div class="flex items-start gap-3">
+            <div class="text-5xl animate-bounce">✅</div>
+            <div class="flex-1 text-left">
+              <div class="font-bold text-xl mb-1">${siteName} FINISHED!</div>
+              <div class="text-sm opacity-90 mb-2">Collection completed successfully</div>
+              <div class="text-xs opacity-80 bg-white bg-opacity-20 px-2 py-1 rounded inline-block">
+                Progress: ${siteManagement.completedSites.size + 1}/${siteManagement.siteLocations.length} sites (${Math.round(((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100)}%)
+              </div>
             </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-white opacity-75 hover:opacity-100 text-3xl font-bold leading-none mt-1">×</button>
           </div>
-          <div class="mt-2 h-2 bg-white bg-opacity-30 rounded-full overflow-hidden">
-            <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: ${((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100}%"></div>
+          <div class="mt-3 h-3 bg-white bg-opacity-30 rounded-full overflow-hidden">
+            <div class="h-full bg-white rounded-full transition-all duration-1000 animate-pulse" style="width: ${((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100}%"></div>
           </div>
         `;
         document.body.appendChild(notification);
         
-        // Play success sound if available
-        try {
-          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGAg+ltryxnMpBSuBzvLaiTUIGGe77OmfTgwOUKbk8LdjHQU2kdby0HwqBSp3x/DdkUELEl+06OyqVRUKRp7g8r5wIgU0h9H004IzBh1tv+/mnEkODlat6O+xXBkIP5Xa8sV0KgUrgc7y2YszCBdnvOzpnk4MDU+m5O+5ZBwGNpHX8s98Kgcrc8fv3ZJCCxFftOjuq1YUDD6f4fK/cCMGNYfR89OCMwYcbb/v5JxKDg5VrOjusVwZCj6U2vLGdSoGK4HO8tmLMwgXZ7vs6J5PDA1Ppubw...');
-          audio.volume = 0.3;
-          audio.play().catch(() => {});
-        } catch (e) {}
-        
+        // Auto-dismiss after 6 seconds (longer than before)
         setTimeout(() => {
           if (document.body.contains(notification)) {
             notification.style.opacity = '0';
@@ -86,50 +93,33 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
               }
             }, 500);
           }
-        }, 3000);
+        }, 6000);
       } else {
-        // Desktop notification with celebration effect
+        // Enhanced desktop notification with better visibility
         const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 min-w-[320px] transform transition-all duration-500';
-        notification.style.animation = 'slideInRight 0.5s ease-out';
+        notification.className = 'fixed top-4 right-4 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-6 py-5 rounded-xl shadow-2xl z-[9999] min-w-[400px] transform transition-all duration-500';
+        notification.style.animation = 'slideInRight 0.5s ease-out, bounceScale 0.3s ease-in-out 0.5s';
         notification.innerHTML = `
-          <div class="flex items-start gap-3">
-            <div class="text-4xl animate-bounce">🎉</div>
+          <div class="flex items-start gap-4">
+            <div class="text-6xl animate-bounce">✅</div>
             <div class="flex-1">
-              <div class="font-bold text-lg mb-1">✅ ${siteName}</div>
-              <div class="text-sm opacity-90 mb-2">Collection completed successfully!</div>
-              <div class="flex items-center gap-2 text-xs">
-                <span class="font-semibold">${siteManagement.completedSites.size + 1}/${siteManagement.siteLocations.length} sites</span>
+              <div class="font-bold text-2xl mb-2">${siteName} FINISHED!</div>
+              <div class="text-sm opacity-90 mb-3">Collection site has been marked as completed</div>
+              <div class="flex items-center gap-2 text-sm mb-3">
+                <span class="font-semibold bg-white bg-opacity-20 px-3 py-1 rounded">${siteManagement.completedSites.size + 1}/${siteManagement.siteLocations.length} sites</span>
                 <span class="opacity-75">•</span>
-                <span>${Math.round(((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100)}% complete</span>
+                <span class="font-semibold">${Math.round(((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100)}% complete</span>
               </div>
-              <div class="mt-2 h-2 bg-white bg-opacity-30 rounded-full overflow-hidden">
-                <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: ${((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100}%"></div>
+              <div class="h-3 bg-white bg-opacity-30 rounded-full overflow-hidden">
+                <div class="h-full bg-white rounded-full transition-all duration-1000 animate-pulse" style="width: ${((siteManagement.completedSites.size + 1) / siteManagement.siteLocations.length) * 100}%"></div>
               </div>
             </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-white opacity-75 hover:opacity-100 text-3xl font-bold leading-none transition-opacity">×</button>
           </div>
         `;
-        
-        // Add close button
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'absolute top-2 right-2 text-white opacity-75 hover:opacity-100 transition-opacity';
-        closeBtn.innerHTML = '×';
-        closeBtn.style.fontSize = '24px';
-        closeBtn.onclick = () => {
-          if (document.body.contains(notification)) {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-              if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
-              }
-            }, 300);
-          }
-        };
-        notification.appendChild(closeBtn);
-        
         document.body.appendChild(notification);
         
+        // Auto-dismiss after 7 seconds (longer than before)
         setTimeout(() => {
           if (document.body.contains(notification)) {
             notification.style.opacity = '0';
@@ -138,9 +128,9 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
               if (document.body.contains(notification)) {
                 document.body.removeChild(notification);
               }
-            }, 300);
+            }, 500);
           }
-        }, 4000);
+        }, 7000);
       }
       
       // Add CSS animations if not already added
@@ -174,6 +164,14 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
             }
             to {
               opacity: 0;
+            }
+          }
+          @keyframes bounceScale {
+            0%, 100% {
+              transform: scale(1);
+            }
+            50% {
+              transform: scale(1.05);
             }
           }
         `;

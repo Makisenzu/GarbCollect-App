@@ -1241,7 +1241,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   // NEW: Show celebration notification to residents
   const showCompletionNotification = (siteName, data) => {
     const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-[9999] min-w-[320px] transform transition-all duration-500';
+    notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-5 rounded-xl shadow-2xl z-[9999] min-w-[320px] max-w-[420px] transform transition-all duration-500';
     notification.style.animation = 'slideInRight 0.5s ease-out';
     
     const completedCount = data.completed_sites || 0;
@@ -1250,41 +1250,33 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     
     notification.innerHTML = `
       <div class="flex items-start gap-3">
-        <div class="text-4xl">✅</div>
+        <div class="text-5xl animate-bounce">✅</div>
         <div class="flex-1">
-          <div class="font-bold text-lg mb-1">${siteName} Collected!</div>
+          <div class="font-bold text-xl mb-1">${siteName} Collected!</div>
           <div class="text-sm opacity-90 mb-2">Driver has completed this collection point</div>
-          <div class="flex items-center gap-2 text-xs">
-            <span class="font-semibold">${completedCount}/${totalCount} sites</span>
+          <div class="flex items-center gap-2 text-sm mb-2">
+            <span class="font-semibold bg-white bg-opacity-20 px-2 py-1 rounded">${completedCount}/${totalCount} sites</span>
             <span class="opacity-75">•</span>
-            <span>${percentage}% complete</span>
+            <span class="font-semibold">${percentage}% complete</span>
           </div>
-          <div class="mt-2 h-2 bg-white bg-opacity-30 rounded-full overflow-hidden">
-            <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: ${percentage}%"></div>
+          <div class="h-3 bg-white bg-opacity-30 rounded-full overflow-hidden">
+            <div class="h-full bg-white rounded-full transition-all duration-1000 animate-pulse" style="width: ${percentage}%"></div>
           </div>
         </div>
+        <button onclick="this.parentElement.parentElement.remove()" class="text-white opacity-75 hover:opacity-100 text-3xl font-bold leading-none transition-opacity">×</button>
       </div>
     `;
     
-    // Add close button
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'absolute top-2 right-2 text-white opacity-75 hover:opacity-100 transition-opacity';
-    closeBtn.innerHTML = '×';
-    closeBtn.style.fontSize = '24px';
-    closeBtn.onclick = () => {
-      if (document.body.contains(notification)) {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-          }
-        }, 300);
-      }
-    };
-    notification.appendChild(closeBtn);
-    
     document.body.appendChild(notification);
+    
+    // Play success sound for residents too
+    try {
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGAg+ltryxnMpBSuBzvLaiTUIGGe77OmfTgwOUKbk8LdjHQU2kdby0HwqBSp3x/DdkUELEl+06OyqVRUKRp7g8r5wIgU0h9H004IzBh1tv+/mnEkODlat6O+xXBkIP5Xa8sV0KgUrgc7y2YszCBdnvOzpnk4MDU+m5O+5ZBwGNpHX8s98Kgcrc8fv3ZJCCxFftOjuq1YUDD6f4fK/cCMGNYfR89OCMwYcbb/v5JxKDg5VrOjusVwZCj6U2vLGdSoGK4HO8tmLMwgXZ7vs6J5PDA1Ppubw...');
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    } catch (e) {
+      // Ignore audio errors
+    }
     
     setTimeout(() => {
       if (document.body.contains(notification)) {
@@ -1296,7 +1288,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
           }
         }, 300);
       }
-    }, 5000);
+    }, 6000);
 
     // Add CSS animations if not already added
     if (!document.getElementById('resident-completion-animations')) {

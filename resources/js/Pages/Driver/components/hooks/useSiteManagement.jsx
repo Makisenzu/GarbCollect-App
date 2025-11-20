@@ -49,7 +49,7 @@ export const useSiteManagement = ({
     if (!currentPos || sites.length === 0) return false;
   
     const [longitude, latitude] = currentPos;
-    const PROXIMITY_THRESHOLD = 0.05;
+    const PROXIMITY_THRESHOLD = 0.05; // ~50 meters
     let siteReached = false;
   
     sites.forEach((site, index) => {
@@ -65,7 +65,13 @@ export const useSiteManagement = ({
         siteLongitude
       );
   
-      if (distance < 0.05) {
+      // Log proximity check for debugging
+      if (distance < 0.1) { // Log when within 100m
+        console.log(`📍 Proximity check: ${site.site_name} - Distance: ${(distance * 1000).toFixed(0)}m (threshold: ${(PROXIMITY_THRESHOLD * 1000).toFixed(0)}m)`);
+      }
+
+      if (distance < PROXIMITY_THRESHOLD) {
+        console.log(`🎯 SITE REACHED! ${site.site_name} - Distance: ${(distance * 1000).toFixed(0)}m`);
         markSiteAsCompleted(site, index);
         siteReached = true;
       }
