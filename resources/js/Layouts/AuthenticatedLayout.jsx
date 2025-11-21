@@ -13,6 +13,7 @@ import { FaUser } from "react-icons/fa6";
 import { FaUserGear } from "react-icons/fa6";
 import { TbLogout } from "react-icons/tb";
 import { RiCalendarScheduleFill } from "react-icons/ri";
+import { getAvatarUrl } from '@/Utils/imageHelpers';
 
 export default function AuthenticatedLayout({ header, children, auth: propAuth }) {
     const pageProps = usePage().props;
@@ -132,7 +133,7 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                     <div className="p-4 border-t border-gray-200">
                         <div className="flex items-center space-x-3 mb-3">
                             <img
-                                src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
+                                src={getAvatarUrl(user)}
                                 alt="Profile"
                                 className="w-10 h-10 rounded-full object-cover"
                             />
@@ -268,7 +269,7 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                     <div className="p-4 border-t border-gray-200">
                         <div className="flex items-center space-x-3 mb-3">
                             <img
-                                src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
+                                src={getAvatarUrl(user)}
                                 alt="Profile"
                                 className="w-10 h-10 rounded-full object-cover"
                             />
@@ -330,7 +331,7 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
                                             className="inline-flex items-center p-2 border-transparent rounded-md text-gray-500 hover:text-gray-700 focus:outline-none"
                                         >
                                             <img
-                                                src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
+                                                src={getAvatarUrl(user)}
                                                 alt="Profile"
                                                 className="w-8 h-8 rounded-full object-cover"
                                             />
@@ -366,3 +367,4 @@ export default function AuthenticatedLayout({ header, children, auth: propAuth }
         </div>
     );
 }
+

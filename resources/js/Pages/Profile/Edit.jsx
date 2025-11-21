@@ -3,6 +3,7 @@ import { Head, usePage } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
+import { getAvatarUrl } from '@/Utils/imageHelpers';
 
 export default function Edit({ mustVerifyEmail, status }) {
     const { auth } = usePage().props;
@@ -38,7 +39,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                             <div className="sticky top-8">
                                 <div className="mb-6">
                                     <img
-                                        src={auth.user.picture ? `/storage/profile-pictures/${auth.user.picture}` : '/default-avatar.png'}
+                                        src={getAvatarUrl(auth.user)}
                                         alt="Profile"
                                         className="w-full aspect-square rounded-full object-cover border border-gray-200"
                                     />

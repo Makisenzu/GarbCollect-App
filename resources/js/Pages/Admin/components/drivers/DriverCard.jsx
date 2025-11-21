@@ -4,6 +4,7 @@ import FormModal from '@/Components/FormModal';
 import DriverModal from '@/Components/DriverModal';
 import { showAlert, confirmDialog } from '@/SweetAlert';
 import { router } from '@inertiajs/react';
+import { getAvatarUrl } from '@/Utils/imageHelpers';
 
 const DriverCard = ({ driver, schedule, isActive }) => {
   const [open, setOpen] = useState(false);
@@ -212,7 +213,7 @@ const DriverCard = ({ driver, schedule, isActive }) => {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {driver.user.picture ? (
               <img
-                src={`/storage/profile-pictures/${driver.user.picture}`}
+                src={getAvatarUrl(driver.user)}
                 alt={driver.user.name}
                 className="w-12 h-12 rounded-full object-cover flex-shrink-0"
               />

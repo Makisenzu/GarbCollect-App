@@ -4,6 +4,7 @@ import { CircleLoader, RingLoader } from 'react-spinners';
 import FormModal from '@/Components/FormModal';
 import { router } from '@inertiajs/react';
 import { showAlert, confirmDialog } from '@/SweetAlert';
+import { getAvatarUrl } from '@/Utils/imageHelpers';
 
 const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = false }) => {
   if (!show || !driver) return null;
@@ -341,7 +342,7 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                 <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                   {driver.user.picture ? (
                     <img 
-                      src={`/storage/profile-pictures/${driver.user.picture}`} 
+                      src={getAvatarUrl(driver.user)} 
                       alt={`${driver.user.name} ${driver.user.lastname}`}
                       className="w-full h-full object-cover"
                     />

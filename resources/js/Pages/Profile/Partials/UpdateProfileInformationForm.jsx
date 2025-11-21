@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { getAvatarUrl } from '@/Utils/imageHelpers';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -47,7 +48,7 @@ export default function UpdateProfileInformation({
                     <div className="flex items-start">
                         <div className="flex-shrink-0">
                             <img
-                                src={user.picture ? `/storage/profile-pictures/${user.picture}` : '/default-avatar.png'}
+                                src={getAvatarUrl(user)}
                                 alt="Profile"
                                 className="w-16 h-16 rounded-full object-cover border border-gray-300"
                             />
@@ -69,7 +70,10 @@ export default function UpdateProfileInformation({
                                 <p className="mt-2 text-xs text-gray-600">Selected: {data.picture.name}</p>
                             )}
                             <p className="mt-1 text-xs text-gray-500">
-                                Upload a photo to personalize your account
+                                {user.picture && (user.picture.startsWith('http://') || user.picture.startsWith('https://'))
+                                    ? 'You can upload a custom photo to replace your Google profile picture' 
+                                    : 'Upload a photo to personalize your account'
+                                }
                             </p>
                         </div>
                     </div>
