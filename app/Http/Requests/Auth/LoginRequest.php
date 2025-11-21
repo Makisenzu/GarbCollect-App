@@ -49,6 +49,16 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+        
+        if ($user->roles === 'applicant') {
+            Auth::logout();
+            
+            throw ValidationException::withMessages([
+                'email' => 'Your account is pending approval. Please wait for admin to activate your account as a driver.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

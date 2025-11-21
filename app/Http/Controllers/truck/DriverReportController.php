@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\truck;
 
+use App\Http\Controllers\Controller;
 use App\Models\Schedule;
 use App\Models\Report;
 use App\Models\Garbage;

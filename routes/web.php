@@ -11,7 +11,7 @@ use App\Http\Controllers\User\PublicSchedule;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\ComplaintsController;
 
-use App\Http\Controllers\DriverReportController;
+use App\Http\Controllers\truck\DriverReportController;
 
 use App\Http\Controllers\truck\EmployeeController;
 use App\Http\Controllers\admin\Ai\ReviewController;
