@@ -25,7 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'municipality/barangay/addNewGarbageSite',
             '/admin/Driver/add',
             '/admin/getBarangay/{id}',
-            '/reviews'
+            '/reviews',
+            'auth/google/callback',
         ]);
     
         $middleware->web(append: [

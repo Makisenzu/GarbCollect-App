@@ -12,19 +12,20 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use Illuminate\Support\Facades\Route;
 
+// Google OAuth routes (outside guest middleware to allow callback)
+Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
+    ->middleware('guest')
+    ->name('google.login');
+
+Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
+    ->name('google.callback');
+
 Route::middleware('guest')->group(function () {
     // Disabled regular registration - only Google OAuth allowed
     // Route::get('register', [RegisteredUserController::class, 'create'])
     //     ->name('register');
 
     // Route::post('register', [RegisteredUserController::class, 'store']);
-
-    // Google OAuth routes
-    Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
-        ->name('google.login');
-    
-    Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
-        ->name('google.callback');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
