@@ -16,7 +16,7 @@ const ScheduleHero = () => {
         
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
-          style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
+          style: 'mapbox://styles/mapbox/streets-v12',
           center: [126.00318418, 8.48822700],
           zoom: 10,
           pitch: 0,
