@@ -152,7 +152,7 @@ const useLocation = (mapboxToken, sites) => {
 
             map.current = new mapboxgl.Map({
                 container: mapContainer.current,
-                style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
+                style: 'mapbox://styles/mapbox/streets-v12',
                 center: [125.94849837776422, 8.483022468128098],
                 zoom: 11,
                 attributionControl: false,

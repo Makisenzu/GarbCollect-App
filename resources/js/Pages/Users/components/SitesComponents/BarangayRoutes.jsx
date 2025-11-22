@@ -59,18 +59,20 @@ const BarangayRoutes = ({ mapboxToken }) => {
           </div>
         )}
         
+        {/* Back Button - Positioned at top-left */}
         <Link
           href="/"
-          className="absolute top-4 left-4 z-40 bg-white hover:bg-gray-50 text-gray-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:shadow-xl border border-gray-200"
+          className="absolute top-4 left-4 z-50 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white p-2.5 sm:p-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl flex items-center gap-2 group"
           title="Back to Dashboard"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
+          <span className="hidden sm:inline-block text-sm font-medium">Back</span>
         </Link>
 
         {/* Barangay Select Container - Responsive */}
-        <div className="absolute top-4 md:left-20 left-4 right-4 md:right-auto z-40 bg-white rounded-lg shadow-lg p-3 md:p-4 md:min-w-64 max-w-md">
+        <div className="absolute top-16 sm:top-4 left-4 right-4 md:left-auto md:right-4 z-40 bg-white rounded-lg shadow-lg p-3 md:p-4 md:min-w-64 max-w-md md:max-w-sm">
           <label htmlFor="barangay_id" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
             Select Barangay
           </label>
