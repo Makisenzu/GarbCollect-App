@@ -41,7 +41,7 @@ const barangayColors = {
   '_default': '#4F262A'
 };
 
-const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
+const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [cssLoaded, setCssLoaded] = useState(false);
@@ -1553,6 +1553,9 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   };
 
   const getMapHeight = () => {
+    if (isFullscreen) {
+      return '100%'; // Full height in fullscreen mode
+    }
     if (windowSize.width < 640) {
       return '400px';
     } else if (windowSize.width < 768) {
@@ -1587,7 +1590,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
   }
 
   return (
-    <div className="w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className={`${isFullscreen ? 'w-full h-full' : 'w-full'} bg-white ${isFullscreen ? '' : 'rounded-lg border border-gray-200'} overflow-hidden`}>
       {/* ONLY GarbageTruckSpinner remains */}
       <GarbageTruckSpinner 
         isLoading={showSpinner}
@@ -1597,7 +1600,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
       />
 
       {/* Map Container */}
-      <div className="relative w-full" style={{ height: getMapHeight() }}>
+      <div className={`relative w-full ${isFullscreen ? 'h-full' : ''}`} style={{ height: isFullscreen ? '100%' : getMapHeight() }}>
         {/* REMOVED: The loading spinner div that was here */}
         
         <div 
@@ -1607,9 +1610,24 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         
         {mapInitialized && (
           <>
-            {/* Enhanced Legend - Responsive */}
-            <div className={`absolute ${isMobile ? 'bottom-2 left-2' : 'bottom-4 left-4'} bg-white rounded-lg shadow-lg border border-gray-200 ${isMobile ? 'p-2' : 'p-3'} z-10 ${isMobile ? 'min-w-40' : 'min-w-48'}`}>
-              <div className={`font-semibold ${isMobile ? 'text-xs' : 'text-sm'} text-gray-900 ${isMobile ? 'mb-2' : 'mb-3'}`}>Legend</div>
+            {/* Enhanced Legend - Responsive and Fullscreen Optimized */}
+            <div className={`absolute ${
+              isMobile 
+                ? 'bottom-2 left-2' 
+                : isFullscreen 
+                  ? 'bottom-4 left-4' 
+                  : 'bottom-4 left-4'
+            } bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 ${
+              isMobile ? 'p-2' : 'p-3'
+            } z-10 ${
+              isMobile ? 'min-w-40 max-w-48' : isFullscreen ? 'min-w-52' : 'min-w-48'
+            }`}>
+              <div className={`font-semibold ${isMobile ? 'text-xs' : 'text-sm'} text-gray-900 ${isMobile ? 'mb-2' : 'mb-3'} flex items-center justify-between`}>
+                <span>Legend</span>
+                {isFullscreen && !isMobile && (
+                  <span className="text-xs font-normal text-gray-500">Live Tracking</span>
+                )}
+              </div>
               <div className={`space-y-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 relative">
@@ -1650,11 +1668,19 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
               </div>
             </div>
 
-            {/* Enhanced Control Buttons - Responsive */}
-            <div className={`absolute ${isMobile ? 'top-2 right-2' : 'top-4 right-4'} flex flex-col gap-2 z-10`}>
+            {/* Enhanced Control Buttons - Responsive and Fullscreen Optimized */}
+            <div className={`absolute ${
+              isMobile 
+                ? 'top-2 right-2' 
+                : isFullscreen 
+                  ? 'top-4 right-4' 
+                  : 'top-4 right-4'
+            } flex ${isFullscreen && !isMobile ? 'flex-row gap-2' : 'flex-col gap-2'} z-10`}>
               <button
                 onClick={refreshIcons}
-                className={`bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
+                className={`${
+                  isFullscreen ? 'bg-white/95 backdrop-blur-sm' : 'bg-white'
+                } rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
                   isMobile ? 'p-2' : 'p-3'
                 }`}
                 title="Refresh icons"
@@ -1664,7 +1690,9 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
               <button
                 onClick={toggleRealTimeRouting}
-                className={`rounded-lg shadow-lg border transition-colors flex items-center justify-center ${
+                className={`${
+                  isFullscreen && !realTimeRouteEnabled ? 'bg-white/95 backdrop-blur-sm' : ''
+                } rounded-lg shadow-lg border transition-colors flex items-center justify-center ${
                   isMobile ? 'p-2' : 'p-3'
                 } ${
                   realTimeRouteEnabled 
@@ -1679,7 +1707,9 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
               <button
                 onClick={refreshRoute}
                 disabled={routeLoading}
-                className={`bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
+                className={`${
+                  isFullscreen ? 'bg-white/95 backdrop-blur-sm' : 'bg-white'
+                } rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
                   isMobile ? 'p-2' : 'p-3'
                 } ${routeLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title="Refresh route"
@@ -1695,17 +1725,23 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
               <button
                 onClick={toggleRouteInfo}
-                className={`bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
+                className={`${
+                  isFullscreen ? 'bg-white/95 backdrop-blur-sm' : 'bg-white'
+                } rounded-lg shadow-lg border ${
+                  showRouteInfo ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                } hover:bg-gray-50 transition-colors flex items-center justify-center ${
                   isMobile ? 'p-2' : 'p-3'
                 }`}
                 title={showRouteInfo ? 'Hide route info' : 'Show route info'}
               >
-                <IoList className={`text-gray-700 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                <IoList className={`${showRouteInfo ? 'text-blue-600' : 'text-gray-700'} ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
               </button>
 
               <button
                 onClick={fitMapToRoute}
-                className={`bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
+                className={`${
+                  isFullscreen ? 'bg-white/95 backdrop-blur-sm' : 'bg-white'
+                } rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
                   isMobile ? 'p-2' : 'p-3'
                 }`}
                 title="Fit to route"
@@ -1714,8 +1750,14 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
               </button>
             </div>
 
-            {/* Connection Status - Responsive */}
-            <div className={`absolute ${isMobile ? 'top-2 left-2' : 'top-4 left-4'} bg-white rounded-lg shadow-lg border border-gray-200 ${
+            {/* Connection Status - Responsive and Fullscreen Optimized */}
+            <div className={`absolute ${
+              isMobile 
+                ? 'top-2 left-2' 
+                : isFullscreen 
+                  ? 'top-4 left-4' 
+                  : 'top-4 left-4'
+            } bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 ${
               isMobile ? 'px-2 py-1' : 'px-3 py-2'
             } z-10`}>
               <div className="flex items-center gap-2">
@@ -1731,15 +1773,23 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
               </div>
             </div>
 
-            {/* Enhanced Route Information Panel - Responsive */}
+            {/* Enhanced Route Information Panel - Responsive and Fullscreen Optimized */}
             {routeInfo && showRouteInfo && (
               <div className={`absolute ${
-                isMobile ? 
-                  'top-12 left-2 right-2' : 
-                  'top-16 left-4'
-              } bg-white rounded-lg shadow-lg border border-gray-200 ${
+                isMobile 
+                  ? 'top-12 left-2 right-2' 
+                  : isFullscreen 
+                    ? 'top-4 left-1/2 transform -translate-x-1/2' 
+                    : 'top-16 left-4'
+              } bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 ${
                 isMobile ? 'p-3' : 'p-4'
-              } z-10 ${isMobile ? '' : 'min-w-64'}`}>
+              } z-10 ${
+                isMobile 
+                  ? '' 
+                  : isFullscreen 
+                    ? 'min-w-80 max-w-md' 
+                    : 'min-w-64'
+              }`}>
                 <div className={`font-semibold text-gray-900 ${
                   isMobile ? 'text-sm mb-2' : 'text-base mb-3'
                 } flex items-center justify-between`}>

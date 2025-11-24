@@ -24,6 +24,7 @@ const getFirstDayOfMonth = (year, month) => {
 const PublicSchedule = () => {
   const [showResidentMap, setShowResidentMap] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [isFullscreenMap, setIsFullscreenMap] = useState(false);
 
   const [selectedBarangay, setSelectedBarangay] = useState(null);
   const [barangayOptions, setBarangayOptions] = useState([]);
@@ -93,6 +94,14 @@ const PublicSchedule = () => {
     setCurrentPage(1);
   }, [activeTab]);
 
+  // Cleanup effect: restore scroll when component unmounts or fullscreen closes
+  useEffect(() => {
+    return () => {
+      // Ensure body scroll is restored on unmount
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
   // NEW: Enhanced schedule status detection
   const getScheduleStatus = (schedule) => {
     const now = new Date();
@@ -138,12 +147,18 @@ const PublicSchedule = () => {
   const handleTrackSchedule = (schedule) => {
     setSelectedSchedule(schedule);
     setShowResidentMap(true);
+    setIsFullscreenMap(true); // Enable fullscreen mode
     
-    setTimeout(() => {
-      document.getElementById('resident-map-section')?.scrollIntoView({ 
-        behavior: 'smooth' 
-      });
-    }, 100);
+    // Prevent body scroll when fullscreen map is open
+    document.body.style.overflow = 'hidden';
+  };
+
+  const handleCloseMap = () => {
+    setShowResidentMap(false);
+    setIsFullscreenMap(false);
+    
+    // Re-enable body scroll
+    document.body.style.overflow = 'auto';
   };
 
   // UPDATED: Get today's active schedules only
@@ -686,32 +701,78 @@ const PublicSchedule = () => {
 
                 {/* Resident Map Section */}
                 {showResidentMap && selectedSchedule && (
-                  <div id="resident-map-section" className="mt-12">
-                    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                      <div className="p-6 border-b border-gray-100">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h2 className="text-2xl font-bold text-gray-800">Live Collection Map</h2>
-                            <p className="text-gray-600">
-                              Real-time tracking for {selectedBarangay.label} - {selectedSchedule.formattedDate}
-                            </p>
+                  <div 
+                    id="resident-map-section" 
+                    className={`${
+                      isFullscreenMap 
+                        ? 'fixed inset-0 z-[9999] bg-white' 
+                        : 'mt-12'
+                    }`}
+                  >
+                    {isFullscreenMap ? (
+                      // Fullscreen Mode
+                      <div className="w-full h-full flex flex-col">
+                        {/* Fullscreen Header with Back Button */}
+                        <div className="bg-gradient-to-r from-green-600 to-blue-600 px-4 py-3 sm:px-6 sm:py-4 shadow-md">
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={handleCloseMap}
+                              className="flex items-center gap-2 text-white hover:bg-white/20 px-3 py-2 rounded-lg transition-colors"
+                            >
+                              <ChevronLeft className="h-5 w-5" />
+                              <span className="font-semibold">Back</span>
+                            </button>
+                            <div className="flex-1 text-center px-4">
+                              <h2 className="text-lg sm:text-xl font-bold text-white truncate">
+                                {selectedBarangay.label}
+                              </h2>
+                              <p className="text-xs sm:text-sm text-white/90 hidden sm:block">
+                                {selectedSchedule.formattedDate} at {selectedSchedule.collection_time}
+                              </p>
+                            </div>
+                            <div className="w-20"></div> {/* Spacer for centering */}
                           </div>
-                          <button
-                            onClick={() => setShowResidentMap(false)}
-                            className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                          >
-                            <X className="h-5 w-5" />
-                          </button>
+                        </div>
+
+                        {/* Fullscreen Map */}
+                        <div className="flex-1 relative overflow-hidden">
+                          <ResidentMap 
+                            mapboxKey={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                            barangayId={selectedBarangay.value}
+                            scheduleId={selectedSchedule.id}
+                            isFullscreen={true}
+                          />
                         </div>
                       </div>
-                      <div className="p-6">
-                        <ResidentMap 
-                          mapboxKey={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-                          barangayId={selectedBarangay.value}
-                          scheduleId={selectedSchedule.id}
-                        />
+                    ) : (
+                      // Normal Mode (Embedded)
+                      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                        <div className="p-6 border-b border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h2 className="text-2xl font-bold text-gray-800">Live Collection Map</h2>
+                              <p className="text-gray-600">
+                                Real-time tracking for {selectedBarangay.label} - {selectedSchedule.formattedDate}
+                              </p>
+                            </div>
+                            <button
+                              onClick={handleCloseMap}
+                              className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-6">
+                          <ResidentMap 
+                            mapboxKey={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                            barangayId={selectedBarangay.value}
+                            scheduleId={selectedSchedule.id}
+                            isFullscreen={false}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </>
