@@ -1205,12 +1205,13 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
 
   // NEW: Handle site completion events from driver
   const handleSiteCompletion = (completionData) => {
-    console.log('Handling site completion:', completionData);
+    console.log('🎯 Handling site completion:', completionData);
     
     // Update site locations to mark as completed
     setSiteLocations(prevSites => 
       prevSites.map(site => {
         if (site.id === completionData.site_id || site.id === completionData.siteId) {
+          console.log(`✅ Marking site ${site.site_name} as completed`);
           return {
             ...site,
             status: 'completed',
@@ -1225,16 +1226,29 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
     // Show celebration notification to resident
     showCompletionNotification(completionData.site_name || 'Collection Site', completionData);
     
-    // Update markers to reflect completion
+    // Update markers to reflect completion immediately
     if (mapInitialized) {
       setTimeout(() => {
-        updateSiteMarkers(siteLocations);
+        // Get updated sites list
+        const updatedSites = siteLocations.map(site => {
+          if (site.id === completionData.site_id || site.id === completionData.siteId) {
+            return {
+              ...site,
+              status: 'completed',
+              collectionStatus: 'finished',
+              completed_at: completionData.completed_at || new Date().toISOString()
+            };
+          }
+          return site;
+        });
+        
+        updateSiteMarkers(updatedSites);
         
         // Recalculate route if needed
         if (realTimeRouteEnabled && driverLocation) {
           updateRealTimeRoute();
         }
-      }, 500);
+      }, 100);
     }
   };
 
@@ -1411,11 +1425,16 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId }) => {
         const markerElement = document.createElement('div');
         markerElement.className = 'site-marker';
         
-        const isCompleted = site.status === 'completed';
+        const isCompleted = site.status === 'completed' || site.collectionStatus === 'finished';
         const isCurrent = site.status === 'in_progress';
         const isStation = site.type === 'station';
         const purokName = site.purok_name || site.site_name || 'Site';
-        const isTargetSite = realTimeRouteEnabled && nearestSite && nearestSite.id === site.id;
+        const isTargetSite = realTimeRouteEnabled && nearestSite && nearestSite.id === site.id && !isCompleted;
+        
+        // Debug logging for completion status
+        if (isCompleted) {
+          console.log(`✓ Rendering completed site: ${site.site_name} (ID: ${site.id})`);
+        }
         
         const getMarkerColor = () => {
           if (isStation) return '#DC2626';
