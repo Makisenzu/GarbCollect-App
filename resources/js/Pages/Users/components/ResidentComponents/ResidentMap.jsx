@@ -1676,19 +1676,9 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
                   ? 'top-4 right-4' 
                   : 'top-4 right-4'
             } flex ${isFullscreen && !isMobile ? 'flex-row gap-2' : 'flex-col gap-2'} z-10`}>
-              <button
-                onClick={refreshIcons}
-                className={`${
-                  isFullscreen ? 'bg-white/95 backdrop-blur-sm' : 'bg-white'
-                } rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center ${
-                  isMobile ? 'p-2' : 'p-3'
-                }`}
-                title="Refresh icons"
-              >
-                <IoRefresh className={`text-gray-700 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-              </button>
 
-              <button
+
+              {/* <button
                 onClick={toggleRealTimeRouting}
                 className={`${
                   isFullscreen && !realTimeRouteEnabled ? 'bg-white/95 backdrop-blur-sm' : ''
@@ -1702,7 +1692,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
                 title={realTimeRouteEnabled ? 'Disable real-time routing' : 'Enable real-time routing'}
               >
                 <div className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} ${realTimeRouteEnabled ? 'animate-pulse' : ''}`}></div>
-              </button>
+              </button> */}
 
               <button
                 onClick={refreshRoute}
