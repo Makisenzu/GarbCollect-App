@@ -81,7 +81,7 @@ class DashboardController extends Controller
             foreach ($garbageTypes as $garbageType) {
                 $count = $reports->filter(function($report) use ($garbageType) {
                     return $report->garbage_id == $garbageType->id;
-                })->sum('sack_count');
+                })->sum('kilograms');
                 
                 $weekData[$garbageType->garbage_type] = $count;
             }
@@ -106,7 +106,7 @@ class DashboardController extends Controller
             foreach ($garbageTypes as $garbageType) {
                 $count = $reports->filter(function($report) use ($garbageType) {
                     return $report->garbage_id == $garbageType->id;
-                })->sum('sack_count');
+                })->sum('kilograms');
                 
                 $monthData[$garbageType->garbage_type] = $count;
             }
@@ -164,9 +164,9 @@ class DashboardController extends Controller
             $reportData = [];
             
             foreach ($schedules as $schedule) {
-                $totalSacks = $schedule->reports->sum('sack_count');
+                $totalKg = $schedule->reports->sum('kilograms');
                 $garbageTypes = $schedule->reports->map(function($report) {
-                    return $report->garbage->garbage_type . ' (' . $report->sack_count . ' sacks)';
+                    return $report->garbage->garbage_type . ' (' . number_format($report->kilograms, 2) . ' kg)';
                 })->implode(', ');
 
                 $sitesVisited = $schedule->collections->count();
@@ -179,7 +179,7 @@ class DashboardController extends Controller
                     'Barangay' => $schedule->barangay->baranggay_name ?? 'N/A',
                     'Driver Name' => $schedule->driver->user->name . ' ' . $schedule->driver->user->lastname ?? 'N/A',
                     'Status' => strtoupper($schedule->status),
-                    'Total Sacks Collected' => $totalSacks,
+                    'Total Kilograms Collected' => number_format($totalKg, 2),
                     'Garbage Types' => $garbageTypes ?: 'No data',
                     'Sites Assigned' => $sitesVisited,
                     'Sites Completed' => $sitesCompleted,
@@ -193,7 +193,7 @@ class DashboardController extends Controller
                 'data' => $reportData,
                 'summary' => [
                     'total_schedules' => $schedules->count(),
-                    'total_sacks' => array_sum(array_column($reportData, 'Total Sacks Collected')),
+                    'total_kilograms' => array_sum(array_column($reportData, 'Total Kilograms Collected')),
                     'completed' => $schedules->where('status', 'completed')->count(),
                     'active' => $schedules->where('status', 'active')->count(),
                     'failed' => $schedules->where('status', 'FAILED')->count(),

@@ -10,7 +10,7 @@ class Report extends Model
         'schedule_id',
         'garbage_id',
         'report_picture',
-        'sack_count',
+        'kilograms',
         'additional_notes'
     ];
 

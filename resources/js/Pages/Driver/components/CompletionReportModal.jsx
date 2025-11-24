@@ -33,7 +33,7 @@ export default function CompletionReportModal({
         setReports(types.map(type => ({
           garbage_id: type.id,
           garbage_type: type.garbage_type,
-          sack_count: 0
+          kilograms: 0
         })));
       }
     } catch (error) {
@@ -41,11 +41,23 @@ export default function CompletionReportModal({
     }
   };
 
-  const handleSackCountChange = (garbageId, value) => {
+  const handleKilogramsChange = (garbageId, value) => {
+    // Allow decimal values
+    const numValue = parseFloat(value) || 0;
     setReports(prev => 
       prev.map(report => 
         report.garbage_id === garbageId 
-          ? { ...report, sack_count: parseInt(value) || 0 }
+          ? { ...report, kilograms: numValue }
+          : report
+      )
+    );
+  };
+
+  const incrementKilograms = (garbageId, amount) => {
+    setReports(prev => 
+      prev.map(report => 
+        report.garbage_id === garbageId 
+          ? { ...report, kilograms: Math.max(0, report.kilograms + amount) }
           : report
       )
     );
@@ -72,9 +84,9 @@ export default function CompletionReportModal({
         return;
       }
 
-      const totalSacks = reports.reduce((sum, r) => sum + r.sack_count, 0);
-      if (totalSacks === 0) {
-        setErrors({ sacks: 'Please enter at least one sack count' });
+      const totalKg = reports.reduce((sum, r) => sum + r.kilograms, 0);
+      if (totalKg === 0) {
+        setErrors({ kilograms: 'Please enter at least one garbage weight' });
         setIsSubmitting(false);
         return;
       }
@@ -86,7 +98,7 @@ export default function CompletionReportModal({
       formData.append('reports', JSON.stringify(reports));
 
       // Submit report
-      const response = await axios.post('/driver/submit-completion-report', formData, {
+      const response = await axios.post('/submit-completion-report', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -115,24 +127,28 @@ export default function CompletionReportModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6">
+        <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold">🎉 All Sites Completed!</h2>
-              <p className="text-green-100 text-sm mt-1">Please submit your collection report</p>
+              <h2 className="text-xl sm:text-2xl font-bold">🎉 Collection Completed!</h2>
+              <p className="text-green-100 text-xs sm:text-sm mt-1">Please submit your collection report</p>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-green-100">Schedule</div>
-              <div className="font-semibold">{scheduleName}</div>
-            </div>
+            <button
+              onClick={onClose}
+              className="ml-2 p-2 hover:bg-green-700 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-200px)]">
           {/* Error Messages */}
           {errors.submit && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -151,7 +167,7 @@ export default function CompletionReportModal({
                   <img 
                     src={picturePreview} 
                     alt="Preview" 
-                    className="max-h-48 mx-auto rounded-lg"
+                    className="max-h-40 sm:max-h-48 mx-auto rounded-lg"
                   />
                   <button
                     type="button"
@@ -159,16 +175,16 @@ export default function CompletionReportModal({
                       setReportPicture(null);
                       setPicturePreview(null);
                     }}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600"
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 sm:p-2 hover:bg-red-600"
                   >
                     ✕
                   </button>
                 </div>
               ) : (
                 <div>
-                  <div className="text-4xl mb-2">📷</div>
+                  <div className="text-3xl sm:text-4xl mb-2">📷</div>
                   <label className="cursor-pointer">
-                    <span className="text-blue-600 hover:text-blue-700 font-medium">
+                    <span className="text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base">
                       Click to upload picture
                     </span>
                     <input
@@ -187,45 +203,46 @@ export default function CompletionReportModal({
             )}
           </div>
 
-          {/* Garbage Collection Counts */}
+          {/* Garbage Collection Weights */}
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Garbage Collected (Number of Sacks) <span className="text-red-500">*</span>
+              Garbage Collected (Kilograms) <span className="text-red-500">*</span>
             </label>
             <div className="space-y-3">
               {reports.map((report) => (
                 <div 
                   key={report.garbage_id} 
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                       🗑️
                     </div>
-                    <div>
-                      <div className="font-medium text-gray-900">{report.garbage_type}</div>
-                      <div className="text-xs text-gray-500">Number of sacks</div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-gray-900 text-sm sm:text-base truncate">{report.garbage_type}</div>
+                      <div className="text-xs text-gray-500">Kilograms (kg)</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 ml-2">
                     <button
                       type="button"
-                      onClick={() => handleSackCountChange(report.garbage_id, Math.max(0, report.sack_count - 1))}
-                      className="w-8 h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 font-bold"
+                      onClick={() => incrementKilograms(report.garbage_id, -0.5)}
+                      className="w-7 h-7 sm:w-8 sm:h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 font-bold text-sm sm:text-base"
                     >
                       -
                     </button>
                     <input
                       type="number"
+                      step="0.1"
                       min="0"
-                      value={report.sack_count}
-                      onChange={(e) => handleSackCountChange(report.garbage_id, e.target.value)}
-                      className="w-20 text-center px-3 py-2 border border-gray-300 rounded-lg font-semibold"
+                      value={report.kilograms}
+                      onChange={(e) => handleKilogramsChange(report.garbage_id, e.target.value)}
+                      className="w-16 sm:w-20 text-center px-2 py-1.5 sm:py-2 border border-gray-300 rounded-lg font-semibold text-sm sm:text-base"
                     />
                     <button
                       type="button"
-                      onClick={() => handleSackCountChange(report.garbage_id, report.sack_count + 1)}
-                      className="w-8 h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 font-bold"
+                      onClick={() => incrementKilograms(report.garbage_id, 0.5)}
+                      className="w-7 h-7 sm:w-8 sm:h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 font-bold text-sm sm:text-base"
                     >
                       +
                     </button>
@@ -233,52 +250,52 @@ export default function CompletionReportModal({
                 </div>
               ))}
             </div>
-            {errors.sacks && (
-              <p className="text-red-500 text-xs mt-1">{errors.sacks}</p>
+            {errors.kilograms && (
+              <p className="text-red-500 text-xs mt-1">{errors.kilograms}</p>
             )}
           </div>
 
           {/* Total Summary */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-6">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700">Total Sacks Collected:</span>
-              <span className="text-2xl font-bold text-blue-600">
-                {reports.reduce((sum, r) => sum + r.sack_count, 0)}
+              <span className="font-semibold text-gray-700 text-sm sm:text-base">Total Collected:</span>
+              <span className="text-xl sm:text-2xl font-bold text-blue-600">
+                {reports.reduce((sum, r) => sum + r.kilograms, 0).toFixed(2)} kg
               </span>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                   Submitting...
                 </span>
               ) : (
-                'Submit Report & Complete Task'
+                'Submit Report & Complete'
               )}
             </button>
           </div>
 
           {/* Info Note */}
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="mt-4 p-2.5 sm:p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-xs text-yellow-800">
               <span className="font-semibold">Note:</span> After submitting this report, the schedule will be marked as completed and you'll be redirected to the dashboard.
             </p>

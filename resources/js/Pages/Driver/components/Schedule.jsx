@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Play, Eye, AlertCircle, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, Play, Eye, AlertCircle, X, CheckCircle } from 'lucide-react';
+import CompletionReportModal from './CompletionReportModal';
 
 export default function Schedule({ drivers, barangays, schedules, onStartTask, mapboxKey }) {
     const [timePeriod, setTimePeriod] = useState('today');
@@ -8,6 +9,8 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
     const [currentTime, setCurrentTime] = useState(new Date());
     const [selectedSchedule, setSelectedSchedule] = useState(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportScheduleId, setReportScheduleId] = useState(null);
 
     const assignedBarangay = drivers.length > 0 ? drivers[0]?.barangay : null;
     const assignedBarangayId = assignedBarangay?.id || (schedules.length > 0 ? schedules[0]?.barangay_id : null);
@@ -124,22 +127,20 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
     };
 
     const handleFinishTask = async (schedule) => {
-        if (!confirm('Are you sure you want to finish this task? This will open the completion report modal.')) {
-            return;
-        }
+        setReportScheduleId(schedule.id);
+        setShowReportModal(true);
+    };
 
-        try {
-            // Trigger the completion report modal
-            // This will be handled by the parent component
-            if (window.showCompletionReportModal) {
-                window.showCompletionReportModal(schedule.id);
-            } else {
-                alert('Please complete all sites first before finishing the task.');
-            }
-        } catch (error) {
-            console.error('Error finishing task:', error);
-            alert('Failed to finish task. Please try again.');
-        }
+    const handleReportModalClose = () => {
+        setShowReportModal(false);
+        setReportScheduleId(null);
+    };
+
+    const handleReportSubmitSuccess = () => {
+        setShowReportModal(false);
+        setReportScheduleId(null);
+        // Reload the page or update schedules
+        window.location.reload();
     };
 
     const handleShowDetails = (schedule) => {
@@ -186,7 +187,7 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
             completed: { color: 'bg-green-100 text-green-800 border-green-200', label: 'Completed' },
             done: { color: 'bg-green-100 text-green-800 border-green-200', label: 'Done' },
             failed: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Failed' },
-            pending: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Pending' }
+            progress: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Pending' }
         };
         
         const config = statusConfig[status] || { color: 'bg-gray-100 text-gray-800 border-gray-200', label: status };
@@ -206,10 +207,10 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
             <div className={`bg-white rounded-xl border hover:shadow-lg transition-all duration-200 overflow-hidden ${
                 isToday ? 'border-blue-300 bg-gradient-to-br from-blue-50 to-white' : 'border-gray-200'
             }`}>
-                <div className="p-5">
+                <div className="p-4 sm:p-5">
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
                                 <Calendar className="w-4 h-4 text-gray-500" />
                                 <span className="text-sm font-semibold text-gray-900">
                                     {formatDate(schedule.collection_date)}
@@ -230,7 +231,9 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
                                 )}
                             </div>
                         </div>
-                        {getStatusBadge(schedule.status)}
+                        <div className="ml-2">
+                            {getStatusBadge(schedule.status)}
+                        </div>
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -247,23 +250,25 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
                             <span className="hidden sm:inline">{canStart ? 'Start Task' : 'Not Available'}</span>
                             <span className="sm:hidden">{canStart ? 'Start' : 'N/A'}</span>
                         </button>
-                        {schedule.status === 'in_progress' && (
+                        
+                        {/* DONE button for today's schedules */}
+                        {isToday && (schedule.status === 'active' || schedule.status === 'progress' || schedule.status === 'in_progress') && (
                             <button 
                                 onClick={() => handleFinishTask(schedule)}
-                                className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg text-sm font-medium hover:from-orange-700 hover:to-orange-800 shadow-sm hover:shadow-md transition-all duration-200"
+                                className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg text-sm font-medium hover:from-emerald-700 hover:to-emerald-800 shadow-sm hover:shadow-md transition-all duration-200"
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                </svg>
-                                Finish
+                                <CheckCircle className="w-4 h-4" />
+                                <span className="hidden sm:inline">DONE</span>
                             </button>
                         )}
+                        
                         <button 
                             onClick={() => handleShowDetails(schedule)}
                             className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-white border border-blue-300 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
                         >
                             <Eye className="w-4 h-4" />
-                            Details
+                            <span className="hidden sm:inline">Details</span>
+                            <span className="sm:hidden">Info</span>
                         </button>
                     </div>
                 </div>
@@ -336,6 +341,17 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
                     schedule={selectedSchedule}
                     onClose={handleCloseDetails}
                     barangays={barangays}
+                />
+            )}
+
+            {/* Completion Report Modal */}
+            {showReportModal && reportScheduleId && (
+                <CompletionReportModal
+                    isOpen={showReportModal}
+                    onClose={handleReportModalClose}
+                    scheduleId={reportScheduleId}
+                    scheduleName={`Schedule #${reportScheduleId}`}
+                    onSubmitSuccess={handleReportSubmitSuccess}
                 />
             )}
         </div>

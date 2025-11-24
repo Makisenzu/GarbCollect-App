@@ -140,7 +140,7 @@ class DriverReportController extends Controller
         $request->validate([
             'schedule_id' => 'required|exists:schedules,id',
             'garbage_id' => 'required|exists:garbages,id',
-            'sack_count' => 'required|integer|min:0',
+            'kilograms' => 'required|numeric|min:0',
             'report_picture' => 'nullable|image|max:5120', // 5MB max
             'additional_notes' => 'nullable|string|max:500'
         ]);
@@ -161,7 +161,7 @@ class DriverReportController extends Controller
                 'schedule_id' => $request->schedule_id,
                 'garbage_id' => $request->garbage_id,
                 'report_picture' => $imagePath,
-                'sack_count' => $request->sack_count,
+                'kilograms' => $request->kilograms,
                 'additional_notes' => $request->additional_notes
             ]);
 

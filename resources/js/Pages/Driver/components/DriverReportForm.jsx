@@ -8,7 +8,7 @@ const DriverReportForm = ({ scheduleId, token }) => {
     const [formData, setFormData] = useState({
         garbage_id: '',
         report_picture: null,
-        sack_count: '',
+        kilograms: '',
         additional_notes: ''
     });
     
@@ -92,13 +92,13 @@ const DriverReportForm = ({ scheduleId, token }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        if (!formData.garbage_id || !formData.sack_count) {
+        if (!formData.garbage_id || !formData.kilograms) {
             alert('Please fill in all required fields');
             return;
         }
 
-        if (formData.sack_count < 0) {
-            alert('Sack count cannot be negative');
+        if (formData.kilograms < 0) {
+            alert('Weight cannot be negative');
             return;
         }
 
@@ -108,7 +108,7 @@ const DriverReportForm = ({ scheduleId, token }) => {
             const submitData = new FormData();
             submitData.append('schedule_id', scheduleId);
             submitData.append('garbage_id', formData.garbage_id);
-            submitData.append('sack_count', formData.sack_count);
+            submitData.append('kilograms', formData.kilograms);
             submitData.append('additional_notes', formData.additional_notes || '');
             
             if (formData.report_picture) {
@@ -201,20 +201,21 @@ const DriverReportForm = ({ scheduleId, token }) => {
                         </select>
                     </div>
 
-                    {/* Sack Count */}
+                    {/* Kilograms */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Number of Sacks Collected *
+                            Weight Collected (Kilograms) *
                         </label>
                         <input
                             type="number"
-                            name="sack_count"
-                            value={formData.sack_count}
+                            name="kilograms"
+                            value={formData.kilograms}
                             onChange={handleInputChange}
                             min="0"
+                            step="0.1"
                             required
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter number of sacks"
+                            placeholder="Enter weight in kilograms"
                         />
                     </div>
 

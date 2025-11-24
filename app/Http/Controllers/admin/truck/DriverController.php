@@ -585,12 +585,12 @@ class DriverController extends Controller
 
             // Create report entries for each garbage type
             foreach ($reportsData as $reportData) {
-                if ($reportData['sack_count'] > 0) {
+                if ($reportData['kilograms'] > 0) {
                     \App\Models\Report::create([
                         'schedule_id' => $validatedData['schedule_id'],
                         'garbage_id' => $reportData['garbage_id'],
                         'report_picture' => $picturePath,
-                        'sack_count' => $reportData['sack_count']
+                        'kilograms' => $reportData['kilograms']
                     ]);
                 }
             }
