@@ -5,8 +5,11 @@ namespace App\Http\Controllers\truck;
 use App\Models\Site;
 use App\Models\Driver;
 use App\Models\Schedule;
+use App\Models\CollectionQue;
 use Illuminate\Http\Request;
 use App\Events\DriverLocation;
+use App\Events\SiteCompletionUpdated;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -74,12 +77,22 @@ class DriverTrackerController extends Controller
                 $request->barangay_id
             ));
     
-            Log::info('Location update successful for driver: ' . $driver->id);
+            // Check proximity to collection sites and auto-complete
+            $sitesCompleted = $this->checkAndCompleteNearbySites(
+                $request->schedule_id,
+                $request->latitude,
+                $request->longitude
+            );
+    
+            Log::info('Location update successful for driver: ' . $driver->id, [
+                'sites_completed' => count($sitesCompleted)
+            ]);
     
             return response()->json([
                 'success' => true,
                 'message' => 'Location updated and broadcasted successfully',
-                'data' => $locationData
+                'data' => $locationData,
+                'sites_completed' => $sitesCompleted
             ]);
     
         } catch (\Exception $e) {
@@ -91,6 +104,107 @@ class DriverTrackerController extends Controller
                 'message' => 'Failed to update location: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function checkAndCompleteNearbySites($scheduleId, $driverLat, $driverLng)
+    {
+        $completedSites = [];
+        
+        try {
+            // Get all unfinished sites for this schedule
+            $unfinishedCollections = \App\Models\CollectionQue::where('schedule_id', $scheduleId)
+                ->where('status', 'unfinished')
+                ->with('site')
+                ->get();
+            
+            $PROXIMITY_THRESHOLD_KM = 0.05; // 50 meters
+            
+            foreach ($unfinishedCollections as $collection) {
+                if (!$collection->site) continue;
+                
+                $siteLat = floatval($collection->site->latitude);
+                $siteLng = floatval($collection->site->longitude);
+                
+                // Calculate distance using Haversine formula
+                $distance = $this->calculateDistance($driverLat, $driverLng, $siteLat, $siteLng);
+                
+                // Log proximity for debugging
+                if ($distance < 0.1) { // Log when within 100m
+                    Log::info("Driver proximity to {$collection->site->site_name}: {$distance}km");
+                }
+                
+                if ($distance <= $PROXIMITY_THRESHOLD_KM) {
+                    Log::info("AUTO-COMPLETING site: {$collection->site->site_name} - Distance: {$distance}km");
+                    
+                    // Mark site as completed
+                    DB::beginTransaction();
+                    
+                    $collection->markAsFinished();
+                    
+                    // Get completion statistics
+                    $completedCount = \App\Models\CollectionQue::where('schedule_id', $scheduleId)
+                        ->where('status', 'finished')
+                        ->count();
+                    $totalSites = \App\Models\CollectionQue::where('schedule_id', $scheduleId)->count();
+                    
+                    // Broadcast site completion event
+                    $schedule = Schedule::find($scheduleId);
+                    if ($schedule) {
+                        broadcast(new \App\Events\SiteCompletionUpdated(
+                            $collection->site->id,
+                            $scheduleId,
+                            $schedule->barangay_id,
+                            'finished',
+                            now()->toISOString(),
+                            $collection->site->site_name,
+                            $collection->site->latitude,
+                            $collection->site->longitude,
+                            $completedCount,
+                            $totalSites
+                        ));
+                    }
+                    
+                    // Check if all sites are completed
+                    if ($completedCount === $totalSites) {
+                        Schedule::where('id', $scheduleId)
+                            ->update(['status' => 'completed']);
+                        Log::info("All sites completed for schedule {$scheduleId}");
+                    }
+                    
+                    DB::commit();
+                    
+                    $completedSites[] = [
+                        'site_id' => $collection->site->id,
+                        'site_name' => $collection->site->site_name,
+                        'distance' => $distance
+                    ];
+                }
+            }
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in checkAndCompleteNearbySites: ' . $e->getMessage());
+        }
+        
+        return $completedSites;
+    }
+    
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371; // Earth's radius in kilometers
+        
+        $lat1Rad = deg2rad($lat1);
+        $lat2Rad = deg2rad($lat2);
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lonDelta = deg2rad($lon2 - $lon1);
+        
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos($lat1Rad) * cos($lat2Rad) *
+             sin($lonDelta / 2) * sin($lonDelta / 2);
+        
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        
+        return $earthRadius * $c;
     }
 
     public function startSchedule(Request $request){

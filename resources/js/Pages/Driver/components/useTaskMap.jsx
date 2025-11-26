@@ -262,6 +262,27 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     
         if (response.data.success) {
           console.log('Location successfully sent to backend');
+          
+          // Check if any sites were auto-completed by the backend
+          if (response.data.sites_completed && response.data.sites_completed.length > 0) {
+            console.log('🎯 Backend auto-completed sites:', response.data.sites_completed);
+            
+            // Update local state for each completed site
+            response.data.sites_completed.forEach(completedSite => {
+              console.log(`✅ Site auto-completed: ${completedSite.site_name} (${completedSite.distance}km)`);
+              
+              // The broadcast event will handle updating the UI
+              // But we can also update local state immediately for faster feedback
+              siteManagement.setCompletedSites(prev => {
+                const newSet = new Set(prev);
+                newSet.add(completedSite.site_id);
+                return newSet;
+              });
+            });
+            
+            // Update site markers to reflect completion
+            mapLayers.updateSiteMarkers();
+          }
         }
       } catch (error) {
         console.error('Failed to send location to backend:', error);
