@@ -30,9 +30,9 @@ const CalendarWidget = ({ schedules }) => {
     const getDayColor = (schedules) => {
         if (!schedules || schedules.length === 0) return '';
         
-        const hasFailed = schedules.some(s => s.status === 'FAILED');
+        const hasFailed = schedules.some(s => s.status === 'failed');
         const hasCompleted = schedules.some(s => s.status === 'completed');
-        const hasActive = schedules.some(s => s.status === 'active' || s.status === 'pending');
+        const hasActive = schedules.some(s => s.status === 'active' || s.status === 'pending' || s.status === 'in_progress');
         
         if (hasFailed) return 'bg-red-50 text-red-700 border border-red-200';
         if (hasCompleted) return 'bg-green-50 text-green-700 border border-green-200';
@@ -44,9 +44,9 @@ const CalendarWidget = ({ schedules }) => {
     const getStatusDot = (schedules) => {
         if (!schedules || schedules.length === 0) return null;
         
-        const hasFailed = schedules.some(s => s.status === 'FAILED');
+        const hasFailed = schedules.some(s => s.status === 'failed');
         const hasCompleted = schedules.some(s => s.status === 'completed');
-        const hasActive = schedules.some(s => s.status === 'active' || s.status === 'pending');
+        const hasActive = schedules.some(s => s.status === 'active' || s.status === 'pending' || s.status === 'in_progress');
         
         if (hasFailed) return 'bg-red-500';
         if (hasCompleted) return 'bg-green-500';
@@ -242,7 +242,7 @@ export function WelcomeHero({ schedules }) {
                                     <option value="all">All Collections</option>
                                     <option value="completed">Completed Only</option>
                                     <option value="active">Active Only</option>
-                                    <option value="FAILED">Failed Only</option>
+                                    <option value="failed">Failed Only</option>
                                 </select>
                             </div>
                             
