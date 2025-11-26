@@ -821,19 +821,31 @@ export const useMapLayers = ({
     const el = document.createElement('div');
     el.className = 'custom-marker relative';
     
+    const iconSize = isMobile ? 44 : 36;
+    const containerSize = isMobile ? 'w-14 h-14' : 'w-12 h-12';
+    
     let sequenceBadge = '';
     if (activeSchedule) {
       const badgeSize = isMobile ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
       sequenceBadge = `
-        <div class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full ${badgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white">
+        <div class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full ${badgeSize} flex items-center justify-center font-bold shadow-lg border-2 border-white z-20">
           🏠
         </div>
       `;
     }
 
-    el.innerHTML = sequenceBadge;
-    const root = createRoot(el);
-    root.render(<GiControlTower size={isMobile ? 36 : 30} color={'#4F262A'} />);
+    // Create white circular background with shadow and icon
+    el.innerHTML = `
+      <div class="relative">
+        ${sequenceBadge}
+        <div class="${containerSize} rounded-full bg-white shadow-2xl border-4 border-red-600 flex items-center justify-center">
+          <div id="station-icon-container" class="flex items-center justify-center"></div>
+        </div>
+      </div>
+    `;
+    
+    const root = createRoot(el.querySelector('#station-icon-container'));
+    root.render(<GiControlTower size={iconSize} color={'#DC2626'} />);
     return { element: el, root };
   };
 

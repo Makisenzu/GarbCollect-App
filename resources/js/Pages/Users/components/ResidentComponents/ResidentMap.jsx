@@ -1446,7 +1446,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         const getMarkerIcon = () => {
           if (isStation) {
             return `
-              <svg viewBox="0 0 24 24" fill="currentColor">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
                 <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
               </svg>
             `;
@@ -1467,8 +1467,9 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
           }
         };
 
-        const markerSize = isMobile ? 'w-12 h-12' : 'w-10 h-10';
-        const iconSize = isMobile ? 'w-6 h-6' : 'w-5 h-5';
+        const markerSize = isMobile ? 'w-14 h-14' : 'w-12 h-12';
+        const iconSize = isMobile ? 'w-7 h-7' : 'w-6 h-6';
+        const stationIconSize = isMobile ? 'w-8 h-8' : 'w-7 h-7';
         
         // Get sequence number from optimized site order
         const sequenceNumber = optimizedSiteOrder.findIndex(s => s.id === site.id) + 1;
@@ -1481,12 +1482,20 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
                 ${isCompleted ? '✓' : sequenceNumber}
               </div>
             ` : ''}
-            <div class="${markerSize} rounded-full border-3 border-white flex items-center justify-center shadow-lg" 
-                  style="background-color: ${getMarkerColor()}; ${isCompleted ? 'opacity: 0.7;' : ''}">
-              <div class="${iconSize} text-white">
-                ${getMarkerIcon()}
+            ${isStation ? `
+              <div class="${markerSize} rounded-full bg-white shadow-2xl border-4 border-red-600 flex items-center justify-center">
+                <div class="${stationIconSize} text-red-600">
+                  ${getMarkerIcon()}
+                </div>
               </div>
-            </div>
+            ` : `
+              <div class="${markerSize} rounded-full border-3 border-white flex items-center justify-center shadow-lg" 
+                    style="background-color: ${getMarkerColor()}; ${isCompleted ? 'opacity: 0.7;' : ''}">
+                <div class="${iconSize} text-white">
+                  ${getMarkerIcon()}
+                </div>
+              </div>
+            `}
             ${isCurrent ? `<div class="absolute inset-0 rounded-full border-3 border-yellow-500 animate-ping"></div>` : ''}
             ${isTargetSite && !isCurrent ? `<div class="absolute inset-0 rounded-full border-3 border-green-500 animate-ping"></div>` : ''}
           </div>
