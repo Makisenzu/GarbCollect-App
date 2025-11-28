@@ -26,9 +26,10 @@ class PublicScheduleController extends Controller
         try {
             $barangaySchedule = Schedule::with('barangay')
             ->where('barangay_id', $id)
-            ->where('status', '!=', 'failed')
-            ->orderBy('collection_date', 'desc')
-            ->orderBy('collection_time', 'desc')
+            ->where('collection_date', '>=', today())
+            ->whereIn('status', ['active', 'progress'])
+            ->orderBy('collection_date', 'asc')
+            ->orderBy('collection_time', 'asc')
             ->get();
 
 

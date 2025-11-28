@@ -89,7 +89,10 @@ class UserController extends Controller
         try {
             $barangaySchedule = Schedule::with(['barangay', 'driver'])
             ->where('barangay_id', $id)
-            ->whereDate('collection_date', today())
+            ->where('collection_date', '>=', today())
+            ->whereIn('status', ['active', 'progress'])
+            ->orderBy('collection_date', 'asc')
+            ->orderBy('collection_time', 'asc')
             ->get();
             return response()->json([
                 'success' => true,
