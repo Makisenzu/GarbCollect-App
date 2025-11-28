@@ -31,7 +31,7 @@ class UpdateScheduleStatus extends Command
 
             $inProgressCount = DB::update("
                 UPDATE schedules 
-                SET status = 'progress', 
+                SET status = 'in_progress', 
                     updated_at = NOW() 
                 WHERE status = 'active' 
                 AND collection_date = CURDATE() 
@@ -42,7 +42,7 @@ class UpdateScheduleStatus extends Command
                 UPDATE schedules 
                 SET status = 'completed', 
                     updated_at = NOW() 
-                WHERE status = 'progress' 
+                WHERE status = 'in_progress' 
                 AND collection_date < CURDATE()
             ");
 
@@ -53,7 +53,7 @@ class UpdateScheduleStatus extends Command
             WHERE id IN (
                 SELECT DISTINCT driver_id 
                 FROM schedules 
-                WHERE status = 'progress' 
+                WHERE status = 'in_progress' 
                 AND collection_date = CURDATE()
                 AND collection_time <= TIME(NOW())
             )
@@ -68,7 +68,7 @@ class UpdateScheduleStatus extends Command
         AND id NOT IN (
             SELECT DISTINCT driver_id 
             FROM schedules 
-            WHERE status = 'progress' 
+            WHERE status = 'in_progress' 
             AND collection_date = CURDATE()
         )
     ");

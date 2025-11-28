@@ -34,7 +34,7 @@ const PublicSchedule = () => {
   const [currentDate] = useState(new Date());
   const [viewMonth, setViewMonth] = useState(currentDate.getMonth());
   const [viewYear, setViewYear] = useState(currentDate.getFullYear());
-  const [activeTab, setActiveTab] = useState("today"); // Default to today tab
+  const [activeTab, setActiveTab] = useState("today");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,7 +130,7 @@ const PublicSchedule = () => {
     
     if (now < collectionDate) return "upcoming";
     if (now >= collectionDate && now <= endTime) {
-        return schedule.status === 'in_progress' ? "progress" : "active";
+        return schedule.status === 'in_progress' ? "in_progress" : "active";
     }
     if (now > endTime && schedule.status === 'completed') return "completed";
     if (now > endTime && schedule.status !== 'completed') return "failed";
@@ -141,7 +141,7 @@ const PublicSchedule = () => {
   // NEW: Filter to only show active and ongoing schedules
   const isActiveOrOngoingSchedule = (schedule) => {
     const status = getScheduleStatus(schedule);
-    return status === 'active' || status === 'progress';
+    return status === 'active' || status === 'in_progress';
   };
 
   const handleTrackSchedule = (schedule) => {
@@ -247,7 +247,7 @@ const PublicSchedule = () => {
   const getStatusStyles = (status) => {
     switch (status) {
       case "active": return "bg-green-500/20 text-green-700 border-green-400/30";
-      case "progress": return "bg-yellow-500/20 text-yellow-700 border-yellow-400/30";
+      case "in_progress": return "bg-yellow-500/20 text-yellow-700 border-yellow-400/30";
       case "completed": return "bg-blue-500/20 text-blue-700 border-blue-400/30";
       case "failed": return "bg-red-500/20 text-red-700 border-red-400/30";
       case "upcoming": return "bg-purple-500/20 text-purple-700 border-purple-400/30";
@@ -521,7 +521,7 @@ const PublicSchedule = () => {
                                       Start - {schedule.time}
                                     </p>
                                     <span className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${getStatusStyles(schedule.status)}`}>
-                                      {schedule.status === 'progress' ? 'In Progress' : 'Active'}
+                                      {schedule.status === 'in_progress' ? 'In Progress' : 'Active'}
                                     </span>
                                   </div>
                                   <div className="text-right">
@@ -574,14 +574,14 @@ const PublicSchedule = () => {
                                       Start - {schedule.time}
                                     </p>
                                     <span className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${getStatusStyles(schedule.status)}`}>
-                                      {schedule.status === 'progress' ? 'In Progress' : 
+                                      {schedule.status === 'in_progress' ? 'In Progress' : 
                                        schedule.status === 'active' ? 'Active' :
                                        schedule.status === 'upcoming' ? 'Upcoming' :
                                        schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                                     </span>
                                   </div>
                                   <div className="text-right">
-                                    {(schedule.status === 'active' || schedule.status === 'progress') ? (
+                                    {(schedule.status === 'active' || schedule.status === 'in_progress') ? (
                                       <button 
                                         onClick={() => handleTrackSchedule(schedule)}
                                         className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
@@ -661,14 +661,14 @@ const PublicSchedule = () => {
                                       Start - {schedule.time}
                                     </p>
                                     <span className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${getStatusStyles(schedule.status)}`}>
-                                      {schedule.status === 'progress' ? 'In Progress' : 
+                                      {schedule.status === 'in_progress' ? 'In Progress' : 
                                        schedule.status === 'active' ? 'Active' :
                                        schedule.status === 'upcoming' ? 'Upcoming' :
                                        schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                                     </span>
                                   </div>
                                   <div className="text-right">
-                                    {(schedule.status === 'active' || schedule.status === 'progress') ? (
+                                    {(schedule.status === 'active' || schedule.status === 'in_progress') ? (
                                       <button 
                                         onClick={() => handleTrackSchedule(schedule)}
                                         className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
