@@ -87,30 +87,33 @@ class UserController extends Controller
 
     public function getBarangaySchedule($id, Request $request) {
         try {
-            $filter = $request->query('filter', 'today');
+            $filter = $request->query('filter', 'week');
             
             $query = Schedule::with(['barangay', 'driver'])
-                ->where('barangay_id', $id)
-                ->whereIn('status', ['active', 'progress', 'in_progress']);
+                ->where('barangay_id', $id);
             
             switch ($filter) {
                 case 'today':
-                    $query->whereDate('collection_date', today());
+                    $query->whereDate('collection_date', today())
+                          ->whereIn('status', ['active', 'progress', 'in_progress']);
                     break;
                 case 'week':
                     $query->whereBetween('collection_date', [
                         today(),
-                        today()->addDays(7)
-                    ]);
+                        today()->addDays(6)
+                    ])
+                    ->whereIn('status', ['active', 'progress', 'in_progress']);
                     break;
                 case 'monthly':
                     $query->whereBetween('collection_date', [
-                        today(),
-                        today()->addDays(30)
-                    ]);
+                        today()->startOfMonth(),
+                        today()->endOfMonth()
+                    ])
+                    ->whereIn('status', ['active', 'progress', 'in_progress']);
                     break;
                 default:
-                    $query->where('collection_date', '>=', today());
+                    $query->where('collection_date', '>=', today())
+                          ->whereIn('status', ['active', 'progress', 'in_progress']);
             }
             
             $barangaySchedule = $query->orderBy('collection_date', 'asc')

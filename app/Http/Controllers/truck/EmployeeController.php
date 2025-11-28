@@ -96,9 +96,8 @@ public function index(){
     if ($driver) {
         $schedules = Schedule::with(['barangay', 'driver.user', 'collections'])
             ->where('driver_id', $driver->id)
-            ->where('collection_date', '>=', today())
-            ->orderBy('collection_date', 'asc')
-            ->orderBy('collection_time', 'asc')
+            ->orderBy('collection_date', 'desc')
+            ->orderBy('collection_time', 'desc')
             ->get();
 
         $stats = [
