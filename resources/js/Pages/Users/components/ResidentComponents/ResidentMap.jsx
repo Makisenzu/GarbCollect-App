@@ -359,9 +359,15 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         return;
       }
 
+      // Filter out finished/completed sites from route calculation
+      const unfinishedSites = validSites.filter(site => 
+        site.type === 'station' || 
+        (site.status !== 'finished' && site.status !== 'completed')
+      );
+
       const optimizedSites = station 
-        ? optimizeSiteOrderFromStation(station, validSites.filter(site => site.type !== 'station'))
-        : validSites;
+        ? optimizeSiteOrderFromStation(station, unfinishedSites.filter(site => site.type !== 'station'))
+        : unfinishedSites.filter(site => site.type !== 'station');
 
       setOptimizedSiteOrder(optimizedSites);
       if (optimizedSites.length > 0) {
@@ -1203,125 +1209,38 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     }
   };
 
-  // NEW: Handle site completion events from driver
   const handleSiteCompletion = (completionData) => {
     console.log('🎯 Handling site completion:', completionData);
     
     // Update site locations to mark as completed
-    setSiteLocations(prevSites => 
-      prevSites.map(site => {
+    setSiteLocations(prevSites => {
+      const updatedSites = prevSites.map(site => {
         if (site.id === completionData.site_id || site.id === completionData.siteId) {
-          console.log(`✅ Marking site ${site.site_name} as completed`);
+          console.log(`✅ Marking site ${site.site_name} as finished`);
           return {
             ...site,
-            status: 'completed',
+            status: 'finished',
             collectionStatus: 'finished',
             completed_at: completionData.completed_at || new Date().toISOString()
           };
         }
         return site;
-      })
-    );
-
-    // Show celebration notification to resident
-    showCompletionNotification(completionData.site_name || 'Collection Site', completionData);
-    
-    // Update markers to reflect completion immediately
-    if (mapInitialized) {
-      setTimeout(() => {
-        // Get updated sites list
-        const updatedSites = siteLocations.map(site => {
-          if (site.id === completionData.site_id || site.id === completionData.siteId) {
-            return {
-              ...site,
-              status: 'completed',
-              collectionStatus: 'finished',
-              completed_at: completionData.completed_at || new Date().toISOString()
-            };
-          }
-          return site;
-        });
-        
-        updateSiteMarkers(updatedSites);
-        
-        // Recalculate route if needed
-        if (realTimeRouteEnabled && driverLocation) {
-          updateRealTimeRoute();
-        }
-      }, 100);
-    }
-  };
-
-  // NEW: Show celebration notification to residents
-  const showCompletionNotification = (siteName, data) => {
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-5 rounded-xl shadow-2xl z-[9999] min-w-[320px] max-w-[420px] transform transition-all duration-500';
-    notification.style.animation = 'slideInRight 0.5s ease-out';
-    
-    const completedCount = data.completed_sites || 0;
-    const totalCount = data.total_sites || 0;
-    const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-    
-    notification.innerHTML = `
-      <div class="flex items-start gap-3">
-        <div class="text-5xl animate-bounce">✅</div>
-        <div class="flex-1">
-          <div class="font-bold text-xl mb-1">${siteName} Collected!</div>
-          <div class="text-sm opacity-90 mb-2">Driver has completed this collection point</div>
-          <div class="flex items-center gap-2 text-sm mb-2">
-            <span class="font-semibold bg-white bg-opacity-20 px-2 py-1 rounded">${completedCount}/${totalCount} sites</span>
-            <span class="opacity-75">•</span>
-            <span class="font-semibold">${percentage}% complete</span>
-          </div>
-          <div class="h-3 bg-white bg-opacity-30 rounded-full overflow-hidden">
-            <div class="h-full bg-white rounded-full transition-all duration-1000 animate-pulse" style="width: ${percentage}%"></div>
-          </div>
-        </div>
-        <button onclick="this.parentElement.parentElement.remove()" class="text-white opacity-75 hover:opacity-100 text-3xl font-bold leading-none transition-opacity">×</button>
-      </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Play success sound for residents too
-    try {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGAg+ltryxnMpBSuBzvLaiTUIGGe77OmfTgwOUKbk8LdjHQU2kdby0HwqBSp3x/DdkUELEl+06OyqVRUKRp7g8r5wIgU0h9H004IzBh1tv+/mnEkODlat6O+xXBkIP5Xa8sV0KgUrgc7y2YszCBdnvOzpnk4MDU+m5O+5ZBwGNpHX8s98Kgcrc8fv3ZJCCxFftOjuq1YUDD6f4fK/cCMGNYfR89OCMwYcbb/v5JxKDg5VrOjusVwZCj6U2vLGdSoGK4HO8tmLMwgXZ7vs6J5PDA1Ppubw...');
-      audio.volume = 0.3;
-      audio.play().catch(() => {});
-    } catch (e) {
-      // Ignore audio errors
-    }
-    
-    setTimeout(() => {
-      if (document.body.contains(notification)) {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
+      });
+      
+      // Update markers immediately with the new data
+      if (mapInitialized) {
         setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
+          updateSiteMarkers(updatedSites);
+          
+          // Recalculate route if needed
+          if (realTimeRouteEnabled && driverLocation) {
+            updateRealTimeRoute();
           }
-        }, 300);
+        }, 100);
       }
-    }, 6000);
-
-    // Add CSS animations if not already added
-    if (!document.getElementById('resident-completion-animations')) {
-      const style = document.createElement('style');
-      style.id = 'resident-completion-animations';
-      style.textContent = `
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
+      
+      return updatedSites;
+    });
   };
 
   const updateDriverMarker = (coordinates, locationData) => {
@@ -1425,7 +1344,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         const markerElement = document.createElement('div');
         markerElement.className = 'site-marker';
         
-        const isCompleted = site.status === 'completed' || site.collectionStatus === 'finished';
+        const isCompleted = site.status === 'completed' || site.status === 'finished' || site.collectionStatus === 'finished';
         const isCurrent = site.status === 'in_progress';
         const isStation = site.type === 'station';
         const purokName = site.purok_name || site.site_name || 'Site';
