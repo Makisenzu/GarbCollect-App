@@ -25,15 +25,18 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
       case 'today':
         filtered = filtered.filter(schedule => {
           const scheduleDate = new Date(schedule.collection_date);
-          return scheduleDate.toDateString() === today.toDateString();
+          const scheduleDateOnly = new Date(scheduleDate.getFullYear(), scheduleDate.getMonth(), scheduleDate.getDate());
+          return scheduleDateOnly.getTime() === today.getTime();
         });
         break;
         
       case 'week':
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - today.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
         
         filtered = filtered.filter(schedule => {
           const scheduleDate = new Date(schedule.collection_date);
@@ -43,7 +46,9 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
         
       case 'month':
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        startOfMonth.setHours(0, 0, 0, 0);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endOfMonth.setHours(23, 59, 59, 999);
         
         filtered = filtered.filter(schedule => {
           const scheduleDate = new Date(schedule.collection_date);
