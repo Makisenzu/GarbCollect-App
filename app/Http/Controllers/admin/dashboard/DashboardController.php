@@ -30,6 +30,10 @@ class DashboardController extends Controller
         $pending = Review::with(['purok', 'category'])->get();
         $schedules = Schedule::with(['barangay', 'driver.user'])->get();
         
+        // Calculate average rating from reviews
+        $averageRating = Review::whereNotNull('rate')->avg('rate');
+        $averageRating = $averageRating ? round($averageRating, 1) : 0;
+        
         // Generate weekly collection data (last 7 days)
         $weeklyData = [];
         $daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -122,6 +126,7 @@ class DashboardController extends Controller
             'siteCount' => $sites->count(),
             'pendingCount' => $pending->count(),
             'schedules' => $schedules,
+            'averageRating' => $averageRating,
             'chartData' => [
                 'weekly' => $weeklyData,
                 'monthly' => $monthlyData,

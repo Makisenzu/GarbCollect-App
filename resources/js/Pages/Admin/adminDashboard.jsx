@@ -5,7 +5,7 @@ import { FaCommentDots } from "react-icons/fa";
 import { WelcomeHero } from './components/dashboard/WelcomeHero';
 
 export default function AdminDashboard() {
-    const {drivers, driverCount, sites, siteCount, driverTotal, pendingCount, schedules, chartData, garbageTypes} = usePage().props;
+    const {drivers, driverCount, sites, siteCount, driverTotal, pendingCount, schedules, chartData, garbageTypes, averageRating} = usePage().props;
     
     return (
         <AuthenticatedLayout header="Dashboard">
@@ -62,7 +62,9 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Average Rating</p>
-                                    <p className="text-3xl font-semibold text-gray-900 mt-2">4.8</p>
+                                    <p className="text-3xl font-semibold text-gray-900 mt-2">
+                                        {averageRating > 0 ? averageRating : 'N/A'}
+                                    </p>
                                 </div>
                                 <div className="p-3 bg-amber-50 rounded-lg">
                                     <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
