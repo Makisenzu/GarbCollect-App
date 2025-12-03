@@ -155,7 +155,7 @@ const CalendarWidget = ({ schedules }) => {
     );
 };
 
-export function WelcomeHero({ schedules, todaysCollections, inProgress, completedToday }) {
+export function WelcomeHero({ schedules, todaysCollections, inProgress, completedTotal }) {
     const currentHour = new Date().getHours();
     const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
     const [isGenerating, setIsGenerating] = useState(false);
@@ -346,7 +346,7 @@ export function WelcomeHero({ schedules, todaysCollections, inProgress, complete
                     </div>
                     <div>
                         <p className="text-xs font-medium text-gray-500 mb-1">Completed</p>
-                        <p className="text-2xl font-bold text-green-600">{completedToday || 0}</p>
+                        <p className="text-2xl font-bold text-green-600">{completedTotal || 0}</p>
                     </div>
                 </div>
             </div>

@@ -40,9 +40,7 @@ class DashboardController extends Controller
         $inProgress = Schedule::whereDate('collection_date', $today)
             ->whereIn('status', ['active', 'in_progress'])
             ->count();
-        $completedToday = Schedule::whereDate('collection_date', $today)
-            ->where('status', 'completed')
-            ->count();
+        $completedTotal = Schedule::where('status', 'completed')->count();
         
         // Generate weekly collection data (last 7 days)
         $weeklyData = [];
@@ -139,7 +137,7 @@ class DashboardController extends Controller
             'averageRating' => $averageRating,
             'todaysCollections' => $todaysCollections,
             'inProgress' => $inProgress,
-            'completedToday' => $completedToday,
+            'completedTotal' => $completedTotal,
             'chartData' => [
                 'weekly' => $weeklyData,
                 'monthly' => $monthlyData,
