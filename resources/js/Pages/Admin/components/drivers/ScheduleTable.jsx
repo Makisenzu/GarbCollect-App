@@ -5,12 +5,14 @@ const ReportModal = ({ show, onClose, schedule }) => {
 
   const hasReports = schedule?.reports && schedule.reports.length > 0;
   
-  // Get unique pictures from all reports
-  const uniquePictures = hasReports 
-    ? [...new Set(schedule.reports
-        .filter(r => r.report_picture)
-        .map(r => r.report_picture))]
+  // Get all unique pictures from all reports (each report can have multiple pictures now)
+  const allPictures = hasReports 
+    ? schedule.reports
+        .filter(r => r.report_picture && Array.isArray(r.report_picture))
+        .flatMap(r => r.report_picture)
     : [];
+  
+  const uniquePictures = [...new Set(allPictures)];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

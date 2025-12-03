@@ -14,6 +14,10 @@ class Report extends Model
         'additional_notes'
     ];
 
+    protected $casts = [
+        'report_picture' => 'array',
+    ];
+
     public function garbage () {
         return $this->belongsTo(Garbage::class);
     }

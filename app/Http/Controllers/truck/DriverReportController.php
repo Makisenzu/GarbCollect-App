@@ -141,7 +141,8 @@ class DriverReportController extends Controller
             'schedule_id' => 'required|exists:schedules,id',
             'garbage_id' => 'required|exists:garbages,id',
             'kilograms' => 'required|numeric|min:0',
-            'report_picture' => 'nullable|image|max:5120', // 5MB max
+            'report_pictures' => 'nullable|array',
+            'report_pictures.*' => 'image|max:5120', // 5MB max per image
             'additional_notes' => 'nullable|string|max:500'
         ]);
 
@@ -150,17 +151,19 @@ class DriverReportController extends Controller
 
             $schedule = Schedule::findOrFail($request->schedule_id);
 
-            // Handle file upload
-            $imagePath = null;
-            if ($request->hasFile('report_picture')) {
-                $imagePath = $request->file('report_picture')->store('report-photos', 'public');
+            // Handle multiple file uploads
+            $imagePaths = [];
+            if ($request->hasFile('report_pictures')) {
+                foreach ($request->file('report_pictures') as $file) {
+                    $imagePaths[] = $file->store('report-photos', 'public');
+                }
             }
 
             // Create report
             $report = Report::create([
                 'schedule_id' => $request->schedule_id,
                 'garbage_id' => $request->garbage_id,
-                'report_picture' => $imagePath,
+                'report_picture' => $imagePaths, // Now stores array
                 'kilograms' => $request->kilograms,
                 'additional_notes' => $request->additional_notes
             ]);

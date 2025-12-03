@@ -7,7 +7,7 @@ const DriverReportForm = ({ scheduleId, token }) => {
     
     const [formData, setFormData] = useState({
         garbage_id: '',
-        report_picture: null,
+        report_pictures: [],
         kilograms: '',
         additional_notes: ''
     });
@@ -16,7 +16,7 @@ const DriverReportForm = ({ scheduleId, token }) => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [tokenValid, setTokenValid] = useState(false);
-    const [previewImage, setPreviewImage] = useState(null);
+    const [previewImages, setPreviewImages] = useState([]);
 
     // Validate access token on component mount
     useEffect(() => {
@@ -64,29 +64,52 @@ const DriverReportForm = ({ scheduleId, token }) => {
     };
 
     const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
+        const files = Array.from(e.target.files);
+        
+        if (files.length === 0) return;
+
+        // Validate all files
+        const validFiles = [];
+        const newPreviews = [];
+
+        for (const file of files) {
             if (!file.type.startsWith('image/')) {
-                alert('Please select an image file');
-                return;
+                alert(`${file.name} is not an image file`);
+                continue;
             }
 
             if (file.size > 5 * 1024 * 1024) {
-                alert('Image size should be less than 5MB');
-                return;
+                alert(`${file.name} is larger than 5MB`);
+                continue;
             }
 
-            setFormData(prev => ({
-                ...prev,
-                report_picture: file
-            }));
+            validFiles.push(file);
 
+            // Create preview
             const reader = new FileReader();
             reader.onload = (e) => {
-                setPreviewImage(e.target.result);
+                newPreviews.push(e.target.result);
+                if (newPreviews.length === validFiles.length) {
+                    setPreviewImages(prev => [...prev, ...newPreviews]);
+                }
             };
             reader.readAsDataURL(file);
         }
+
+        if (validFiles.length > 0) {
+            setFormData(prev => ({
+                ...prev,
+                report_pictures: [...prev.report_pictures, ...validFiles]
+            }));
+        }
+    };
+
+    const removeImage = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            report_pictures: prev.report_pictures.filter((_, i) => i !== index)
+        }));
+        setPreviewImages(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e) => {
@@ -111,8 +134,11 @@ const DriverReportForm = ({ scheduleId, token }) => {
             submitData.append('kilograms', formData.kilograms);
             submitData.append('additional_notes', formData.additional_notes || '');
             
-            if (formData.report_picture) {
-                submitData.append('report_picture', formData.report_picture);
+            // Append multiple pictures
+            if (formData.report_pictures.length > 0) {
+                formData.report_pictures.forEach((file, index) => {
+                    submitData.append(`report_pictures[${index}]`, file);
+                });
             }
 
             const response = await axios.post('/submit-report', submitData, {
@@ -219,25 +245,41 @@ const DriverReportForm = ({ scheduleId, token }) => {
                         />
                     </div>
 
-                    {/* Report Picture */}
+                    {/* Report Pictures */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Collection Photo
+                            Collection Photos (Multiple)
                         </label>
                         <input
                             type="file"
                             accept="image/*"
+                            multiple
                             onChange={handleFileChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        {previewImage && (
+                        <p className="text-xs text-gray-500 mt-1">You can select multiple images (max 5MB each)</p>
+                        
+                        {previewImages.length > 0 && (
                             <div className="mt-4">
-                                <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                                <img 
-                                    src={previewImage} 
-                                    alt="Preview" 
-                                    className="max-w-full h-48 object-cover rounded-md border"
-                                />
+                                <p className="text-sm text-gray-600 mb-2">Selected Images ({previewImages.length}):</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {previewImages.map((preview, index) => (
+                                        <div key={index} className="relative">
+                                            <img 
+                                                src={preview} 
+                                                alt={`Preview ${index + 1}`} 
+                                                className="w-full h-32 object-cover rounded-md border"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(index)}
+                                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
