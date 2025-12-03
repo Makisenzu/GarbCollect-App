@@ -1,10 +1,154 @@
 import React, { useState, useEffect } from 'react';
 
+const ReportModal = ({ show, onClose, schedule }) => {
+  if (!show) return null;
+
+  const hasReports = schedule?.reports && schedule.reports.length > 0;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Collection Report</h3>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {schedule?.barangay?.baranggay_name} - {new Date(schedule?.collection_date).toLocaleDateString()}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {!hasReports ? (
+            <div className="text-center py-12">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No Report Submitted</h3>
+              <p className="mt-1 text-sm text-gray-500">This collection has not been reported yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Report Images */}
+              {schedule.reports.some(r => r.report_picture) && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Collection Photos</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {schedule.reports
+                      .filter(r => r.report_picture)
+                      .map((report, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={`/storage/${report.report_picture}`}
+                            alt={`Collection photo ${index + 1}`}
+                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23f3f4f6" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%239ca3af"%3ENo Image%3C/text%3E%3C/svg%3E';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg"></div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Garbage Collection Summary */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Waste Collection Summary</h4>
+                <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-900 uppercase">
+                          Garbage Type
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-900 uppercase">
+                          Kilograms
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {schedule.reports.map((report, index) => (
+                        <tr key={index}>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {report.garbage?.garbage_type || 'Unknown'}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
+                            {parseFloat(report.kilograms).toFixed(2)} kg
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                          Total
+                        </td>
+                        <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
+                          {schedule.reports
+                            .reduce((sum, report) => sum + parseFloat(report.kilograms || 0), 0)
+                            .toFixed(2)} kg
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Additional Notes */}
+              {schedule.reports.some(r => r.additional_notes) && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Additional Notes</h4>
+                  <div className="space-y-2">
+                    {schedule.reports
+                      .filter(r => r.additional_notes)
+                      .map((report, index) => (
+                        <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm text-gray-700">{report.additional_notes}</p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ScheduleTable = ({ drivers, barangays, schedules }) => {
   const [selectedBarangay, setSelectedBarangay] = useState('');
   const [timePeriod, setTimePeriod] = useState('today');
   const [filteredSchedules, setFilteredSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
+
+  const handleViewReport = (schedule) => {
+    setSelectedSchedule(schedule);
+    setShowReportModal(true);
+  };
 
   useEffect(() => {
     if (!selectedBarangay) {
@@ -134,6 +278,12 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200">
+      <ReportModal 
+        show={showReportModal} 
+        onClose={() => setShowReportModal(false)} 
+        schedule={selectedSchedule} 
+      />
+      
       <div className="px-6 py-5 border-b border-gray-200">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
@@ -241,6 +391,9 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider bg-gray-50">
                       Notes
                     </th>
+                    <th scope="col" className="px-6 py-3 text-center text-xs font-semibold text-gray-900 uppercase tracking-wider bg-gray-50">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -267,6 +420,21 @@ const ScheduleTable = ({ drivers, barangays, schedules }) => {
                         <div className="truncate" title={schedule.notes}>
                           {schedule.notes || '—'}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {schedule.status === 'completed' ? (
+                          <button
+                            onClick={() => handleViewReport(schedule)}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                          >
+                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            View Report
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
