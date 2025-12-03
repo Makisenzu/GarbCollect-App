@@ -4,6 +4,13 @@ const ReportModal = ({ show, onClose, schedule }) => {
   if (!show) return null;
 
   const hasReports = schedule?.reports && schedule.reports.length > 0;
+  
+  // Get unique pictures from all reports
+  const uniquePictures = hasReports 
+    ? [...new Set(schedule.reports
+        .filter(r => r.report_picture)
+        .map(r => r.report_picture))]
+    : [];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -39,26 +46,24 @@ const ReportModal = ({ show, onClose, schedule }) => {
           ) : (
             <div className="space-y-6">
               {/* Report Images */}
-              {schedule.reports.some(r => r.report_picture) && (
+              {uniquePictures.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-900 mb-3">Collection Photos</h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {schedule.reports
-                      .filter(r => r.report_picture)
-                      .map((report, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={`/storage/${report.report_picture}`}
-                            alt={`Collection photo ${index + 1}`}
-                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23f3f4f6" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%239ca3af"%3ENo Image%3C/text%3E%3C/svg%3E';
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg"></div>
-                        </div>
-                      ))}
+                    {uniquePictures.map((picture, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={`/storage/${picture}`}
+                          alt={`Collection photo ${index + 1}`}
+                          className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23f3f4f6" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%239ca3af"%3ENo Image%3C/text%3E%3C/svg%3E';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg"></div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
