@@ -34,6 +34,16 @@ class DashboardController extends Controller
         $averageRating = Review::whereNotNull('rate')->avg('rate');
         $averageRating = $averageRating ? round($averageRating, 1) : 0;
         
+        // Calculate today's collection stats
+        $today = now()->toDateString();
+        $todaysCollections = Schedule::whereDate('collection_date', $today)->count();
+        $inProgress = Schedule::whereDate('collection_date', $today)
+            ->whereIn('status', ['active', 'in_progress'])
+            ->count();
+        $completedToday = Schedule::whereDate('collection_date', $today)
+            ->where('status', 'completed')
+            ->count();
+        
         // Generate weekly collection data (last 7 days)
         $weeklyData = [];
         $daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -127,6 +137,9 @@ class DashboardController extends Controller
             'pendingCount' => $pending->count(),
             'schedules' => $schedules,
             'averageRating' => $averageRating,
+            'todaysCollections' => $todaysCollections,
+            'inProgress' => $inProgress,
+            'completedToday' => $completedToday,
             'chartData' => [
                 'weekly' => $weeklyData,
                 'monthly' => $monthlyData,

@@ -5,7 +5,7 @@ import { FaCommentDots } from "react-icons/fa";
 import { WelcomeHero } from './components/dashboard/WelcomeHero';
 
 export default function AdminDashboard() {
-    const {drivers, driverCount, sites, siteCount, driverTotal, pendingCount, schedules, chartData, garbageTypes, averageRating} = usePage().props;
+    const {drivers, driverCount, sites, siteCount, driverTotal, pendingCount, schedules, chartData, garbageTypes, averageRating, todaysCollections, inProgress, completedToday} = usePage().props;
     
     return (
         <AuthenticatedLayout header="Dashboard">
@@ -13,7 +13,12 @@ export default function AdminDashboard() {
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl">
-                    <WelcomeHero schedules={schedules} />
+                    <WelcomeHero 
+                        schedules={schedules} 
+                        todaysCollections={todaysCollections}
+                        inProgress={inProgress}
+                        completedToday={completedToday}
+                    />
                     
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4">

@@ -155,7 +155,7 @@ const CalendarWidget = ({ schedules }) => {
     );
 };
 
-export function WelcomeHero({ schedules }) {
+export function WelcomeHero({ schedules, todaysCollections, inProgress, completedToday }) {
     const currentHour = new Date().getHours();
     const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
     const [isGenerating, setIsGenerating] = useState(false);
@@ -338,15 +338,15 @@ export function WelcomeHero({ schedules }) {
                 <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
                     <div>
                         <p className="text-xs font-medium text-gray-500 mb-1">Today's Collections</p>
-                        <p className="text-2xl font-bold text-gray-900">24</p>
+                        <p className="text-2xl font-bold text-gray-900">{todaysCollections || 0}</p>
                     </div>
                     <div>
                         <p className="text-xs font-medium text-gray-500 mb-1">In Progress</p>
-                        <p className="text-2xl font-bold text-blue-600">8</p>
+                        <p className="text-2xl font-bold text-blue-600">{inProgress || 0}</p>
                     </div>
                     <div>
                         <p className="text-xs font-medium text-gray-500 mb-1">Completed</p>
-                        <p className="text-2xl font-bold text-green-600">16</p>
+                        <p className="text-2xl font-bold text-green-600">{completedToday || 0}</p>
                     </div>
                 </div>
             </div>
