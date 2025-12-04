@@ -159,20 +159,35 @@ const DriverReportForm = ({ scheduleId, token }) => {
             });
 
             if (response.data.success) {
+                // Invalidate token silently (don't show errors to user)
+                try {
+                    await axios.post('/invalidate-report-token', {
+                        schedule_id: scheduleId,
+                        token: token
+                    }).catch(() => {
+                        // Silently ignore token invalidation errors
+                        console.log('Token invalidation skipped (non-critical)');
+                    });
+                } catch {
+                    // Double catch for safety
+                }
+
                 alert('Report submitted successfully!');
                 
-                await axios.post('/invalidate-report-token', {
-                    schedule_id: scheduleId,
-                    token: token
-                });
-
-                router.visit('/dashboard');
+                // Small delay before redirect to ensure request completes
+                setTimeout(() => {
+                    router.visit('/dashboard');
+                }, 100);
             } else {
                 alert('Failed to submit report: ' + (response.data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error submitting report:', error);
-            alert('Error submitting report. Please try again.');
+            if (error.response?.status === 404) {
+                alert('Error: Report submission endpoint not found. Please contact support.');
+            } else {
+                alert('Error submitting report. Please try again.');
+            }
         } finally {
             setSubmitting(false);
         }
