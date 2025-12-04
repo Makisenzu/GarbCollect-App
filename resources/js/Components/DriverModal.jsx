@@ -41,58 +41,80 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
 
   // Sort and group schedules by month and date
   const { sortedAndGroupedSchedules, monthlySchedules } = useMemo(() => {
-    const driverSchedules = schedules.filter(schedule => 
-      schedule.driver_id === driver.id
-    );
+    try {
+      const driverSchedules = schedules.filter(schedule => 
+        schedule && schedule.driver_id === driver.id
+      );
 
-    // Sort schedules by date (earliest first) and then by time
-    const sortedSchedules = [...driverSchedules].sort((a, b) => {
-      const dateA = new Date(a.collection_date);
-      const dateB = new Date(b.collection_date);
-      
-      // First compare by date
-      if (dateA.getTime() !== dateB.getTime()) {
-        return dateA.getTime() - dateB.getTime();
-      }
-      
-      // If same date, compare by time
-      const timeA = a.collection_time || '00:00';
-      const timeB = b.collection_time || '00:00';
-      return timeA.localeCompare(timeB);
-    });
-
-    // Group schedules by month-year for display purposes
-    const groupedByMonth = sortedSchedules.reduce((acc, schedule) => {
-      const date = new Date(schedule.collection_date);
-      const monthYear = date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long' 
+      // Sort schedules by date (earliest first) and then by time
+      const sortedSchedules = [...driverSchedules].sort((a, b) => {
+        try {
+          const dateA = new Date(a.collection_date);
+          const dateB = new Date(b.collection_date);
+          
+          // First compare by date
+          if (dateA.getTime() !== dateB.getTime()) {
+            return dateA.getTime() - dateB.getTime();
+          }
+          
+          // If same date, compare by time
+          const timeA = a.collection_time || '00:00';
+          const timeB = b.collection_time || '00:00';
+          return timeA.localeCompare(timeB);
+        } catch (error) {
+          console.error('Error sorting schedules:', error);
+          return 0;
+        }
       });
-      
-      if (!acc[monthYear]) {
-        acc[monthYear] = [];
-      }
-      acc[monthYear].push(schedule);
-      return acc;
-    }, {});
 
-    // Convert to array format for easier rendering
-    const monthlySchedulesArray = Object.entries(groupedByMonth).map(([monthYear, schedules]) => ({
-      monthYear,
-      schedules
-    }));
+      // Group schedules by month-year for display purposes
+      const groupedByMonth = sortedSchedules.reduce((acc, schedule) => {
+        try {
+          const date = new Date(schedule.collection_date);
+          const monthYear = date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long' 
+          });
+          
+          if (!acc[monthYear]) {
+            acc[monthYear] = [];
+          }
+          acc[monthYear].push(schedule);
+        } catch (error) {
+          console.error('Error grouping schedule:', error, schedule);
+        }
+        return acc;
+      }, {});
 
-    // Sort months chronologically (earliest first)
-    monthlySchedulesArray.sort((a, b) => {
-      const dateA = new Date(a.monthYear);
-      const dateB = new Date(b.monthYear);
-      return dateA.getTime() - dateB.getTime();
-    });
+      // Convert to array format for easier rendering
+      const monthlySchedulesArray = Object.entries(groupedByMonth).map(([monthYear, schedules]) => ({
+        monthYear,
+        schedules
+      }));
 
-    return {
-      sortedAndGroupedSchedules: sortedSchedules,
-      monthlySchedules: monthlySchedulesArray
-    };
+      // Sort months chronologically (earliest first)
+      monthlySchedulesArray.sort((a, b) => {
+        try {
+          const dateA = new Date(a.monthYear);
+          const dateB = new Date(b.monthYear);
+          return dateA.getTime() - dateB.getTime();
+        } catch (error) {
+          console.error('Error sorting months:', error);
+          return 0;
+        }
+      });
+
+      return {
+        sortedAndGroupedSchedules: sortedSchedules,
+        monthlySchedules: monthlySchedulesArray
+      };
+    } catch (error) {
+      console.error('Error processing schedules:', error);
+      return {
+        sortedAndGroupedSchedules: [],
+        monthlySchedules: []
+      };
+    }
   }, [schedules, driver.id]);
 
   const totalPages = Math.ceil(sortedAndGroupedSchedules.length / itemsPerPage);
@@ -205,18 +227,34 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
   };
 
   const getBarangayName = (schedule) => {
-    if (!schedule) return 'N/A';
-    
-    // Try multiple ways to get barangay name
-    if (schedule.barangay?.baranggay_name) {
-      return schedule.barangay.baranggay_name;
-    }
-    if (schedule.baranggay_name) {
-      return schedule.baranggay_name;
+    if (!schedule) {
+      console.warn('Schedule is undefined or null');
+      return 'N/A';
     }
     
-    console.log('Could not find barangay name for schedule:', schedule);
-    return 'N/A';
+    try {
+      // Try multiple ways to get barangay name
+      if (schedule.barangay?.baranggay_name) {
+        return schedule.barangay.baranggay_name;
+      }
+      if (schedule.baranggay_name) {
+        return schedule.baranggay_name;
+      }
+      if (schedule.barangay_name) {
+        return schedule.barangay_name;
+      }
+      
+      console.warn('Could not find barangay name for schedule:', {
+        id: schedule.id,
+        barangay: schedule.barangay,
+        baranggay_name: schedule.baranggay_name,
+        barangay_name: schedule.barangay_name
+      });
+      return 'Unknown Barangay';
+    } catch (error) {
+      console.error('Error getting barangay name:', error, schedule);
+      return 'Error Loading';
+    }
   };
 
   const handlePageChange = (newPage) => {
@@ -461,67 +499,81 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {paginatedItems.map((item, index) => {
-                          if (item.type === 'month-header') {
-                            return (
-                              <tr key={`month-${item.monthYear}`} className="bg-gray-50">
-                                <td colSpan="7" className="px-6 py-3">
-                                  <h5 className="font-semibold text-gray-900 text-sm">
-                                    {item.monthYear}
-                                  </h5>
-                                </td>
-                              </tr>
-                            );
-                          } else {
-                            const schedule = item.schedule;
-                            return (
-                              <tr key={schedule.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {formatDate(schedule.collection_date)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {getBarangayName(schedule)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {formatTimeTo12Hour(schedule.collection_time)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {schedule.finished_time ? formatTimeTo12Hour(schedule.finished_time) : 'N/A'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                    ${schedule.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                                    schedule.status === 'failed' ? 'bg-red-100 text-red-800' : 
-                                    schedule.status === 'progress' ? 'bg-yellow-100 text-yellow-800' :
-                                    schedule.status === 'active' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-gray-100 text-gray-800'}`}>
-                                    {schedule.status?.charAt(0)?.toUpperCase() + schedule.status?.slice(1)?.replace('_', ' ') || 'N/A'}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                                  {schedule.notes || 'None'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                  <div className="flex items-center space-x-2">
-                                    <button
-                                      onClick={() => handleEdit(schedule)}
-                                      className="text-blue-600 hover:text-blue-900 transition-colors"
-                                      title="Edit Schedule"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                      </svg>
-                                    </button>
+                          try {
+                            if (item.type === 'month-header') {
+                              return (
+                                <tr key={`month-${item.monthYear}`} className="bg-gray-50">
+                                  <td colSpan="7" className="px-6 py-3">
+                                    <h5 className="font-semibold text-gray-900 text-sm">
+                                      {item.monthYear}
+                                    </h5>
+                                  </td>
+                                </tr>
+                              );
+                            } else if (item.type === 'schedule' && item.schedule) {
+                              const schedule = item.schedule;
+                              return (
+                                <tr key={schedule.id || `schedule-${index}`}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {formatDate(schedule.collection_date)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {getBarangayName(schedule)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {formatTimeTo12Hour(schedule.collection_time)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {schedule.finished_time ? formatTimeTo12Hour(schedule.finished_time) : 'N/A'}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                      ${schedule.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                                      schedule.status === 'failed' ? 'bg-red-100 text-red-800' : 
+                                      schedule.status === 'progress' ? 'bg-yellow-100 text-yellow-800' :
+                                      schedule.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                                      'bg-gray-100 text-gray-800'}`}>
+                                      {schedule.status?.charAt(0)?.toUpperCase() + schedule.status?.slice(1)?.replace('_', ' ') || 'N/A'}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                                    {schedule.notes || 'None'}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div className="flex items-center space-x-2">
+                                      <button
+                                        onClick={() => handleEdit(schedule)}
+                                        className="text-blue-600 hover:text-blue-900 transition-colors"
+                                        title="Edit Schedule"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                      </button>
 
-                                    <button
-                                      onClick={() => handleRemove(schedule)}
-                                      className="text-red-600 hover:text-red-900 transition-colors"
-                                      title="Remove Schedule"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
-                                    </button>
-                                  </div>
+                                      <button
+                                        onClick={() => handleRemove(schedule)}
+                                        className="text-red-600 hover:text-red-900 transition-colors"
+                                        title="Remove Schedule"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            } else {
+                              console.warn('Invalid item type or missing schedule data:', item);
+                              return null;
+                            }
+                          } catch (error) {
+                            console.error('Error rendering schedule item:', error, item);
+                            return (
+                              <tr key={`error-${index}`}>
+                                <td colSpan="7" className="px-6 py-4 text-center text-sm text-red-600">
+                                  Error displaying schedule
                                 </td>
                               </tr>
                             );
