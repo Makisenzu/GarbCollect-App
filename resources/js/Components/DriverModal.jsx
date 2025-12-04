@@ -117,10 +117,6 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
     }
   }, [schedules, driver.id]);
 
-  const totalPages = Math.ceil(sortedAndGroupedSchedules.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedSchedules = sortedAndGroupedSchedules.slice(startIndex, startIndex + itemsPerPage);
-
   // Flatten monthly schedules for single table display
   const flattenedSchedulesWithMonths = useMemo(() => {
     const result = [];
@@ -137,10 +133,13 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
     return result;
   }, [monthlySchedules]);
 
+  // Calculate pagination based on flattened items (includes month headers)
+  const totalPages = Math.ceil(flattenedSchedulesWithMonths.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  
   // Get paginated items (including month headers)
   const paginatedItems = useMemo(() => {
-    const allItems = flattenedSchedulesWithMonths;
-    return allItems.slice(startIndex, startIndex + itemsPerPage);
+    return flattenedSchedulesWithMonths.slice(startIndex, startIndex + itemsPerPage);
   }, [flattenedSchedulesWithMonths, startIndex, itemsPerPage]);
 
   const scheduleFields = [
