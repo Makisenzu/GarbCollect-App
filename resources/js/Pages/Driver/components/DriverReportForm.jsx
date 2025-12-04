@@ -250,33 +250,68 @@ const DriverReportForm = ({ scheduleId, token }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Collection Photos (Multiple)
                         </label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleFileChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">You can select multiple images (max 5MB each)</p>
                         
+                        {/* Custom file upload button */}
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                            <input
+                                id="photo-upload"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
+                            <label 
+                                htmlFor="photo-upload"
+                                className="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                            >
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Add Photos
+                            </label>
+                            <p className="text-xs text-gray-500 mt-2">Select multiple images (max 5MB each)</p>
+                            {previewImages.length > 0 && (
+                                <p className="text-sm text-green-600 mt-1 font-medium">
+                                    {previewImages.length} photo{previewImages.length !== 1 ? 's' : ''} selected
+                                </p>
+                            )}
+                        </div>
+                        
+                        {/* Preview Images */}
                         {previewImages.length > 0 && (
                             <div className="mt-4">
-                                <p className="text-sm text-gray-600 mb-2">Selected Images ({previewImages.length}):</p>
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-sm font-medium text-gray-700">Selected Photos ({previewImages.length})</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFormData(prev => ({ ...prev, report_pictures: [] }));
+                                            setPreviewImages([]);
+                                        }}
+                                        className="text-xs text-red-600 hover:text-red-700 font-medium"
+                                    >
+                                        Remove All
+                                    </button>
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     {previewImages.map((preview, index) => (
-                                        <div key={index} className="relative">
+                                        <div key={index} className="relative group">
                                             <img 
                                                 src={preview} 
                                                 alt={`Preview ${index + 1}`} 
-                                                className="w-full h-32 object-cover rounded-md border"
+                                                className="w-full h-32 object-cover rounded-md border-2 border-gray-200"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => removeImage(index)}
-                                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 shadow-md"
                                             >
                                                 ×
                                             </button>
+                                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs py-1 text-center rounded-b-md">
+                                                Photo {index + 1}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
