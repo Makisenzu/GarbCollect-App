@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePage, router } from '@inertiajs/react';
 import axios from 'axios';
 
 const DriverReportForm = ({ scheduleId, token }) => {
     const { props } = usePage();
+    const fileInputRef = useRef(null);
     
     const [formData, setFormData] = useState({
         garbage_id: '',
@@ -71,15 +72,16 @@ const DriverReportForm = ({ scheduleId, token }) => {
         // Validate all files
         const validFiles = [];
         const newPreviews = [];
+        let errorMessages = [];
 
         for (const file of files) {
             if (!file.type.startsWith('image/')) {
-                alert(`${file.name} is not an image file`);
+                errorMessages.push(`${file.name} is not an image file`);
                 continue;
             }
 
             if (file.size > 5 * 1024 * 1024) {
-                alert(`${file.name} is larger than 5MB`);
+                errorMessages.push(`${file.name} is larger than 5MB`);
                 continue;
             }
 
@@ -96,11 +98,20 @@ const DriverReportForm = ({ scheduleId, token }) => {
             reader.readAsDataURL(file);
         }
 
+        if (errorMessages.length > 0) {
+            alert(errorMessages.join('\n'));
+        }
+
         if (validFiles.length > 0) {
             setFormData(prev => ({
                 ...prev,
                 report_pictures: [...prev.report_pictures, ...validFiles]
             }));
+        }
+
+        // Reset file input to allow selecting the same files again
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 
@@ -169,10 +180,10 @@ const DriverReportForm = ({ scheduleId, token }) => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Validating access...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+                    <p className="mt-4 text-gray-600 font-medium">Validating access...</p>
                 </div>
             </div>
         );
@@ -180,14 +191,18 @@ const DriverReportForm = ({ scheduleId, token }) => {
 
     if (!tokenValid) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="text-center max-w-md mx-auto p-6">
+                    <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-gray-100">
+                        <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-                    <p className="text-gray-600">Invalid or expired access token.</p>
+                    <p className="text-gray-600 mb-6">Invalid or expired access token.</p>
                     <button
                         onClick={() => router.visit('/dashboard')}
-                        className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                        className="bg-gray-900 text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors font-medium"
                     >
                         Return to Dashboard
                     </button>
@@ -197,159 +212,191 @@ const DriverReportForm = ({ scheduleId, token }) => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
-            <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-                <div className="text-center mb-6">
-                    <div className="text-green-500 text-6xl mb-4">✅</div>
-                    <h1 className="text-2xl font-bold text-gray-900">Route Completed!</h1>
-                    <p className="text-gray-600 mt-2">Please submit your collection report</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Garbage Type */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Garbage Type *
-                        </label>
-                        <select
-                            name="garbage_id"
-                            value={formData.garbage_id}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="">Select Garbage Type</option>
-                            {garbageTypes.map((garbage) => (
-                                <option key={garbage.id} value={garbage.id}>
-                                    {garbage.name}
-                                </option>
-                            ))}
-                        </select>
+        <div className="min-h-screen bg-gray-50 py-8 px-4">
+            <div className="max-w-2xl mx-auto">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    {/* Header */}
+                    <div className="border-b border-gray-200 px-6 py-4">
+                        <h1 className="text-2xl font-bold text-gray-900">Collection Report</h1>
+                        <p className="text-sm text-gray-600 mt-1">Submit your collection details</p>
                     </div>
 
-                    {/* Kilograms */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Weight Collected (Kilograms) *
-                        </label>
-                        <input
-                            type="number"
-                            name="kilograms"
-                            value={formData.kilograms}
-                            onChange={handleInputChange}
-                            min="0"
-                            step="0.1"
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter weight in kilograms"
-                        />
-                    </div>
-
-                    {/* Report Pictures */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Collection Photos (Multiple)
-                        </label>
-                        
-                        {/* Custom file upload button */}
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                            <input
-                                id="photo-upload"
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleFileChange}
-                                className="hidden"
-                            />
-                            <label 
-                                htmlFor="photo-upload"
-                                className="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                            >
-                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                                Add Photos
+                    {/* Form */}
+                    <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                        {/* Garbage Type */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                Garbage Type <span className="text-red-600">*</span>
                             </label>
-                            <p className="text-xs text-gray-500 mt-2">Select multiple images (max 5MB each)</p>
+                            <select
+                                name="garbage_id"
+                                value={formData.garbage_id}
+                                onChange={handleInputChange}
+                                required
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                            >
+                                <option value="">Select Garbage Type</option>
+                                {garbageTypes.map((garbage) => (
+                                    <option key={garbage.id} value={garbage.id}>
+                                        {garbage.garbage_type}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Kilograms */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                Weight Collected (Kilograms) <span className="text-red-600">*</span>
+                            </label>
+                            <input
+                                type="number"
+                                name="kilograms"
+                                value={formData.kilograms}
+                                onChange={handleInputChange}
+                                min="0"
+                                step="0.1"
+                                required
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                                placeholder="Enter weight in kilograms"
+                            />
+                        </div>
+
+                        {/* Report Pictures */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                Collection Photos
+                            </label>
+                            
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                                <input
+                                    ref={fileInputRef}
+                                    id="photo-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                                <div className="space-y-3">
+                                    <div className="w-12 h-12 mx-auto rounded-full bg-gray-100 flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <label 
+                                            htmlFor="photo-upload"
+                                            className="cursor-pointer inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                            </svg>
+                                            Add Photos
+                                        </label>
+                                    </div>
+                                    <p className="text-xs text-gray-500">
+                                        Select multiple images (max 5MB each)
+                                    </p>
+                                    {previewImages.length > 0 && (
+                                        <div className="pt-2">
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                {previewImages.length} photo{previewImages.length !== 1 ? 's' : ''} selected
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {/* Preview Images */}
                             {previewImages.length > 0 && (
-                                <p className="text-sm text-green-600 mt-1 font-medium">
-                                    {previewImages.length} photo{previewImages.length !== 1 ? 's' : ''} selected
-                                </p>
+                                <div className="mt-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-sm font-semibold text-gray-900">
+                                            Selected Photos ({previewImages.length})
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setFormData(prev => ({ ...prev, report_pictures: [] }));
+                                                setPreviewImages([]);
+                                            }}
+                                            className="text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                                        >
+                                            Remove All
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {previewImages.map((preview, index) => (
+                                            <div key={index} className="relative group">
+                                                <img 
+                                                    src={preview} 
+                                                    alt={`Preview ${index + 1}`} 
+                                                    className="w-full h-32 object-cover rounded-md border border-gray-200"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(index)}
+                                                    className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-white border border-gray-300 text-gray-700 rounded-full hover:bg-gray-100 transition-colors shadow-sm"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                                <div className="absolute bottom-2 left-2 right-2">
+                                                    <div className="bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded text-center">
+                                                        Photo {index + 1}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </div>
-                        
-                        {/* Preview Images */}
-                        {previewImages.length > 0 && (
-                            <div className="mt-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-sm font-medium text-gray-700">Selected Photos ({previewImages.length})</p>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFormData(prev => ({ ...prev, report_pictures: [] }));
-                                            setPreviewImages([]);
-                                        }}
-                                        className="text-xs text-red-600 hover:text-red-700 font-medium"
-                                    >
-                                        Remove All
-                                    </button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {previewImages.map((preview, index) => (
-                                        <div key={index} className="relative group">
-                                            <img 
-                                                src={preview} 
-                                                alt={`Preview ${index + 1}`} 
-                                                className="w-full h-32 object-cover rounded-md border-2 border-gray-200"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => removeImage(index)}
-                                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 shadow-md"
-                                            >
-                                                ×
-                                            </button>
-                                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs py-1 text-center rounded-b-md">
-                                                Photo {index + 1}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* Additional Notes */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Additional Notes
-                        </label>
-                        <textarea
-                            name="additional_notes"
-                            value={formData.additional_notes}
-                            onChange={handleInputChange}
-                            rows="3"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Any additional information about the collection..."
-                        />
-                    </div>
+                        {/* Additional Notes */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                Additional Notes
+                            </label>
+                            <textarea
+                                name="additional_notes"
+                                value={formData.additional_notes}
+                                onChange={handleInputChange}
+                                rows="4"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
+                                placeholder="Any additional information about the collection..."
+                            />
+                        </div>
 
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {submitting ? (
-                            <div className="flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Submitting...
-                            </div>
-                        ) : (
-                            'Submit Report'
-                        )}
-                    </button>
-                </form>
+                        {/* Submit Button */}
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => router.visit('/dashboard')}
+                                disabled={submitting}
+                                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={submitting}
+                                className="flex-1 px-6 py-3 bg-gray-900 text-white font-medium rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {submitting ? (
+                                    <div className="flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                        Submitting...
+                                    </div>
+                                ) : (
+                                    'Submit Report'
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );
