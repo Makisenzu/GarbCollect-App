@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import axios from 'axios';
 
@@ -9,10 +9,11 @@ export default function CompletionReportModal({
   scheduleName,
   onSubmitSuccess 
 }) {
+  const fileInputRef = useRef(null);
   const [garbageTypes, setGarbageTypes] = useState([]);
   const [reports, setReports] = useState([]);
-  const [reportPicture, setReportPicture] = useState(null);
-  const [picturePreview, setPicturePreview] = useState(null);
+  const [reportPictures, setReportPictures] = useState([]);
+  const [picturesPreviews, setPicturesPreviews] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -64,11 +65,54 @@ export default function CompletionReportModal({
   };
 
   const handlePictureChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setReportPicture(file);
-      setPicturePreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
+
+    const validFiles = [];
+    const newPreviews = [];
+    let errorMessages = [];
+
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        errorMessages.push(`${file.name} is not an image file`);
+        continue;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        errorMessages.push(`${file.name} is larger than 5MB`);
+        continue;
+      }
+
+      validFiles.push(file);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        newPreviews.push(e.target.result);
+        if (newPreviews.length === validFiles.length) {
+          setPicturesPreviews(prev => [...prev, ...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
     }
+
+    if (errorMessages.length > 0) {
+      alert(errorMessages.join('\n'));
+    }
+
+    if (validFiles.length > 0) {
+      setReportPictures(prev => [...prev, ...validFiles]);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (index) => {
+    setReportPictures(prev => prev.filter((_, i) => i !== index));
+    setPicturesPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -78,8 +122,8 @@ export default function CompletionReportModal({
 
     try {
       // Validate
-      if (!reportPicture) {
-        setErrors({ picture: 'Report picture is required' });
+      if (reportPictures.length === 0) {
+        setErrors({ picture: 'At least one report picture is required' });
         setIsSubmitting(false);
         return;
       }
@@ -94,7 +138,12 @@ export default function CompletionReportModal({
       // Prepare form data
       const formData = new FormData();
       formData.append('schedule_id', scheduleId);
-      formData.append('report_picture', reportPicture);
+      
+      // Append all pictures
+      reportPictures.forEach((file, index) => {
+        formData.append(`report_pictures[${index}]`, file);
+      });
+      
       formData.append('reports', JSON.stringify(reports));
 
       // Submit report
@@ -105,7 +154,7 @@ export default function CompletionReportModal({
       });
 
       if (response.data.success) {
-        console.log('✅ Completion report submitted successfully');
+        console.log('Completion report submitted successfully');
         
         if (onSubmitSuccess) {
           onSubmitSuccess();
@@ -128,17 +177,17 @@ export default function CompletionReportModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden border border-gray-200">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 sm:p-6">
+        <div className="bg-gray-900 text-white px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold">🎉 Collection Completed!</h2>
-              <p className="text-green-100 text-xs sm:text-sm mt-1">Please submit your collection report</p>
+              <h2 className="text-xl sm:text-2xl font-bold">Collection Completed</h2>
+              <p className="text-gray-300 text-xs sm:text-sm mt-1">Submit your collection report</p>
             </div>
             <button
               onClick={onClose}
-              className="ml-2 p-2 hover:bg-green-700 rounded-lg transition-colors"
+              className="ml-2 p-2 hover:bg-gray-800 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -156,57 +205,107 @@ export default function CompletionReportModal({
             </div>
           )}
 
-          {/* Report Picture */}
+          {/* Report Pictures */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Collection Report Picture <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Collection Photos <span className="text-red-600">*</span>
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-              {picturePreview ? (
-                <div className="relative">
-                  <img 
-                    src={picturePreview} 
-                    alt="Preview" 
-                    className="max-h-40 sm:max-h-48 mx-auto rounded-lg"
-                  />
+            
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+              <input
+                ref={fileInputRef}
+                id="completion-photo-upload"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePictureChange}
+                className="hidden"
+              />
+              <div className="space-y-3">
+                <div className="w-12 h-12 mx-auto rounded-full bg-gray-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <label 
+                    htmlFor="completion-photo-upload"
+                    className="cursor-pointer inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Photos
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Select multiple images (max 5MB each)
+                </p>
+                {picturesPreviews.length > 0 && (
+                  <div className="pt-2">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      {picturesPreviews.length} photo{picturesPreviews.length !== 1 ? 's' : ''} selected
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Preview Images */}
+            {picturesPreviews.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold text-gray-900">
+                    Selected Photos ({picturesPreviews.length})
+                  </p>
                   <button
                     type="button"
                     onClick={() => {
-                      setReportPicture(null);
-                      setPicturePreview(null);
+                      setReportPictures([]);
+                      setPicturesPreviews([]);
                     }}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 sm:p-2 hover:bg-red-600"
+                    className="text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors"
                   >
-                    ✕
+                    Remove All
                   </button>
                 </div>
-              ) : (
-                <div>
-                  <div className="text-3xl sm:text-4xl mb-2">📷</div>
-                  <label className="cursor-pointer">
-                    <span className="text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base">
-                      Click to upload picture
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePictureChange}
-                      className="hidden"
-                    />
-                  </label>
-                  <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {picturesPreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={preview} 
+                        alt={`Preview ${index + 1}`} 
+                        className="w-full h-32 object-cover rounded-md border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-white border border-gray-300 text-gray-700 rounded-full hover:bg-gray-100 transition-colors shadow-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <div className="bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded text-center">
+                          Photo {index + 1}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+            
             {errors.picture && (
-              <p className="text-red-500 text-xs mt-1">{errors.picture}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.picture}</p>
             )}
           </div>
 
           {/* Garbage Collection Weights */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Garbage Collected (Kilograms) <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">
+              Garbage Collected (Kilograms) <span className="text-red-600">*</span>
             </label>
             <div className="space-y-3">
               {reports.map((report) => (
@@ -215,8 +314,10 @@ export default function CompletionReportModal({
                   className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200"
                 >
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      🗑️
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
                     </div>
                     <div className="min-w-0">
                       <div className="font-medium text-gray-900 text-sm sm:text-base truncate">{report.garbage_type}</div>
@@ -227,9 +328,9 @@ export default function CompletionReportModal({
                     <button
                       type="button"
                       onClick={() => incrementKilograms(report.garbage_id, -0.5)}
-                      className="w-7 h-7 sm:w-8 sm:h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 font-bold text-sm sm:text-base"
+                      className="w-7 h-7 sm:w-8 sm:h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 font-bold text-sm sm:text-base transition-colors"
                     >
-                      -
+                      −
                     </button>
                     <input
                       type="number"
@@ -237,12 +338,12 @@ export default function CompletionReportModal({
                       min="0"
                       value={report.kilograms}
                       onChange={(e) => handleKilogramsChange(report.garbage_id, e.target.value)}
-                      className="w-16 sm:w-20 text-center px-2 py-1.5 sm:py-2 border border-gray-300 rounded-lg font-semibold text-sm sm:text-base"
+                      className="w-16 sm:w-20 text-center px-2 py-1.5 sm:py-2 border border-gray-300 rounded-lg font-semibold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                     />
                     <button
                       type="button"
                       onClick={() => incrementKilograms(report.garbage_id, 0.5)}
-                      className="w-7 h-7 sm:w-8 sm:h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 font-bold text-sm sm:text-base"
+                      className="w-7 h-7 sm:w-8 sm:h-8 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 font-bold text-sm sm:text-base transition-colors"
                     >
                       +
                     </button>
@@ -251,15 +352,15 @@ export default function CompletionReportModal({
               ))}
             </div>
             {errors.kilograms && (
-              <p className="text-red-500 text-xs mt-1">{errors.kilograms}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.kilograms}</p>
             )}
           </div>
 
           {/* Total Summary */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 mb-6">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700 text-sm sm:text-base">Total Collected:</span>
-              <span className="text-xl sm:text-2xl font-bold text-blue-600">
+              <span className="font-semibold text-gray-900 text-sm sm:text-base">Total Collected:</span>
+              <span className="text-xl sm:text-2xl font-bold text-gray-900">
                 {reports.reduce((sum, r) => sum + r.kilograms, 0).toFixed(2)} kg
               </span>
             </div>
@@ -271,14 +372,14 @@ export default function CompletionReportModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-semibold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base transition-colors"
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
@@ -295,8 +396,8 @@ export default function CompletionReportModal({
           </div>
 
           {/* Info Note */}
-          <div className="mt-4 p-2.5 sm:p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-xs text-yellow-800">
+          <div className="mt-4 p-2.5 sm:p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-xs text-gray-600">
               <span className="font-semibold">Note:</span> After submitting this report, the schedule will be marked as completed and you'll be redirected to the dashboard.
             </p>
           </div>

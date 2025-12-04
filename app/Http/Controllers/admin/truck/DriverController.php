@@ -571,7 +571,8 @@ class DriverController extends Controller
         try {
             $validatedData = $request->validate([
                 'schedule_id' => 'required|exists:schedules,id',
-                'report_picture' => 'required|image|max:5120', // 5MB max
+                'report_pictures' => 'nullable|array',
+                'report_pictures.*' => 'image|max:5120', // 5MB max per image
                 'reports' => 'required|json'
             ]);
 
@@ -580,8 +581,13 @@ class DriverController extends Controller
             // Decode reports JSON
             $reportsData = json_decode($validatedData['reports'], true);
 
-            // Store report picture
-            $picturePath = $request->file('report_picture')->store('reports', 'public');
+            // Handle multiple file uploads
+            $imagePaths = [];
+            if ($request->hasFile('report_pictures')) {
+                foreach ($request->file('report_pictures') as $file) {
+                    $imagePaths[] = $file->store('reports', 'public');
+                }
+            }
 
             // Create report entries for each garbage type
             foreach ($reportsData as $reportData) {
@@ -589,7 +595,7 @@ class DriverController extends Controller
                     \App\Models\Report::create([
                         'schedule_id' => $validatedData['schedule_id'],
                         'garbage_id' => $reportData['garbage_id'],
-                        'report_picture' => $picturePath,
+                        'report_picture' => $imagePaths, // Now stores array
                         'kilograms' => $reportData['kilograms']
                     ]);
                 }
