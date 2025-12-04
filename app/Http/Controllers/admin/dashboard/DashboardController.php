@@ -156,9 +156,22 @@ class DashboardController extends Controller
     public function generateReport(Request $request)
     {
         try {
+            // Validate inputs
+            $validated = $request->validate([
+                'type' => 'nullable|in:all,completed,active,failed,in_progress',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+            ]);
+
             $reportType = $request->input('type', 'all');
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
+
+            \Log::info('Generate Report Request', [
+                'type' => $reportType,
+                'start_date' => $startDate,
+                'end_date' => $endDate
+            ]);
 
             $query = Schedule::with([
                 'barangay.municipality', 
@@ -167,8 +180,17 @@ class DashboardController extends Controller
                 'collections.site.purok'
             ]);
 
+            // Handle date filtering
             if ($startDate && $endDate) {
-                $query->whereBetween('collection_date', [$startDate, $endDate]);
+                // Both dates provided - use between (inclusive)
+                $query->whereDate('collection_date', '>=', $startDate)
+                      ->whereDate('collection_date', '<=', $endDate);
+            } elseif ($startDate) {
+                // Only start date provided - from start date onwards
+                $query->whereDate('collection_date', '>=', $startDate);
+            } elseif ($endDate) {
+                // Only end date provided - up to end date
+                $query->whereDate('collection_date', '<=', $endDate);
             }
 
             if ($reportType !== 'all') {
@@ -176,6 +198,8 @@ class DashboardController extends Controller
             }
 
             $schedules = $query->orderBy('collection_date', 'desc')->get();
+            
+            \Log::info('Schedules found', ['count' => $schedules->count()]);
 
             $reportData = [];
             

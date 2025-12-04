@@ -166,6 +166,52 @@ export function WelcomeHero({ schedules, todaysCollections, inProgress, complete
         end_date: ''
     });
 
+    // Helper function to get date range presets
+    const getDatePreset = (preset) => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        
+        switch(preset) {
+            case 'today':
+                return {
+                    start_date: today.toISOString().split('T')[0],
+                    end_date: today.toISOString().split('T')[0]
+                };
+            case 'this_week':
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay());
+                return {
+                    start_date: startOfWeek.toISOString().split('T')[0],
+                    end_date: today.toISOString().split('T')[0]
+                };
+            case 'this_month':
+                const startOfMonth = new Date(year, month, 1);
+                return {
+                    start_date: startOfMonth.toISOString().split('T')[0],
+                    end_date: today.toISOString().split('T')[0]
+                };
+            case 'last_month':
+                const lastMonth = new Date(year, month - 1, 1);
+                const endOfLastMonth = new Date(year, month, 0);
+                return {
+                    start_date: lastMonth.toISOString().split('T')[0],
+                    end_date: endOfLastMonth.toISOString().split('T')[0]
+                };
+            default:
+                return { start_date: '', end_date: '' };
+        }
+    };
+
+    const handlePresetChange = (preset) => {
+        if (preset === 'custom') {
+            setReportConfig({ ...reportConfig, start_date: '', end_date: '' });
+        } else {
+            const dates = getDatePreset(preset);
+            setReportConfig({ ...reportConfig, ...dates });
+        }
+    };
+
     const convertToCSV = (data) => {
         if (!data || data.length === 0) return '';
         
@@ -199,24 +245,51 @@ export function WelcomeHero({ schedules, todaysCollections, inProgress, complete
     };
 
     const handleGenerateReport = async () => {
+        // Validate date range
+        if (reportConfig.start_date && reportConfig.end_date) {
+            const start = new Date(reportConfig.start_date);
+            const end = new Date(reportConfig.end_date);
+            
+            if (start > end) {
+                alert('Start date cannot be after end date');
+                return;
+            }
+        }
+
         setIsGenerating(true);
         
         try {
+            console.log('Generating report with config:', reportConfig);
+            
             const response = await axios.post('/admin/generate-report', reportConfig);
             
             if (response.data.success) {
+                console.log('Report data received:', response.data);
+                
+                if (!response.data.data || response.data.data.length === 0) {
+                    alert('No data found for the selected criteria. Please try different filters.');
+                    setIsGenerating(false);
+                    return;
+                }
+
                 const csv = convertToCSV(response.data.data);
                 const timestamp = new Date().toISOString().split('T')[0];
-                const filename = `GarbCollect_Report_${reportConfig.type}_${timestamp}.csv`;
+                const dateRange = reportConfig.start_date && reportConfig.end_date 
+                    ? `${reportConfig.start_date}_to_${reportConfig.end_date}`
+                    : timestamp;
+                const filename = `GarbCollect_Report_${reportConfig.type}_${dateRange}.csv`;
                 
                 downloadCSV(csv, filename);
+                
+                alert(`Report generated successfully! ${response.data.summary.total_schedules} schedules exported.`);
                 
                 setShowModal(false);
                 setReportConfig({ type: 'all', start_date: '', end_date: '' });
             }
         } catch (error) {
             console.error('Error generating report:', error);
-            alert('Failed to generate report. Please try again.');
+            const errorMessage = error.response?.data?.message || 'Failed to generate report. Please try again.';
+            alert(errorMessage);
         } finally {
             setIsGenerating(false);
         }
@@ -248,7 +321,24 @@ export function WelcomeHero({ schedules, todaysCollections, inProgress, complete
                             
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Start Date (Optional)
+                                    Date Range Preset
+                                </label>
+                                <select
+                                    onChange={(e) => handlePresetChange(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900"
+                                    defaultValue="custom"
+                                >
+                                    <option value="custom">Custom Date Range</option>
+                                    <option value="today">Today</option>
+                                    <option value="this_week">This Week</option>
+                                    <option value="this_month">This Month (December)</option>
+                                    <option value="last_month">Last Month (November)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Start Date
                                 </label>
                                 <input
                                     type="date"
@@ -256,11 +346,12 @@ export function WelcomeHero({ schedules, todaysCollections, inProgress, complete
                                     onChange={(e) => setReportConfig({...reportConfig, start_date: e.target.value})}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">Leave empty for all dates from the beginning</p>
                             </div>
                             
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    End Date (Optional)
+                                    End Date
                                 </label>
                                 <input
                                     type="date"
@@ -268,6 +359,7 @@ export function WelcomeHero({ schedules, todaysCollections, inProgress, complete
                                     onChange={(e) => setReportConfig({...reportConfig, end_date: e.target.value})}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">Leave empty for all dates up to today</p>
                             </div>
                         </div>
                         
