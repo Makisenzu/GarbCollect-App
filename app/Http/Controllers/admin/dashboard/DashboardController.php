@@ -180,28 +180,59 @@ class DashboardController extends Controller
             $reportData = [];
             
             foreach ($schedules as $schedule) {
-                $totalKg = $schedule->reports->sum('kilograms');
-                $garbageTypes = $schedule->reports->map(function($report) {
-                    return $report->garbage->garbage_type . ' (' . number_format($report->kilograms, 2) . ' kg)';
-                })->implode(', ');
+                try {
+                    $totalKg = $schedule->reports->sum('kilograms');
+                    $garbageTypes = $schedule->reports->map(function($report) {
+                        return $report->garbage->garbage_type . ' (' . number_format($report->kilograms, 2) . ' kg)';
+                    })->implode(', ');
 
-                $sitesVisited = $schedule->collections->count();
-                $sitesCompleted = $schedule->collections->where('status', 'finished')->count();
+                    $sitesVisited = $schedule->collections->count();
+                    $sitesCompleted = $schedule->collections->where('status', 'finished')->count();
 
-                $reportData[] = [
-                    'Schedule ID' => $schedule->id,
-                    'Collection Date' => $schedule->collection_date->format('Y-m-d'),
-                    'Collection Time' => $schedule->collection_time,
-                    'Barangay' => $schedule->barangay->baranggay_name ?? 'N/A',
-                    'Driver Name' => $schedule->driver->user->name . ' ' . $schedule->driver->user->lastname ?? 'N/A',
-                    'Status' => strtoupper($schedule->status),
-                    'Total Kilograms Collected' => number_format($totalKg, 2),
-                    'Garbage Types' => $garbageTypes ?: 'No data',
-                    'Sites Assigned' => $sitesVisited,
-                    'Sites Completed' => $sitesCompleted,
-                    'Completion Rate' => $sitesVisited > 0 ? round(($sitesCompleted / $sitesVisited) * 100, 2) . '%' : '0%',
-                    'Notes' => $schedule->notes ?? 'None',
-                ];
+                    // Safe date formatting
+                    $collectionDate = $schedule->collection_date;
+                    if (is_string($collectionDate)) {
+                        $dateString = $collectionDate;
+                    } elseif ($collectionDate instanceof \Carbon\Carbon || $collectionDate instanceof \DateTime) {
+                        $dateString = $collectionDate->format('Y-m-d');
+                    } else {
+                        $dateString = 'N/A';
+                    }
+
+                    // Safe driver name concatenation
+                    $driverName = 'N/A';
+                    if ($schedule->driver && $schedule->driver->user) {
+                        $driverName = trim($schedule->driver->user->name . ' ' . $schedule->driver->user->lastname);
+                    }
+
+                    $reportData[] = [
+                        'Schedule ID' => $schedule->id,
+                        'Collection Date' => $dateString,
+                        'Collection Time' => $schedule->collection_time ?: 'N/A',
+                        'Barangay' => $schedule->barangay->baranggay_name ?? 'N/A',
+                        'Driver Name' => $driverName,
+                        'Status' => strtoupper($schedule->status),
+                        'Total Kilograms Collected' => number_format($totalKg, 2),
+                        'Garbage Types' => $garbageTypes ?: 'No data',
+                        'Sites Assigned' => $sitesVisited,
+                        'Sites Completed' => $sitesCompleted,
+                        'Completion Rate' => $sitesVisited > 0 ? round(($sitesCompleted / $sitesVisited) * 100, 2) . '%' : '0%',
+                        'Notes' => $schedule->notes ?? 'None',
+                    ];
+                } catch (\Exception $e) {
+                    \Log::error('Error processing schedule for report', [
+                        'schedule_id' => $schedule->id ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                    continue;
+                }
+            }
+
+            // Safe total kilograms calculation
+            $totalKilograms = 0;
+            foreach ($reportData as $row) {
+                $kgValue = str_replace(',', '', $row['Total Kilograms Collected']);
+                $totalKilograms += (float) $kgValue;
             }
 
             return response()->json([
@@ -209,13 +240,18 @@ class DashboardController extends Controller
                 'data' => $reportData,
                 'summary' => [
                     'total_schedules' => $schedules->count(),
-                    'total_kilograms' => array_sum(array_column($reportData, 'Total Kilograms Collected')),
+                    'total_kilograms' => number_format($totalKilograms, 2),
                     'completed' => $schedules->where('status', 'completed')->count(),
                     'active' => $schedules->where('status', 'active')->count(),
                     'failed' => $schedules->where('status', 'FAILED')->count(),
                 ]
             ]);
         } catch (\Exception $e) {
+            \Log::error('Generate report error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate report: ' . $e->getMessage()
