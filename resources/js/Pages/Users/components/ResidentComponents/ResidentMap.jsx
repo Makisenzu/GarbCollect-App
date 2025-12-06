@@ -1252,6 +1252,14 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         status: s.status
       })));
       
+      // Immediately update markers with new data
+      if (mapInitialized && map.current) {
+        setTimeout(() => {
+          console.log('🔄 Refreshing site markers after completion');
+          updateSiteMarkers(updatedSites);
+        }, 100);
+      }
+      
       // Trigger route recalculation after state update
       if (mapInitialized && stationLocation) {
         setTimeout(() => {
