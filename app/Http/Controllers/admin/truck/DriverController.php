@@ -460,9 +460,9 @@ class DriverController extends Controller
             $allCompleted = CollectionQue::allSitesCompleted($validatedData['schedule_id']);
 
             if ($allCompleted) {
-                // Update schedule status to completed
-                Schedule::where('id', $validatedData['schedule_id'])
-                        ->update(['status' => 'completed']);
+                // Don't auto-complete schedule here
+                // Schedule will only be marked as 'reported' when driver submits completion report
+                Log::info("All sites completed for schedule {$validatedData['schedule_id']}, awaiting driver report");
 
                 DB::commit();
 

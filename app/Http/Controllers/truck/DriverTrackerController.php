@@ -164,11 +164,10 @@ class DriverTrackerController extends Controller
                         ));
                     }
                     
-                    // Check if all sites are completed
+                    // NOTE: Schedule status is NOT updated here
+                    // It will only be updated to 'reported' when driver submits completion report
                     if ($completedCount === $totalSites) {
-                        Schedule::where('id', $scheduleId)
-                            ->update(['status' => 'completed']);
-                        Log::info("All sites completed for schedule {$scheduleId}");
+                        Log::info("All sites completed for schedule {$scheduleId}, awaiting driver report");
                     }
                     
                     DB::commit();

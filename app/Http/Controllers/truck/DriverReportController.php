@@ -28,11 +28,18 @@ class DriverReportController extends Controller
 
             $schedule = Schedule::findOrFail($request->schedule_id);
             
-            // Check if schedule is completed
-            if ($schedule->status !== 'completed') {
+            // Check if all sites are completed instead of schedule status
+            $totalSites = \App\Models\CollectionQue::where('schedule_id', $request->schedule_id)->count();
+            $completedSites = \App\Models\CollectionQue::where('schedule_id', $request->schedule_id)
+                ->where('status', 'finished')
+                ->count();
+            
+            if ($completedSites < $totalSites) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Schedule is not completed yet'
+                    'message' => 'Not all sites have been completed yet',
+                    'completed' => $completedSites,
+                    'total' => $totalSites
                 ], 400);
             }
 
