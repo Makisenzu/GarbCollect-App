@@ -1167,14 +1167,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         
         setSiteLocations(sites);
         
-        // Update markers immediately with fresh data
-        if (mapInitialized && map.current) {
-          setTimeout(() => {
-            console.log('🔄 Updating markers with refreshed site data');
-            updateSiteMarkers(sites);
-          }, 100);
-        }
-        
         // Recalculate route with fresh data
         const station = findStation(sites);
         if (station && mapInitialized) {
@@ -1188,6 +1180,24 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       console.error('Error refreshing sites from server:', error);
     }
   };
+
+  // Test function - expose to window for debugging
+  useEffect(() => {
+    window.testSiteCompletion = (siteId) => {
+      console.log('🧪 TEST: Manually triggering site completion for site ID:', siteId);
+      handleSiteCompletion({
+        site_id: siteId,
+        status: 'finished',
+        completed_at: new Date().toISOString(),
+        site_name: 'Test Site'
+      });
+    };
+    
+    window.refreshResidentMap = () => {
+      console.log('🧪 TEST: Manually refreshing resident map');
+      refreshSitesFromServer();
+    };
+  }, [siteLocations, currentSchedule]);
 
   const loadInitialData = async () => {
     try {
@@ -1273,7 +1283,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       current_sites_count: siteLocations.length
     });
     
-    // Update site locations to mark as completed
+    // Update site locations to mark as completed - this will trigger the useEffect
     setSiteLocations(prevSites => {
       console.log('📋 Current sites before update:', prevSites.map(s => ({
         id: s.id,
@@ -1300,24 +1310,14 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         status: s.status
       })));
       
-      // Immediately update markers with new data
-      if (mapInitialized && map.current) {
-        setTimeout(() => {
-          console.log('🔄 Refreshing site markers after completion');
-          updateSiteMarkers(updatedSites);
-        }, 100);
-      }
-      
-      // Trigger route recalculation after state update
-      if (mapInitialized && stationLocation) {
-        setTimeout(() => {
-          console.log('🔄 Recalculating route after site completion');
-          calculateOptimalRoute(updatedSites, stationLocation, realTimeRouteEnabled && driverLocation);
-        }, 200);
-      }
-      
       return updatedSites;
     });
+    
+    // Optionally refresh from server for consistency
+    setTimeout(() => {
+      console.log('🔄 Refreshing sites from server');
+      refreshSitesFromServer();
+    }, 1000);
   };
 
   const updateDriverMarker = (coordinates, locationData) => {
