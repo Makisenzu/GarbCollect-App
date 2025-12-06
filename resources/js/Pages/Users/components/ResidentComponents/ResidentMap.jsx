@@ -1091,9 +1091,14 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
               event_data: e,
               site_id: e.site_id || e.siteId,
               status: e.status,
-              site_name: e.site_name || e.siteName
+              site_name: e.site_name || e.siteName,
+              completed_sites: e.completed_sites,
+              total_sites: e.total_sites
             });
             handleSiteCompletion(e);
+            
+            // Refresh site data from server to ensure consistency
+            refreshSitesFromServer();
           });
   
         setConnectionStatus('connected');
@@ -1140,6 +1145,49 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       }
     };
   }, [barangayId, scheduleId]);
+
+  const refreshSitesFromServer = async () => {
+    try {
+      console.log('🔄 Refreshing sites from server after completion event...');
+      
+      if (!currentSchedule || !currentSchedule.id) {
+        console.warn('No current schedule available to refresh sites');
+        return;
+      }
+      
+      const sitesResponse = await axios.get(`/schedule/${currentSchedule.id}/sites`);
+      
+      if (sitesResponse.data.success) {
+        const sites = sitesResponse.data.data;
+        console.log('✅ Sites refreshed from server:', sites.map(s => ({
+          id: s.id,
+          name: s.site_name,
+          status: s.status
+        })));
+        
+        setSiteLocations(sites);
+        
+        // Update markers immediately with fresh data
+        if (mapInitialized && map.current) {
+          setTimeout(() => {
+            console.log('🔄 Updating markers with refreshed site data');
+            updateSiteMarkers(sites);
+          }, 100);
+        }
+        
+        // Recalculate route with fresh data
+        const station = findStation(sites);
+        if (station && mapInitialized) {
+          setTimeout(() => {
+            console.log('🔄 Recalculating route with refreshed data');
+            calculateOptimalRoute(sites, station, realTimeRouteEnabled && driverLocation);
+          }, 200);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing sites from server:', error);
+    }
+  };
 
   const loadInitialData = async () => {
     try {
