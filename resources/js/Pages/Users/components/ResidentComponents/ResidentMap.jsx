@@ -1044,10 +1044,46 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
 
   useEffect(() => {
     if (mapInitialized && siteLocations.length > 0) {
-      console.log('Force updating site markers due to state change');
+      console.log('🔄 Force updating site markers due to state change');
+      console.log('📊 Sites to render:', siteLocations.map(s => ({ id: s.id, name: s.site_name, status: s.status })));
       updateSiteMarkers(siteLocations);
     }
   }, [mapInitialized, siteLocations, isMobile, realTimeRouteEnabled, nearestSite]);
+
+  // POLLING: Refresh sites from server every 5 seconds to ensure we catch updates
+  useEffect(() => {
+    if (!currentSchedule?.id) return;
+
+    console.log('⏰ Starting polling for site updates every 5 seconds');
+    
+    const pollingSiteUpdates = setInterval(async () => {
+      try {
+        const sitesResponse = await axios.get(`/schedule/${currentSchedule.id}/sites`);
+        
+        if (sitesResponse.data.success) {
+          const freshSites = sitesResponse.data.data;
+          
+          // Check if any sites changed status
+          const hasChanges = freshSites.some((freshSite, index) => {
+            const currentSite = siteLocations.find(s => s.id === freshSite.id);
+            return currentSite && currentSite.status !== freshSite.status;
+          });
+          
+          if (hasChanges) {
+            console.log('🔄 POLLING DETECTED CHANGES - Updating sites');
+            setSiteLocations(freshSites);
+          }
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    return () => {
+      console.log('⏰ Stopping site polling');
+      clearInterval(pollingSiteUpdates);
+    };
+  }, [currentSchedule?.id, siteLocations]);
 
   useEffect(() => {
     if (mapInitialized && driverLocation) {
