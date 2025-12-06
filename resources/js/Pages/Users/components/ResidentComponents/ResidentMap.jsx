@@ -1086,7 +1086,13 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         // Listen for site completion events
         echo.channel(`site-completion.${barangayId}`)
           .listen('SiteCompletionUpdated', (e) => {
-            console.log('Site completion received:', e);
+            console.log('🎯 REALTIME: Site completion event received:', {
+              barangay_id: barangayId,
+              event_data: e,
+              site_id: e.site_id || e.siteId,
+              status: e.status,
+              site_name: e.site_name || e.siteName
+            });
             handleSiteCompletion(e);
           });
   
@@ -1210,13 +1216,26 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   };
 
   const handleSiteCompletion = (completionData) => {
-    console.log('🎯 Handling site completion:', completionData);
+    console.log('🎯 PROCESSING site completion:', {
+      received_data: completionData,
+      site_id_variants: {
+        site_id: completionData.site_id,
+        siteId: completionData.siteId
+      },
+      current_sites_count: siteLocations.length
+    });
     
     // Update site locations to mark as completed
     setSiteLocations(prevSites => {
+      console.log('📋 Current sites before update:', prevSites.map(s => ({
+        id: s.id,
+        name: s.site_name,
+        status: s.status
+      })));
+      
       const updatedSites = prevSites.map(site => {
         if (site.id === completionData.site_id || site.id === completionData.siteId) {
-          console.log(`✅ Marking site ${site.site_name} as finished`);
+          console.log(`✅ MARKING site ${site.site_name} (ID: ${site.id}) as FINISHED`);
           return {
             ...site,
             status: 'finished',
@@ -1227,16 +1246,18 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         return site;
       });
       
-      // Update markers immediately with the new data
-      if (mapInitialized) {
+      console.log('📋 Sites after update:', updatedSites.map(s => ({
+        id: s.id,
+        name: s.site_name,
+        status: s.status
+      })));
+      
+      // Trigger route recalculation after state update
+      if (mapInitialized && stationLocation) {
         setTimeout(() => {
-          updateSiteMarkers(updatedSites);
-          
-          // Recalculate route if needed
-          if (realTimeRouteEnabled && driverLocation) {
-            updateRealTimeRoute();
-          }
-        }, 100);
+          console.log('🔄 Recalculating route after site completion');
+          calculateOptimalRoute(updatedSites, stationLocation, realTimeRouteEnabled && driverLocation);
+        }, 200);
       }
       
       return updatedSites;
