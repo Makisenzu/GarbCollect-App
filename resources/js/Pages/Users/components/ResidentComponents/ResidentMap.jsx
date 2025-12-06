@@ -340,11 +340,13 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     return null;
   };
 
-  const calculateOptimalRoute = async (sites, station, includeDriverRoute = false) => {
+  const calculateOptimalRoute = async (sites, station, includeDriverRoute = false, silent = false) => {
     if (!mapboxKey || sites.length < 1) return;
 
-    setRouteLoading(true);
-    showLoadingSpinner('Calculating optimal route...');
+    if (!silent) {
+      setRouteLoading(true);
+      showLoadingSpinner('Calculating optimal route...');
+    }
     setRouteError(null);
 
     try {
@@ -516,8 +518,10 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         }
       }
     } finally {
-      setRouteLoading(false);
-      hideLoadingSpinner();
+      if (!silent) {
+        setRouteLoading(false);
+        hideLoadingSpinner();
+      }
     }
   };
 
@@ -1077,7 +1081,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
             const station = findStation(freshSites);
             if (station && mapInitialized) {
               setTimeout(() => {
-                calculateOptimalRoute(freshSites, station, realTimeRouteEnabled && driverLocation);
+                calculateOptimalRoute(freshSites, station, realTimeRouteEnabled && driverLocation, true);
               }, 200);
             }
           }
@@ -1220,7 +1224,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         const station = findStation(sites);
         if (station && mapInitialized) {
           setTimeout(() => {
-            calculateOptimalRoute(sites, station, realTimeRouteEnabled && driverLocation);
+            calculateOptimalRoute(sites, station, realTimeRouteEnabled && driverLocation, true);
           }, 200);
         }
       }
