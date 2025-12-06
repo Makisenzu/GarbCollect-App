@@ -343,6 +343,16 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   const calculateOptimalRoute = async (sites, station, includeDriverRoute = false, silent = false) => {
     if (!mapboxKey || sites.length < 1) return;
 
+    // Don't calculate route if all sites are finished
+    const unfinishedSites = sites.filter(site => 
+      site.type !== 'station' && site.status !== 'finished' && site.status !== 'completed'
+    );
+    
+    if (unfinishedSites.length === 0) {
+      console.log('⚠️ All sites finished - no route to calculate');
+      return;
+    }
+
     if (!silent) {
       setRouteLoading(true);
       showLoadingSpinner('Calculating optimal route...');
@@ -1025,8 +1035,18 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
 
   useEffect(() => {
     if (siteLocations.length > 0 && stationLocation && mapboxKey && mapInitialized) {
+      // Don't calculate route if all sites are finished
+      const unfinishedSites = siteLocations.filter(site => 
+        site.type !== 'station' && site.status !== 'finished' && site.status !== 'completed'
+      );
+      
+      if (unfinishedSites.length === 0) {
+        console.log('⚠️ All sites finished - skipping route calculation');
+        return;
+      }
+      
       console.log('All data available, calculating optimal route...');
-      calculateOptimalRoute(siteLocations, stationLocation, realTimeRouteEnabled);
+      calculateOptimalRoute(siteLocations, stationLocation, realTimeRouteEnabled, true);
     }
   }, [siteLocations, stationLocation, mapboxKey, mapInitialized]);
 
@@ -1077,12 +1097,20 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
             console.log('🔄 POLLING: Site status changed, updating silently');
             setSiteLocations(freshSites);
             
-            // Recalculate route silently
-            const station = findStation(freshSites);
-            if (station && mapInitialized) {
-              setTimeout(() => {
-                calculateOptimalRoute(freshSites, station, realTimeRouteEnabled && driverLocation, true);
-              }, 200);
+            // Only recalculate route if there are unfinished sites
+            const unfinishedSites = freshSites.filter(site => 
+              site.type !== 'station' && site.status !== 'finished' && site.status !== 'completed'
+            );
+            
+            if (unfinishedSites.length > 0) {
+              const station = findStation(freshSites);
+              if (station && mapInitialized) {
+                setTimeout(() => {
+                  calculateOptimalRoute(freshSites, station, realTimeRouteEnabled && driverLocation, true);
+                }, 200);
+              }
+            } else {
+              console.log('⚠️ All sites finished - no route calculation needed');
             }
           }
         }
@@ -1220,12 +1248,20 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         
         setSiteLocations(sites);
         
-        // Recalculate route with fresh data (silently)
-        const station = findStation(sites);
-        if (station && mapInitialized) {
-          setTimeout(() => {
-            calculateOptimalRoute(sites, station, realTimeRouteEnabled && driverLocation, true);
-          }, 200);
+        // Only recalculate route if there are unfinished sites
+        const unfinishedSites = sites.filter(site => 
+          site.type !== 'station' && site.status !== 'finished' && site.status !== 'completed'
+        );
+        
+        if (unfinishedSites.length > 0) {
+          const station = findStation(sites);
+          if (station && mapInitialized) {
+            setTimeout(() => {
+              calculateOptimalRoute(sites, station, realTimeRouteEnabled && driverLocation, true);
+            }, 200);
+          }
+        } else {
+          console.log('⚠️ All sites finished - no route calculation needed');
         }
       }
     } catch (error) {
