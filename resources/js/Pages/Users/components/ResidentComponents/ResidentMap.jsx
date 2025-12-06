@@ -1070,8 +1070,16 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
           });
           
           if (hasChanges) {
-            console.log('🔄 POLLING DETECTED CHANGES - Updating sites');
+            console.log('🔄 POLLING: Site status changed, updating silently');
             setSiteLocations(freshSites);
+            
+            // Recalculate route silently
+            const station = findStation(freshSites);
+            if (station && mapInitialized) {
+              setTimeout(() => {
+                calculateOptimalRoute(freshSites, station, realTimeRouteEnabled && driverLocation);
+              }, 200);
+            }
           }
         }
       } catch (error) {
@@ -1182,9 +1190,11 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     };
   }, [barangayId, scheduleId]);
 
-  const refreshSitesFromServer = async () => {
+  const refreshSitesFromServer = async (silent = true) => {
     try {
-      console.log('🔄 Refreshing sites from server after completion event...');
+      if (!silent) {
+        console.log('🔄 Refreshing sites from server...');
+      }
       
       if (!currentSchedule || !currentSchedule.id) {
         console.warn('No current schedule available to refresh sites');
@@ -1195,19 +1205,21 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       
       if (sitesResponse.data.success) {
         const sites = sitesResponse.data.data;
-        console.log('✅ Sites refreshed from server:', sites.map(s => ({
-          id: s.id,
-          name: s.site_name,
-          status: s.status
-        })));
+        
+        if (!silent) {
+          console.log('✅ Sites refreshed from server:', sites.map(s => ({
+            id: s.id,
+            name: s.site_name,
+            status: s.status
+          })));
+        }
         
         setSiteLocations(sites);
         
-        // Recalculate route with fresh data
+        // Recalculate route with fresh data (silently)
         const station = findStation(sites);
         if (station && mapInitialized) {
           setTimeout(() => {
-            console.log('🔄 Recalculating route with refreshed data');
             calculateOptimalRoute(sites, station, realTimeRouteEnabled && driverLocation);
           }, 200);
         }
@@ -1509,9 +1521,9 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         
         markerElement.innerHTML = `
           <div class="relative ${isCurrent || isTargetSite ? 'animate-pulse' : ''}">
-            ${hasSequence && !isStation ? `
-              <div class="absolute -top-2 -right-2 ${isCompleted ? 'bg-green-600' : 'bg-blue-500'} text-white rounded-full ${isMobile ? 'w-7 h-7 text-sm' : 'w-6 h-6 text-xs'} flex items-center justify-center font-bold shadow-lg border-2 border-white z-20">
-                ${isCompleted ? '✓' : sequenceNumber}
+            ${hasSequence && !isStation && !isCompleted ? `
+              <div class="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full ${isMobile ? 'w-7 h-7 text-sm' : 'w-6 h-6 text-xs'} flex items-center justify-center font-bold shadow-lg border-2 border-white z-20">
+                ${sequenceNumber}
               </div>
             ` : ''}
             ${isStation ? `
