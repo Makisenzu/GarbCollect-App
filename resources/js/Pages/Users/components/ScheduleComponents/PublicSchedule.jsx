@@ -713,7 +713,7 @@ const PublicSchedule = () => {
                       // Fullscreen Mode
                       <div className="w-full h-full flex flex-col">
                         {/* Fullscreen Header with Back Button */}
-                        <div className="bg-gradient-to-r from-green-600 to-blue-600 px-4 py-3 sm:px-6 sm:py-4 shadow-md">
+                        <div className="bg-black px-4 py-3 sm:px-6 sm:py-4 shadow-md">
                           <div className="flex items-center justify-between">
                             <button
                               onClick={handleCloseMap}

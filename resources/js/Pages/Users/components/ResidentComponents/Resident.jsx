@@ -62,18 +62,18 @@ const Resident = ({ mapboxKey, barangayId }) => {
   return (
     <div className="w-full h-full bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
       {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-green-50 border-b border-gray-200 p-6">
+      <div className="bg-black border-b border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 bg-blue-600 rounded-lg">
-                <Truck className="h-5 w-5 text-white" />
+              <div className="p-2 bg-white rounded-lg">
+                <Truck className="h-5 w-5 text-gray-900" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-white">
                 Live Collection Tracker
               </h2>
             </div>
-            <p className="text-gray-600 flex items-center gap-2">
+            <p className="text-gray-300 flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Barangay {barangayId}
             </p>
@@ -81,7 +81,7 @@ const Resident = ({ mapboxKey, barangayId }) => {
           
           <div className="flex items-center gap-3">
             {!isOnline && (
-              <div className="flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-2 rounded-lg border border-amber-200">
+              <div className="flex items-center gap-2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg border border-yellow-200">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">Offline Mode</span>
               </div>
@@ -100,8 +100,8 @@ const Resident = ({ mapboxKey, barangayId }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Clock className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <Clock className="w-5 h-5 text-gray-900" />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-medium">Scheduled Date</p>
@@ -121,8 +121,8 @@ const Resident = ({ mapboxKey, barangayId }) => {
             
             <div className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-50 rounded-lg">
-                  <Activity className={`w-5 h-5 ${driverLocation ? 'text-green-600' : 'text-gray-400'}`} />
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <Activity className={`w-5 h-5 ${driverLocation ? 'text-gray-900' : 'text-gray-400'}`} />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-medium">Driver Status</p>
@@ -135,8 +135,8 @@ const Resident = ({ mapboxKey, barangayId }) => {
             
             <div className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <TrendingUp className="w-5 h-5 text-purple-600" />
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <TrendingUp className="w-5 h-5 text-gray-900" />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-medium">Progress</p>
@@ -169,8 +169,8 @@ const Resident = ({ mapboxKey, barangayId }) => {
         
         {/* Enhanced Legend */}
         <div className="absolute bottom-4 left-4 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 px-4 py-2 border-b border-gray-200">
-            <p className="text-sm font-bold text-gray-900">Map Legend</p>
+          <div className="bg-black px-4 py-2 border-b border-gray-700">
+            <p className="text-sm font-bold text-white">Map Legend</p>
           </div>
           <div className="p-3 space-y-2">
             <div className="flex items-center gap-3">
@@ -198,10 +198,10 @@ const Resident = ({ mapboxKey, barangayId }) => {
 
       {/* Enhanced Progress Bar */}
       {siteLocations.length > 0 && (
-        <div className="p-6 border-t border-gray-200 bg-gradient-to-br from-gray-50 to-white">
+        <div className="p-6 border-t border-gray-200 bg-white">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <CheckCircle className="w-5 h-5 text-gray-900" />
               <span className="text-sm font-semibold text-gray-900">Collection Progress</span>
             </div>
             <div className="flex items-center gap-2">
@@ -211,7 +211,7 @@ const Resident = ({ mapboxKey, barangayId }) => {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
             <div 
-              className="bg-gradient-to-r from-green-500 to-emerald-600 h-3 rounded-full transition-all duration-500 shadow-inner"
+              className="bg-black h-3 rounded-full transition-all duration-500"
               style={{ width: `${getProgressPercentage()}%` }}
             ></div>
           </div>

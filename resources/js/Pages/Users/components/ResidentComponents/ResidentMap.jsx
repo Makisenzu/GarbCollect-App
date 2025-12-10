@@ -8,7 +8,6 @@ import { IoHome, IoCheckmarkDone } from "react-icons/io5";
 import GarbageTruckSpinner from '@/Components/GarbageTruckSpinner';
 
 import { initEcho, getEcho } from '@/echo'; 
-
 const barangayColors = {
   'Alegria': '#FF5733',
   'Barangay 1': '#33FF57',
@@ -40,7 +39,6 @@ const barangayColors = {
   'San Francisco': '#FFE659',
   '_default': '#4F262A'
 };
-
 const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
@@ -703,8 +701,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         }
       });
   
-      const barangayName = currentSchedule?.barangay_name || 'San Francisco';
-      const routeColor = routeInfo?.isRealTime ? '#10B981' : (barangayColors[barangayName] || barangayColors['_default']);
+      const routeColor = routeInfo?.isRealTime ? '#000000' : '#6B7280'; // Black for real-time, Gray for planned
   
       const lineWidth = isMobile ? 6 : 5;
       const glowWidth = isMobile ? 14 : 12;
@@ -1751,7 +1748,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
                 {routeInfo && (
                   <div className="flex items-center gap-2 pt-1 border-t border-gray-200">
                     <div className="w-4 h-1 rounded-full flex-shrink-0" style={{
-                      backgroundColor: routeInfo.isRealTime ? '#10B981' : (barangayColors[currentSchedule?.barangay_name] || barangayColors['_default'])
+                      backgroundColor: routeInfo.isRealTime ? '#000000' : '#6B7280'
                     }}></div>
                     <span className="text-gray-700">
                       {routeInfo.isRealTime ? 'Live Route' : 'Planned Route'}
