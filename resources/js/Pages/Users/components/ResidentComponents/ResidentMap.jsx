@@ -49,11 +49,12 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   const [driverMarker, setDriverMarker] = useState(null);
   const [siteLocations, setSiteLocations] = useState([]);
   const [siteMarkers, setSiteMarkers] = useState([]);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [mapError, setMapError] = useState(null);
   const [containerReady, setContainerReady] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(false);
 
   // Spinner state - ONLY GarbageTruckSpinner
   const [showSpinner, setShowSpinner] = useState(false);
@@ -144,12 +145,37 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Online/Offline detection
   useEffect(() => {
-    if (mapboxKey) {
-      console.log('Setting Mapbox access token');
-      mapboxgl.accessToken = mapboxKey;
-    }
-  }, [mapboxKey]);
+    const handleOnline = () => {
+      console.log('✅ Internet connection restored');
+      setIsOnline(true);
+      setOfflineMode(false);
+      setConnectionStatus('online');
+    };
+
+    const handleOffline = () => {
+      console.log('⚠️ Internet connection lost - switching to offline mode');
+      setIsOnline(false);
+      setOfflineMode(true);
+      setConnectionStatus('offline');
+      // Clear any map errors when going offline - we'll handle it gracefully
+      setMapError(null);
+    };
+
+    // Set initial state
+    setIsOnline(navigator.onLine);
+    setOfflineMode(!navigator.onLine);
+    setConnectionStatus(navigator.onLine ? 'online' : 'offline');
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const checkContainer = () => {
@@ -949,7 +975,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       try {
         mapboxgl.accessToken = mapboxKey;
 
-        map.current = new mapboxgl.Map({
+        const mapConfig = {
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/streets-v12',
           center: [125.94849837776422, 8.483022468128098],
@@ -964,8 +990,23 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
           touchZoomRotate: true,
           touchPitch: false,
           failIfMajorPerformanceCaveat: false,
-          preserveDrawingBuffer: true
-        });
+          preserveDrawingBuffer: true,
+          // Offline mode optimizations
+          maxTileCacheSize: 50,
+          refreshExpiredTiles: isOnline,
+          transformRequest: (url, resourceType) => {
+            // In offline mode, allow loading from cache
+            if (!isOnline && resourceType === 'Tile') {
+              return {
+                url: url,
+                headers: { 'Cache-Control': 'max-age=86400' }
+              };
+            }
+            return { url };
+          }
+        };
+
+        map.current = new mapboxgl.Map(mapConfig);
 
         const handleMapLoad = () => {
           console.log('Map loaded successfully!');
@@ -995,6 +1036,20 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
 
         const handleMapError = (e) => {
           console.error('Map error:', e);
+          
+          // If offline, suppress the error and continue
+          if (!navigator.onLine || offlineMode) {
+            console.warn('Map error suppressed - continuing in offline mode');
+            setOfflineMode(true);
+            setMapError(null);
+            // Still mark as initialized so UI can continue
+            if (!mapInitialized) {
+              setMapInitialized(true);
+            }
+            return;
+          }
+          
+          // Only show error if we're online and it's a real problem
           setMapError(`Map error: ${e.error?.message || 'Unknown error'}`);
           setMapInitialized(true);
           hideLoadingSpinner();
@@ -1002,6 +1057,19 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
 
         map.current.once('load', handleMapLoad);
         map.current.on('error', handleMapError);
+        
+        // Suppress Mapbox tile errors in offline mode
+        map.current.on('dataloading', (e) => {
+          if (!navigator.onLine || offlineMode) {
+            e.preventDefault?.();
+          }
+        });
+        
+        map.current.on('sourcedataloading', (e) => {
+          if (!navigator.onLine || offlineMode) {
+            e.preventDefault?.();
+          }
+        });
 
         const timeoutId = setTimeout(() => {
           if (!mapInitialized) {
@@ -1674,18 +1742,8 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     });
   }, [cssLoaded, mapInitialized, containerReady, siteLocations, siteMarkers, driverLocation]);
 
-  if (mapError) {
-    return (
-      <div className="w-full h-96 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-        <div className="text-center p-6">
-          <IoWarning className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h3 className="text-base font-semibold text-gray-900 mb-2">Map Loading Error</h3>
-          <p className="text-sm text-gray-600 mb-4">{mapError}</p>
-          <p className="text-xs text-gray-500">The interface will continue with limited functionality</p>
-        </div>
-      </div>
-    );
-  }
+  // Don't show error UI - handle offline gracefully
+  // Map will continue to work with cached tiles
 
   return (
     <div className={`${isFullscreen ? 'w-full h-full' : 'w-full'} bg-white ${isFullscreen ? '' : 'rounded-lg border border-gray-200'} overflow-hidden`}>
@@ -1696,6 +1754,14 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         size={isMobile ? "medium" : "large"}
         variant="default"
       />
+
+      {/* Offline Mode Banner */}
+      {offlineMode && (
+        <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-black px-4 py-2 z-50 flex items-center justify-center gap-2 shadow-lg">
+          <IoWarning className="w-5 h-5" />
+          <span className="font-semibold text-sm">Offline Mode - Using cached map data</span>
+        </div>
+      )}
 
       {/* Map Container */}
       <div className={`relative w-full ${isFullscreen ? 'h-full' : ''}`} style={{ height: isFullscreen ? '100%' : getMapHeight() }}>

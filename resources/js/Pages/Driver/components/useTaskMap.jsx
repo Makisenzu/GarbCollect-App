@@ -312,11 +312,15 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
+      mapboxSetup.setOfflineMode(false);
       console.log('Connection restored');
     };
 
     const handleOffline = () => {
       setIsOnline(false);
+      mapboxSetup.setOfflineMode(true);
+      // Clear any map errors when going offline
+      mapboxSetup.setMapError(null);
       console.log('Connection lost - switching to offline mode');
     };
 
@@ -327,7 +331,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [mapboxSetup]);
 
   // Map initialization
   useEffect(() => {
@@ -533,6 +537,7 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     showControls,
     optimizedSiteOrder: siteManagement.optimizedSiteOrder,
     isOnline,
+    offlineMode: mapboxSetup.offlineMode,
     locationAccuracy: locationTracking.locationAccuracy,
     lastLocationUpdate: locationTracking.lastLocationUpdate,
     completedSites: siteManagement.completedSites,

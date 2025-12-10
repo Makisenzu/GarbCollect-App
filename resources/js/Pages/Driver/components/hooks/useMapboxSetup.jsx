@@ -9,6 +9,7 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
   const [mapInitialized, setMapInitialized] = useState(false);
   const [mapError, setMapError] = useState(null);
   const [customStyleLoaded, setCustomStyleLoaded] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
 
   useEffect(() => {
     const loadMapboxCSS = () => {
@@ -42,6 +43,8 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
 
     try {
       mapboxgl.accessToken = mapboxKey;
+      
+      const isOnline = navigator.onLine;
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
@@ -58,7 +61,20 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
         touchZoomRotate: true,
         touchPitch: false,
         failIfMajorPerformanceCaveat: false,
-        preserveDrawingBuffer: true
+        preserveDrawingBuffer: true,
+        // Offline mode optimizations
+        maxTileCacheSize: 50,
+        refreshExpiredTiles: isOnline,
+        transformRequest: (url, resourceType) => {
+          // In offline mode, allow loading from cache
+          if (!isOnline && resourceType === 'Tile') {
+            return {
+              url: url,
+              headers: { 'Cache-Control': 'max-age=86400' }
+            };
+          }
+          return { url };
+        }
       });
 
       map.current.on('load', () => {
@@ -73,10 +89,34 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
 
       map.current.on('error', (e) => {
         console.error('Map error:', e);
-        setMapError('Failed to load map: ' + e.error?.message);
         
-        if (true) { // isOnline check removed but functionality preserved
-          console.warn('Map loading failed but continuing in limited mode');
+        // If offline, suppress the error and continue
+        if (!navigator.onLine) {
+          console.warn('Map error suppressed - continuing in offline mode');
+          setOfflineMode(true);
+          setMapError(null);
+          // Still mark as initialized so UI can continue
+          if (!mapInitialized) {
+            setMapInitialized(true);
+            setCustomStyleLoaded(true);
+          }
+          return;
+        }
+        
+        // Only show error if we're online and it's a real problem
+        setMapError('Failed to load map: ' + e.error?.message);
+      });
+      
+      // Suppress Mapbox tile errors in offline mode
+      map.current.on('dataloading', (e) => {
+        if (!navigator.onLine) {
+          e.preventDefault?.();
+        }
+      });
+      
+      map.current.on('sourcedataloading', (e) => {
+        if (!navigator.onLine) {
+          e.preventDefault?.();
         }
       });
 
@@ -86,7 +126,16 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
 
     } catch (error) {
       console.error('Error creating map:', error);
-      setMapError('Failed to initialize map: ' + error.message);
+      
+      // If offline, suppress the error
+      if (!navigator.onLine) {
+        console.warn('Map initialization error suppressed - offline mode');
+        setOfflineMode(true);
+        setMapError(null);
+        setMapInitialized(true);
+      } else {
+        setMapError('Failed to initialize map: ' + error.message);
+      }
     }
 
     return () => {
@@ -109,11 +158,13 @@ export const useMapboxSetup = ({ mapboxKey, isMobile }) => {
     mapInitialized,
     mapError,
     customStyleLoaded,
+    offlineMode,
     
     // Setters
     setMapInitialized,
     setCustomStyleLoaded,
     setMapError,
+    setOfflineMode,
     
     // Methods
     initializeMap,
