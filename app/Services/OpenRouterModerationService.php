@@ -32,14 +32,17 @@ class OpenRouterModerationService
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => 'You are a content moderation system. Analyze the text for toxicity,
-                                      hate speech, harassment, or inappropriate content. Respond with JSON only: 
+                        'content' => 'You are a content moderation system for a Filipino waste management review platform. 
+                                      Analyze the text for toxicity, hate speech, harassment, profanity, or inappropriate content 
+                                      in ENGLISH, TAGALOG, and BISAYA/CEBUANO languages. 
+                                      Be culturally aware of Filipino context and slang.
+                                      Respond with JSON only: 
                                       {"flagged": boolean, "reason": string, "categories": 
-                                      {"toxic": boolean, "hate": boolean, "harassment": boolean, "explicit": boolean}}'
+                                      {"toxic": boolean, "hate": boolean, "harassment": boolean, "explicit": boolean, "profanity": boolean}}'
                     ],
                     [
                         'role' => 'user',
-                        'content' => "Analyze this text for moderation: " . $content
+                        'content' => "Analyze this text for moderation (may contain English, Tagalog, or Bisaya): " . $content
                     ]
                 ],
                 'response_format' => ['type' => 'json_object'],

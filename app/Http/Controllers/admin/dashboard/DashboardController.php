@@ -5,13 +5,14 @@ namespace App\Http\Controllers\admin\dashboard;
 use App\Models\Site;
 use Inertia\Inertia;
 use App\Models\Driver;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Models\Review;
-use App\Models\Schedule;
 use App\Models\Report;
-use App\Models\Baranggay;
+use App\Models\Review;
 use App\Models\Garbage;
+use App\Models\Schedule;
+use App\Models\Baranggay;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
 
 class DashboardController extends Controller
 {
@@ -167,7 +168,7 @@ class DashboardController extends Controller
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
 
-            \Log::info('Generate Report Request', [
+            Log::info('Generate Report Request', [
                 'type' => $reportType,
                 'start_date' => $startDate,
                 'end_date' => $endDate
@@ -199,7 +200,7 @@ class DashboardController extends Controller
 
             $schedules = $query->orderBy('collection_date', 'desc')->get();
             
-            \Log::info('Schedules found', ['count' => $schedules->count()]);
+            Log::info('Schedules found', ['count' => $schedules->count()]);
 
             $reportData = [];
             
@@ -244,7 +245,7 @@ class DashboardController extends Controller
                         'Notes' => $schedule->notes ?? 'None',
                     ];
                 } catch (\Exception $e) {
-                    \Log::error('Error processing schedule for report', [
+                    Log::error('Error processing schedule for report', [
                         'schedule_id' => $schedule->id ?? 'unknown',
                         'error' => $e->getMessage()
                     ]);
@@ -252,7 +253,6 @@ class DashboardController extends Controller
                 }
             }
 
-            // Safe total kilograms calculation
             $totalKilograms = 0;
             foreach ($reportData as $row) {
                 $kgValue = str_replace(',', '', $row['Total Kilograms Collected']);
@@ -271,7 +271,7 @@ class DashboardController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            \Log::error('Generate report error', [
+            Log::error('Generate report error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
