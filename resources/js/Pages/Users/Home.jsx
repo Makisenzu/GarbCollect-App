@@ -3,9 +3,10 @@ import Hero from './components/HomeComponents/Hero';
 import Header from './components/HomeComponents/Header';
 import DisplayComponents from './components/HomeComponents/DisplayComponent';
 import CenteredImage from './components/HomeComponents/CenteredImage';
-import photo from "@/images/throw.png";
-import ecoImage from "@/images/3rs.jpeg";
-import { Recycle, MapPin, Clock, Users } from 'lucide-react';
+import photo from "@/images/collection.jpg";
+import ecoImage from "@/images/sanfrance.jpg";
+import { Recycle, MapPin, Clock, Users, Star, Calendar, Navigation, MessageSquare, CheckCircle, TrendingUp } from 'lucide-react';
+import { router } from '@inertiajs/react';
 
 const Home = () => {
   const [mounted, setMounted] = useState(false);
@@ -98,6 +99,159 @@ const Home = () => {
                 ))}
               </div>
             </div>
+          </section>
+
+          {/* What You Can Do */}
+          <section className="py-20 relative overflow-hidden">
+            <div className="max-w-6xl mx-auto px-4">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl font-bold text-gray-900 mb-3">
+                  What You Can Do
+                </h2>
+                <p className="text-gray-600">
+                  Everything you need in one place
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6 mb-16">
+                {/* Nearest Site */}
+                <div 
+                  className="group relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-400 transition-all cursor-pointer"
+                  onClick={() => router.visit('/sites')}
+                  style={{
+                    animation: mounted ? 'slideUp 0.6s ease-out forwards' : 'none',
+                    opacity: 0,
+                    animationDelay: '0.1s'
+                  }}
+                >
+                  <div className="absolute -top-3 -right-3 w-24 h-24 bg-blue-400 rounded-full opacity-10 group-hover:opacity-20 transition-opacity group-hover:scale-110 duration-300"></div>
+                  
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-400 group-hover:rotate-12 transition-all">
+                      <Navigation className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+                    </div>
+                    
+                    <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors">
+                      Find Nearest Site
+                    </h3>
+                    
+                    <p className="text-gray-600 text-sm mb-4">
+                      See collection sites near you on the map
+                    </p>
+
+                    <div className="space-y-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                        <span>View distances</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                        <span>Get directions</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Schedule */}
+                <div 
+                  className="group relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-green-400 transition-all cursor-pointer"
+                  onClick={() => router.visit('/schedule')}
+                  style={{
+                    animation: mounted ? 'slideUp 0.6s ease-out forwards' : 'none',
+                    opacity: 0,
+                    animationDelay: '0.2s'
+                  }}
+                >
+                  <div className="absolute -top-3 -right-3 w-24 h-24 bg-green-400 rounded-full opacity-10 group-hover:opacity-20 transition-opacity group-hover:scale-110 duration-300"></div>
+                  
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-400 group-hover:rotate-12 transition-all">
+                      <Calendar className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" />
+                    </div>
+                    
+                    <h3 className="text-xl font-bold mb-2 group-hover:text-green-600 transition-colors">
+                      Collection Schedule
+                    </h3>
+                    
+                    <p className="text-gray-600 text-sm mb-4">
+                      Check when the truck comes to your area
+                    </p>
+
+                    <div className="space-y-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                        <span>Your barangay's days</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                        <span>Set reminders</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reviews */}
+                <div 
+                  className="group relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-amber-400 transition-all cursor-pointer"
+                  onClick={() => router.visit('/reviews')}
+                  style={{
+                    animation: mounted ? 'slideUp 0.6s ease-out forwards' : 'none',
+                    opacity: 0,
+                    animationDelay: '0.3s'
+                  }}
+                >
+                  <div className="absolute -top-3 -right-3 w-24 h-24 bg-amber-400 rounded-full opacity-10 group-hover:opacity-20 transition-opacity group-hover:scale-110 duration-300"></div>
+                  
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-amber-400 group-hover:rotate-12 transition-all">
+                      <Star className="w-6 h-6 text-amber-600 group-hover:text-white transition-colors" />
+                    </div>
+                    
+                    <h3 className="text-xl font-bold mb-2 group-hover:text-amber-600 transition-colors">
+                      Reviews & Feedback
+                    </h3>
+                    
+                    <p className="text-gray-600 text-sm mb-4">
+                      Share your thoughts on the service
+                    </p>
+
+                    <div className="space-y-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
+                        <span>Rate collectors</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
+                        <span>Read experiences</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <style jsx>{`
+              @keyframes slideUp {
+                from {
+                  opacity: 0;
+                  transform: translateY(30px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+              
+              @keyframes fadeIn {
+                from {
+                  opacity: 0;
+                }
+                to {
+                  opacity: 1;
+                }
+              }
+            `}</style>
           </section>
 
           <DisplayComponents

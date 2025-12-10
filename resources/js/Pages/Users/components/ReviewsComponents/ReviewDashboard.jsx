@@ -156,12 +156,12 @@ const ReviewDashboard = ({
           </svg>
         </Link>
 
-                    <button
+                    {/* <button
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         className="p-2 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
                     >
                         {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                    </button>
+                    </button> */}
                 </div>
 
                 {/* Header with Back Button */}
