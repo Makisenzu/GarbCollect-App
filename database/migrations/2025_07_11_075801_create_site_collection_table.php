@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sites', function (Blueprint $table) {
             $table->id();
             $table->foreignId('purok_id')->constrained('puroks')->cascadeOnDelete();
-            $table->string('site_name');
+            $table->string('site_name')->nullable();
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
             $table->string('type');

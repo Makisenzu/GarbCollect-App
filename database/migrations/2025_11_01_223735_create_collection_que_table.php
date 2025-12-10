@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('schedule_id')->constrained('schedules')->cascadeOnDelete();
             $table->foreignId('site_id')->constrained('sites')->cascadeOnDelete();
             $table->string('status')->default('unfinished');
+            $table->timestamp('completed_at')->nullable();
             $table->timestamps();
         });
     }
