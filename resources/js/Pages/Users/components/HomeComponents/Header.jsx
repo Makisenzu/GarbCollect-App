@@ -18,6 +18,7 @@ import { IoCallOutline } from "react-icons/io5";
 import { TiThMenu } from "react-icons/ti";
 import { CiTrash } from "react-icons/ci";
 import { BsFillTrash3Fill } from "react-icons/bs";
+import { MdAdminPanelSettings } from "react-icons/md";
 
 export default function Header({ header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
@@ -181,16 +182,24 @@ export default function Header({ header, children }) {
                         >
                             <BsFillTrash3Fill className="mr-3" size={20} /> Near Site
                         </ResponsiveNavLink>
-                    </div>
-
-                    <div className="border-t border-gray-200 pb-1 pt-4 prevent-drag">
-                        <div className="mt-3 space-y-1 prevent-drag">
-                            <ResponsiveNavLink 
+                        
+                        <ResponsiveNavLink 
                                 href={route('show.reviews')}
                                 className="prevent-drag"
                                 onDragStart={preventDrag}
                             >
                                 <MdOutlineReviews className="mr-3" size={20}/> Reviews
+                            </ResponsiveNavLink>
+                    </div>
+
+                    <div className="border-t border-gray-200 pb-1 pt-4 prevent-drag">
+                        <div className="mt-3 space-y-1 prevent-drag">
+                            <ResponsiveNavLink 
+                                href={route('loginPage')}
+                                className="prevent-drag"
+                                onDragStart={preventDrag}
+                            >
+                                <MdAdminPanelSettings className="mr-3" size={20}/> Employee Login
                             </ResponsiveNavLink>
                         </div>
                     </div>

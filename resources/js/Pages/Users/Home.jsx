@@ -218,11 +218,11 @@ const Home = () => {
                     <div className="space-y-2 text-sm text-gray-500">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
-                        <span>Rate collectors</span>
+                        <span>Rate Experience</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
-                        <span>Read experiences</span>
+                        <span>Read reviews</span>
                       </div>
                     </div>
                   </div>

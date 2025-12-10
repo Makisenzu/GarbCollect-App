@@ -25,6 +25,17 @@ export default function Login({ status, canResetPassword, applicant_pending, app
         <GuestLayout>
             <Head title="Login - GarbCollect" />
 
+            {/* Back Button */}
+            <Link
+                href="/"
+                className="inline-flex items-center mb-6 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors duration-200"
+            >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Home
+            </Link>
+
             {status && (
                 <div className="mb-6 rounded-md bg-green-50 border border-green-200 p-4">
                     <p className="text-sm font-medium text-green-800">
