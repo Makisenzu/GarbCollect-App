@@ -58,14 +58,20 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   // Spinner state - ONLY GarbageTruckSpinner
   const [showSpinner, setShowSpinner] = useState(false);
   const [spinnerMessage, setSpinnerMessage] = useState('Loading map data...');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const showLoadingSpinner = (message = 'Loading map data...') => {
-    setSpinnerMessage(message);
-    setShowSpinner(true);
+    // Only show spinner during initial load
+    if (isInitialLoad) {
+      setSpinnerMessage(message);
+      setShowSpinner(true);
+    }
   };
 
   const hideLoadingSpinner = () => {
-    setShowSpinner(false);
+    if (isInitialLoad) {
+      setShowSpinner(false);
+    }
   };
 
   // Enhanced Route-related state
@@ -1319,9 +1325,11 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         }
       }
       hideLoadingSpinner();
+      setIsInitialLoad(false); // Mark initial load as complete
     } catch (error) {
       console.error('Error loading initial data:', error);
       hideLoadingSpinner();
+      setIsInitialLoad(false);
     } finally {
       setLoading(false);
     }
