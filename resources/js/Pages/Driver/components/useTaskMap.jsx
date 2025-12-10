@@ -4,6 +4,7 @@ import { useMapboxSetup } from './hooks/useMapboxSetup';
 import { useMapLayers } from './hooks/useMapLayers';
 import { useRouteCalculations } from './hooks/useRouteCalculations';
 import { useSiteManagement } from './hooks/useSiteManagement';
+import { getSiteDisplayName } from '@/Utils/siteHelpers';
 
 export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel }) => {
   const [isMobile, setIsMobile] = useState(false);

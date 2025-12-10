@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { router } from '@inertiajs/react';
+import { getSiteDisplayName } from '@/Utils/siteHelpers';
 
 export const useSiteManagement = ({ 
   scheduleId, 
@@ -194,7 +195,7 @@ export const useSiteManagement = ({
         
         // Update markers to show completion
         updateSiteMarkers();
-        showCompletionNotification(site.site_name);
+        showCompletionNotification(getSiteDisplayName(site));
       }
     } catch (error) {
       console.error('Error marking site as completed:', error);

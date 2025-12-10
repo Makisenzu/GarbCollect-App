@@ -162,14 +162,14 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-4">
                             <div>
-                                <InputLabel htmlFor="site_name" value="Site Name *" />
+                                <InputLabel htmlFor="site_name" value="Site Name (Optional)" />
                                 <TextInput
                                     id="site_name"
                                     name="site_name"
                                     value={data.site_name}
                                     className="mt-1 block w-full text-sm"
                                     onChange={(e) => setData('site_name', e.target.value)}
-                                    required
+                                    placeholder="Leave empty to use purok name"
                                 />
                                 <InputError message={errors.site_name} className="mt-1" />
                             </div>

@@ -73,7 +73,7 @@ class RouteController extends Controller
     {
         $validatedData = $request->validate([
             'purok_id' => ['required', 'exists:puroks,id'],
-            'site_name' => ['required', 'string', 'max:255'],
+            'site_name' => ['nullable', 'string', 'max:255'],
             'latitude' => ['required', 'numeric'],
             'longitude' => ['required', 'numeric'],
             'type' => ['required', 'string', 'max:255'],

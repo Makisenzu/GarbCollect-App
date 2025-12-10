@@ -7,6 +7,7 @@ import axios from 'axios';
 import can from "@/images/can.png";
 import { useTaskMap } from './useTaskMap';
 import CompletionReportModal from './CompletionReportModal';
+import { getSiteDisplayName } from '@/Utils/siteHelpers';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel, autoGetLocation = false }, ref) => {
@@ -290,7 +291,7 @@ const MobileHeader = ({
           </p>
           {currentSiteIndex < optimizedSiteOrder.length && (
             <p className="text-xs text-blue-600 font-medium">
-              Next: {optimizedSiteOrder[currentSiteIndex]?.site_name}
+              Next: {getSiteDisplayName(optimizedSiteOrder[currentSiteIndex])}
             </p>
           )}
           {isTaskActive && (
@@ -410,7 +411,7 @@ const AIPanelContent = ({ aiOptimizedRoute, completedSites, currentSiteIndex, op
       <div className="flex justify-between">
         <span className="text-gray-600">Current Target:</span>
         <span className="font-semibold">
-          {optimizedSiteOrder[currentSiteIndex]?.site_name || aiOptimizedRoute.nearestSite.site_name}
+          {getSiteDisplayName(optimizedSiteOrder[currentSiteIndex]) || getSiteDisplayName(aiOptimizedRoute.nearestSite)}
         </span>
       </div>
       <div className="flex justify-between">
@@ -752,7 +753,7 @@ const ScheduleInfoPanel = ({
         )}
         {currentSiteIndex < optimizedSiteOrder.length && (
           <div className="text-xs text-blue-600">
-            Current: {optimizedSiteOrder[currentSiteIndex]?.site_name}
+            Current: {getSiteDisplayName(optimizedSiteOrder[currentSiteIndex])}
           </div>
         )}
         {isTaskActive && (
