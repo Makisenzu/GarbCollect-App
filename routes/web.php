@@ -148,6 +148,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/edit/site/{id}', [RouteController::class, 'editSite']);
         Route::delete('/delete/site/{id}', [RouteController::class, 'deleteSite']);
 
+        //Review Management Routes
+        Route::delete('/admin/reviews/{review}', [ReviewController::class, 'destroy'])->name('admin.reviews.delete');
+
     });
      
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

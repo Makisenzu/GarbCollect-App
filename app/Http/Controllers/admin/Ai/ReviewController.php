@@ -148,4 +148,17 @@ class ReviewController extends Controller
             'review' => $review
         ]);
     }
+
+    public function destroy(Review $review){
+        try {
+            $review->delete();
+            
+            Log::info('Review deleted by admin', ['review_id' => $review->id]);
+            
+            return back()->with('success', 'Review deleted successfully');
+        } catch (\Exception $e) {
+            Log::error('Error deleting review: ' . $e->getMessage());
+            return back()->with('error', 'Error deleting review: ' . $e->getMessage());
+        }
+    }
 }
