@@ -119,9 +119,9 @@ const Home = () => {
                   className="group relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-400 transition-all cursor-pointer"
                   onClick={() => router.visit('/sites')}
                   style={{
-                    animation: mounted ? 'slideUp 0.6s ease-out forwards' : 'none',
-                    opacity: 0,
-                    animationDelay: '0.1s'
+                    opacity: mounted ? 1 : 0,
+                    transform: mounted ? 'translateY(0)' : 'translateY(30px)',
+                    transition: 'all 0.6s ease-out 0.1s'
                   }}
                 >
                   <div className="absolute -top-3 -right-3 w-24 h-24 bg-blue-400 rounded-full opacity-10 group-hover:opacity-20 transition-opacity group-hover:scale-110 duration-300"></div>
@@ -157,9 +157,9 @@ const Home = () => {
                   className="group relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-green-400 transition-all cursor-pointer"
                   onClick={() => router.visit('/schedule')}
                   style={{
-                    animation: mounted ? 'slideUp 0.6s ease-out forwards' : 'none',
-                    opacity: 0,
-                    animationDelay: '0.2s'
+                    opacity: mounted ? 1 : 0,
+                    transform: mounted ? 'translateY(0)' : 'translateY(30px)',
+                    transition: 'all 0.6s ease-out 0.2s'
                   }}
                 >
                   <div className="absolute -top-3 -right-3 w-24 h-24 bg-green-400 rounded-full opacity-10 group-hover:opacity-20 transition-opacity group-hover:scale-110 duration-300"></div>
@@ -195,9 +195,9 @@ const Home = () => {
                   className="group relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-amber-400 transition-all cursor-pointer"
                   onClick={() => router.visit('/reviews')}
                   style={{
-                    animation: mounted ? 'slideUp 0.6s ease-out forwards' : 'none',
-                    opacity: 0,
-                    animationDelay: '0.3s'
+                    opacity: mounted ? 1 : 0,
+                    transform: mounted ? 'translateY(0)' : 'translateY(30px)',
+                    transition: 'all 0.6s ease-out 0.3s'
                   }}
                 >
                   <div className="absolute -top-3 -right-3 w-24 h-24 bg-amber-400 rounded-full opacity-10 group-hover:opacity-20 transition-opacity group-hover:scale-110 duration-300"></div>
@@ -228,10 +228,9 @@ const Home = () => {
                   </div>
                 </div>
               </div>
-
             </div>
 
-            <style jsx>{`
+            <style>{`
               @keyframes slideUp {
                 from {
                   opacity: 0;

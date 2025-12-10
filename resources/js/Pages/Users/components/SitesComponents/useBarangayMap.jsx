@@ -265,26 +265,7 @@ const useBarangayMap = (mapboxToken) => {
       return;
     }
 
-    [
-      'route', 'route-glow', 'route-direction', 
-      'route-start', 'route-end', 'route-waypoints'
-    ].forEach(layerId => {
-      if (map.current.getLayer(layerId)) {
-        map.current.removeLayer(layerId);
-      }
-    });
-    
-    if (map.current.getSource('route')) {
-      map.current.removeSource('route');
-    }
-  
-    [
-      'route-start-marker', 'route-end-marker', 'route-waypoints-marker'
-    ].forEach(sourceId => {
-      if (map.current.getSource(sourceId)) {
-        map.current.removeSource(sourceId);
-      }
-    });
+    clearRouteFromMap();
   
     try {
       map.current.addSource('route', {
@@ -547,6 +528,42 @@ const useBarangayMap = (mapboxToken) => {
     markersRef.current = [];
   };
 
+  const clearRouteFromMap = () => {
+    if (!map.current) return;
+    
+    if (!map.current.isStyleLoaded()) {
+      setTimeout(clearRouteFromMap, 100);
+      return;
+    }
+
+    try {
+      [
+        'route', 'route-glow', 'route-direction', 
+        'route-start', 'route-end', 'route-waypoints'
+      ].forEach(layerId => {
+        if (map.current.getLayer(layerId)) {
+          map.current.removeLayer(layerId);
+        }
+      });
+      
+      if (map.current.getSource('route')) {
+        map.current.removeSource('route');
+      }
+    
+      [
+        'route-start-marker', 'route-end-marker', 'route-waypoints-marker'
+      ].forEach(sourceId => {
+        if (map.current.getSource(sourceId)) {
+          map.current.removeSource(sourceId);
+        }
+      });
+      
+      console.log('Route layers cleared successfully');
+    } catch (error) {
+      console.error('Error clearing route layers:', error);
+    }
+  };
+
   const addMarkersToMap = (sites) => {
     if (!map.current || !sites.length) return;
 
@@ -652,54 +669,66 @@ const useBarangayMap = (mapboxToken) => {
 
   const fetchActiveSites = async (barangayId) => {
     if (!barangayId) {
-      setActiveSites([]);
       clearMarkers();
+      clearRouteFromMap();
+      setActiveSites([]);
       setRouteCoordinates([]);
       setRouteInfo(null);
+      setOptimizedSiteOrder([]);
+      setNearestSite(null);
+      setStationLocation(null);
       return;
     }
 
+    console.log('Fetching sites for barangay:', barangayId);
+    
+    clearMarkers();
+    clearRouteFromMap();
+    
+    setActiveSites([]);
+    setRouteCoordinates([]);
+    setRouteInfo(null);
+    setOptimizedSiteOrder([]);
+    setNearestSite(null);
+    setStationLocation(null);
     setLoadingSites(true);
+
     try {
       const response = await axios.get(`/barangay/getSites/${barangayId}`);
       if (response.data.success) {
         const sites = response.data.data || [];
-        setActiveSites(sites);
-        console.log('Active sites:', sites);
+        console.log('Received sites:', sites.length);
         
         const station = sites.find(site => site.type === 'station');
         if (station) {
           setStationLocation(station);
         }
         
-        addMarkersToMap(sites);
+        setActiveSites(sites);
         
-        if (sites.length >= 1) {
-          await calculateOptimalRoute(sites, barangayId, station);
+        if (sites.length > 0) {
+          addMarkersToMap(sites);
+          
+          if (sites.length >= 1) {
+            await calculateOptimalRoute(sites, barangayId, station);
+          }
         }
       } else {
         console.error('Failed to fetch sites:', response.data.message);
-        setActiveSites([]);
-        clearMarkers();
-        setRouteCoordinates([]);
-        setRouteInfo(null);
       }
     } catch (error) {
       console.error('Error fetching active sites:', error);
-      setActiveSites([]);
-      clearMarkers();
-      setRouteCoordinates([]);
-      setRouteInfo(null);
     } finally {
       setLoadingSites(false);
     }
   };
 
   useEffect(() => {
-    if (map.current && routeCoordinates.length > 0) {
+    if (map.current && map.current.isStyleLoaded() && routeCoordinates.length > 0) {
+      console.log('Adding route layer with', routeCoordinates.length, 'coordinates');
       addRouteLayer();
     }
-  }, [routeCoordinates]);
+  }, [routeCoordinates, mapLoaded]);
 
   useEffect(() => {
     if (!mapboxToken) {
@@ -772,10 +801,14 @@ const useBarangayMap = (mapboxToken) => {
     if (selectedValue) {
       await fetchActiveSites(selectedValue);
     } else {
-      setActiveSites([]);
       clearMarkers();
+      clearRouteFromMap();
+      setActiveSites([]);
       setRouteCoordinates([]);
       setRouteInfo(null);
+      setOptimizedSiteOrder([]);
+      setNearestSite(null);
+      setStationLocation(null);
     }
   };
 
