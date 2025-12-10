@@ -21,21 +21,64 @@ class ReviewController extends Controller
     public function store(StoreReviewRequest $request): JsonResponse{
         Log::info('Received review submission', ['data' => $request->all()]);
         
-        $moderationResult = $this->moderationService->moderateWithFallback($request->review_content);
+        // Moderate both review content and suggestions
+        $reviewModerationResult = $this->moderationService->moderateWithFallback($request->review_content);
         
-        Log::info('Moderation result: ' . json_encode($moderationResult));
+        Log::info('Review content moderation result: ' . json_encode($reviewModerationResult));
+        
+        // Check if there are suggestions to moderate
+        $suggestionModerationResult = null;
+        if (!empty($request->suggestion_content)) {
+            $suggestionModerationResult = $this->moderationService->moderateWithFallback($request->suggestion_content);
+            Log::info('Suggestion content moderation result: ' . json_encode($suggestionModerationResult));
+        }
+    
+        // Check if review content is flagged
+        if (!isset($reviewModerationResult['error']) && $reviewModerationResult['flagged']) {
+            $flaggedCategories = $reviewModerationResult['categories'] ?? [];
+            $categoryNames = array_keys(array_filter($flaggedCategories, fn($val) => $val === true));
+            
+            Log::warning('Review rejected due to inappropriate content in review', [
+                'flags' => $categoryNames,
+                'content' => substr($request->review_content, 0, 100)
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'flagged' => true,
+                'message' => 'Your review contains inappropriate content (' . implode(', ', $categoryNames) . '). Please remove offensive language and try again.',
+                'categories' => $categoryNames,
+                'field' => 'review_content'
+            ], 200);
+        }
+        
+        // Check if suggestions content is flagged
+        if ($suggestionModerationResult && !isset($suggestionModerationResult['error']) && $suggestionModerationResult['flagged']) {
+            $flaggedCategories = $suggestionModerationResult['categories'] ?? [];
+            $categoryNames = array_keys(array_filter($flaggedCategories, fn($val) => $val === true));
+            
+            Log::warning('Review rejected due to inappropriate content in suggestions', [
+                'flags' => $categoryNames,
+                'content' => substr($request->suggestion_content, 0, 100)
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'flagged' => true,
+                'message' => 'Your additional suggestions contain inappropriate content (' . implode(', ', $categoryNames) . '). Please remove offensive language and try again.',
+                'categories' => $categoryNames,
+                'field' => 'suggestion_content'
+            ], 200);
+        }
     
         $status = 'pending';
         $moderationFlags = null;
     
-        if (isset($moderationResult['error'])) {
-            Log::warning('Moderation API failed. Review left for manual review.', ['error' => $moderationResult['error']]);
-        } elseif (!$moderationResult['flagged']) {
+        if (isset($reviewModerationResult['error']) || ($suggestionModerationResult && isset($suggestionModerationResult['error']))) {
+            Log::warning('Moderation API failed. Review left for manual review.');
+        } elseif (!$reviewModerationResult['flagged'] && (!$suggestionModerationResult || !$suggestionModerationResult['flagged'])) {
             $status = 'approved';
             Log::info('Review approved by moderation');
-        } else {
-            $moderationFlags = json_encode($moderationResult['categories']);
-            Log::info('Review flagged for moderation', ['flags' => $moderationResult['categories']]);
         }
     
         try {
@@ -44,7 +87,7 @@ class ReviewController extends Controller
                 'purok_id' => $request->purok_id,
                 'category_id' => $request->category_id,
                 'review_content' => $request->review_content,
-                'suggestion_content' => $request->suggestion_content,
+                'suggestion_content' => $request->suggestion_content ?? '',
                 'rate' => $request->rate,
                 'status' => $status,
                 'moderation_flags' => $moderationFlags,
@@ -54,12 +97,16 @@ class ReviewController extends Controller
     
             return response()->json([
                 'success' => true,
+                'flagged' => false,
                 'message' => $status === 'approved' 
-                    ? 'Thank you for your review! It is now live.' 
+                    ? 'Thank you for your review!' 
                     : 'Thank you for your review! It will be visible after a quick check by our team.',
                 'status' => $status,
                 'review' => $review,
-                'moderation_result' => $moderationResult
+                'moderation_result' => [
+                    'review' => $reviewModerationResult,
+                    'suggestion' => $suggestionModerationResult
+                ]
             ]);
     
         } catch (\Exception $e) {

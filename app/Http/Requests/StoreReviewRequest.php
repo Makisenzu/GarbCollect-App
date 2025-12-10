@@ -25,8 +25,8 @@ class StoreReviewRequest extends FormRequest
             'fullname' => 'required|string|max:255',
             'purok_id' => 'required|exists:puroks,id',
             'category_id' => 'required|exists:categories,id',
-            'review_content' => 'required|string|min:10|max:2000',
-            'suggestion_content' => 'required|string|min:10|max:2000',
+            'review_content' => 'required|string|max:2000',
+            'suggestion_content' => 'nullable|string|max:2000',
             'rate' => 'required|integer|between:1,5',
         ];
     }

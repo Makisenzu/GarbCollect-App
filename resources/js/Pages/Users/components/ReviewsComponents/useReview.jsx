@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 
 export const useReview = (initialReviews = []) => {
   // State management - use initialReviews from Laravel controller
@@ -192,6 +193,33 @@ export const useReview = (initialReviews = []) => {
       }
 
       if (result.success) {
+        // Check if review was flagged
+        if (result.flagged) {
+          const fieldName = result.field === 'suggestion_content' ? 'Additional Suggestions' : 'Review Content';
+          
+          // Show flagged content alert
+          await Swal.fire({
+            icon: 'error',
+            title: 'Review Not Submitted',
+            html: `
+              <p class="text-gray-700 mb-4">Your <strong>${fieldName}</strong> contains inappropriate content and cannot be submitted.</p>
+              <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                <p class="text-sm font-semibold text-red-800 mb-2">Flagged Content:</p>
+                <p class="text-sm text-red-700">${result.message || 'Please review your content and remove any inappropriate language.'}</p>
+              </div>
+              <p class="text-sm text-gray-600 mt-4">Please edit your ${fieldName.toLowerCase()} and resubmit.</p>
+            `,
+            confirmButtonText: 'Edit Review',
+            confirmButtonColor: '#ef4444',
+            customClass: {
+              popup: 'rounded-2xl',
+              confirmButton: 'px-6 py-3 rounded-xl'
+            }
+          });
+          
+          return; // Don't reset form, allow user to edit
+        }
+
         // Success - update local state with the new review
         const savedReview = {
           id: result.review.id,
@@ -229,18 +257,22 @@ export const useReview = (initialReviews = []) => {
         setCurrentStep(1);
         setCurrentPage(1);
 
-        // Show success message
-        setSubmitResult({
-          success: true,
-          message: result.message,
-          status: result.status,
-          review: savedReview
+        // Show success message with SweetAlert
+        await Swal.fire({
+          icon: 'success',
+          title: 'Review Submitted!',
+          html: `
+            <p class="text-gray-700 mb-2">${result.message}</p>
+            ${result.status === 'pending' ? '<p class="text-sm text-gray-600">Your review is pending admin approval.</p>' : ''}
+          `,
+          confirmButtonText: 'Great!',
+          confirmButtonColor: '#10b981',
+          timer: 3000,
+          customClass: {
+            popup: 'rounded-2xl',
+            confirmButton: 'px-6 py-3 rounded-xl'
+          }
         });
-
-        // Auto-clear success message after 5 seconds
-        setTimeout(() => {
-          setSubmitResult(null);
-        }, 5000);
 
       } else {
         throw new Error(result.message || 'Failed to submit review');
@@ -248,6 +280,22 @@ export const useReview = (initialReviews = []) => {
 
     } catch (err) {
       console.error('Error submitting review:', err);
+      
+      // Show error message with SweetAlert
+      await Swal.fire({
+        icon: 'error',
+        title: 'Submission Failed',
+        html: `
+          <p class="text-gray-700">${err.message || 'An error occurred while submitting your review. Please try again.'}</p>
+        `,
+        confirmButtonText: 'Try Again',
+        confirmButtonColor: '#ef4444',
+        customClass: {
+          popup: 'rounded-2xl',
+          confirmButton: 'px-6 py-3 rounded-xl'
+        }
+      });
+      
       setSubmitResult({
         success: false,
         message: err.message || 'An error occurred while submitting your review. Please try again.'
