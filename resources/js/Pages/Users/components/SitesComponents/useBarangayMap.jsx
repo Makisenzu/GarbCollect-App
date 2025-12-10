@@ -336,14 +336,6 @@ const useBarangayMap = (mapboxToken) => {
   
       const waypoints = [];
 
-      if (stationLocation && stationLocation.latitude && stationLocation.longitude) {
-        waypoints.push({
-          coordinates: [parseFloat(stationLocation.longitude), parseFloat(stationLocation.latitude)],
-          type: 'station',
-          sequence: 0
-        });
-      }
-
       optimizedSiteOrder.forEach((site, index) => {
         if (site.latitude && site.longitude) {
           waypoints.push({
@@ -366,7 +358,7 @@ const useBarangayMap = (mapboxToken) => {
                 coordinates: waypoint.coordinates
               },
               properties: {
-                description: waypoint.type === 'station' ? 'Station' : `Site ${waypoint.sequence}`,
+                description: `Site ${waypoint.sequence}`,
                 type: waypoint.type,
                 sequence: waypoint.sequence
               }
@@ -379,16 +371,8 @@ const useBarangayMap = (mapboxToken) => {
           type: 'circle',
           source: 'route-waypoints-marker',
           paint: {
-            'circle-radius': [
-              'case',
-              ['==', ['get', 'type'], 'station'], isMobile ? 10 : 8,
-              isMobile ? 8 : 6 
-            ],
-            'circle-color': [
-              'case',
-              ['==', ['get', 'type'], 'station'], '#dc2626',
-              '#3b82f6'
-            ],
+            'circle-radius': isMobile ? 8 : 6,
+            'circle-color': '#3b82f6',
             'circle-stroke-width': 2,
             'circle-stroke-color': '#ffffff'
           }
@@ -574,34 +558,6 @@ const useBarangayMap = (mapboxToken) => {
     
     const optimizedSites = station ? optimizeSiteOrderFromStation(station, regularSites) : regularSites;
     setOptimizedSiteOrder(optimizedSites);
-
-    if (station && station.latitude && station.longitude) {
-      const stationEl = document.createElement('div');
-      stationEl.className = 'custom-marker animate-pulse';
-      const stationBadgeSize = isMobile ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
-      stationEl.innerHTML = `
-        <div class="hover:scale-110 transition-transform duration-200 cursor-pointer relative">
-          <div class="bg-white rounded-full p-2 shadow-lg border-2 border-red-500">
-            <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-              <span class="text-white text-xs font-bold">🏠</span>
-            </div>
-          </div>
-        </div>
-      `;
-
-      const stationMarker = new mapboxgl.Marker({
-        element: stationEl,
-        anchor: 'bottom'
-      })
-        .setLngLat([parseFloat(station.longitude), parseFloat(station.latitude)])
-        .addTo(map.current);
-
-      markersRef.current.push(stationMarker);
-
-      stationEl.addEventListener('click', () => {
-        stationMarker.togglePopup();
-      });
-    }
 
     optimizedSites.forEach((site, index) => {
       if (site.latitude && site.longitude) {
@@ -828,7 +784,7 @@ const useBarangayMap = (mapboxToken) => {
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-800">
-              Active Sites {activeSites.length > 0 && `(${activeSites.length})`}
+              Active Sites {activeSites.filter(site => site.type !== 'station').length > 0 && `(${activeSites.filter(site => site.type !== 'station').length})`}
             </h3>
             {loadingSites && (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -856,9 +812,9 @@ const useBarangayMap = (mapboxToken) => {
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
               <p className="text-sm text-gray-600">Loading sites...</p>
             </div>
-          ) : activeSites.length > 0 ? (
+          ) : activeSites.filter(site => site.type !== 'station').length > 0 ? (
             <div className="space-y-2">
-              {activeSites.map((site) => (
+              {activeSites.filter(site => site.type !== 'station').map((site) => (
                 <div 
                   key={site.id}
                   className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer"
@@ -890,9 +846,6 @@ const useBarangayMap = (mapboxToken) => {
                       </div>
                       <div className="text-xs text-gray-600">
                         Purok: {site.purok?.purok_name || 'N/A'}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        Type: <span className="capitalize">{site.type}</span>
                       </div>
                     </div>
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">

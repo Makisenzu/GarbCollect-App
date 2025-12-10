@@ -89,7 +89,7 @@ const BarangayRoutes = ({ mapboxToken }) => {
                       Loading sites...
                     </span>
                   ) : (
-                    `${activeSites.length} site${activeSites.length !== 1 ? 's' : ''}`
+                    `${activeSites.filter(site => site.type !== 'station').length} site${activeSites.filter(site => site.type !== 'station').length !== 1 ? 's' : ''}`
                   )}
                 </div>
               </div>

@@ -117,7 +117,7 @@ const Home = () => {
                 {/* Nearest Site */}
                 <div 
                   className="group relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-400 transition-all cursor-pointer"
-                  onClick={() => router.visit('/sites')}
+                  onClick={() => router.visit('/site')}
                   style={{
                     opacity: mounted ? 1 : 0,
                     transform: mounted ? 'translateY(0)' : 'translateY(30px)',
@@ -155,7 +155,7 @@ const Home = () => {
                 {/* Schedule */}
                 <div 
                   className="group relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-green-400 transition-all cursor-pointer"
-                  onClick={() => router.visit('/schedule')}
+                  onClick={() => router.visit('/barangay/schedule/show')}
                   style={{
                     opacity: mounted ? 1 : 0,
                     transform: mounted ? 'translateY(0)' : 'translateY(30px)',
@@ -174,7 +174,7 @@ const Home = () => {
                     </h3>
                     
                     <p className="text-gray-600 text-sm mb-4">
-                      Check when the truck comes to your area
+                      Check the truck distance to your area
                     </p>
 
                     <div className="space-y-2 text-sm text-gray-500">
@@ -184,7 +184,7 @@ const Home = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
-                        <span>Set reminders</span>
+                        <span>View barangay's collection schedules</span>
                       </div>
                     </div>
                   </div>
