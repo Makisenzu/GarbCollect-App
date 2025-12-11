@@ -363,11 +363,19 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
         if (type === 'site' && title) {
             const popup = new mapboxgl.Popup({ 
                 offset: 25,
-                closeOnClick: true,
-                closeButton: true
+                closeOnClick: false,
+                closeButton: true,
+                className: 'site-popup'
             }).setDOMContent(createActionButtonsPopup(siteData));
             
             marker.setPopup(popup);
+            
+            // Add click event to marker element to toggle popup
+            markerElement.style.cursor = 'pointer';
+            markerElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                marker.togglePopup();
+            });
         }
     
         if (type === 'manual') {
