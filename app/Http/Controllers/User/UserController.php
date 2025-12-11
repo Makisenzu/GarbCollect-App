@@ -105,23 +105,23 @@ class UserController extends Controller
             switch ($filter) {
                 case 'today':
                     $query->whereDate('collection_date', today())
-                          ->whereIn('status', ['active', 'in_progress']);
+                          ->whereNotIn('status', ['completed', 'reported', 'FAILED']);
                     break;
                 case 'week':
                     $query->whereBetween('collection_date', [
                         today(),
                         today()->addDays(6)
                     ])
-                    ->whereIn('status', ['active', 'in_progress']);
+                    ->whereNotIn('status', ['completed', 'reported', 'FAILED']);
                     break;
                 case 'monthly':
                     $query->whereYear('collection_date', today()->year)
                           ->whereMonth('collection_date', today()->month)
-                          ->whereIn('status', ['active', 'in_progress', 'completed']);
+                          ->whereNotIn('status', ['FAILED']);
                     break;
                 default:
                     $query->where('collection_date', '>=', today())
-                          ->whereIn('status', ['active', 'in_progress']);
+                          ->whereNotIn('status', ['completed', 'reported', 'FAILED']);
             }
             
             $barangaySchedule = $query->orderBy('collection_date', 'asc')
