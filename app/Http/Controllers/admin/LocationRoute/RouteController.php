@@ -41,6 +41,23 @@ class RouteController extends Controller
         ]);
     }
     
+    public function getPuroksByBarangay($barangayId)
+    {
+        try {
+            $puroks = Purok::where('baranggay_id', $barangayId)->get();
+            return response()->json([
+                'success' => true,
+                'data' => $puroks
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch puroks',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
 
     /**
      * Show the form for creating a new resource.
@@ -112,7 +129,7 @@ class RouteController extends Controller
     public function editSite (Request $request, string $id) {
         try {
             $data = $request->validate([
-                'site_name' => ['required', 'string', 'max:255'],
+                'purok_id' => ['required', 'exists:puroks,id'],
                 'status' => ['required', 'string', 'in:active,inactive,pending,maintenance']
             ]);
 

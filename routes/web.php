@@ -144,6 +144,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{id}/barangay/purok', [RouteController::class, 'getPurok']);
 
         Route::get('/municipality/barangay/purok/sites', [RouteController::class, 'getSiteLocation']);
+        Route::get('/barangay/{barangayId}/puroks', [RouteController::class, 'getPuroksByBarangay']);
         Route::post('/municipality/barangay/addNewGarbageSite', [RouteController::class, 'addCollectionRoute']);
         Route::patch('/edit/site/{id}', [RouteController::class, 'editSite']);
         Route::delete('/delete/site/{id}', [RouteController::class, 'deleteSite']);

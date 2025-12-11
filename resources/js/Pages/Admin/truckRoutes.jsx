@@ -16,6 +16,7 @@ export default function TruckRoutes({ auth, mapboxKey }) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editFormData, setEditFormData] = useState({});
     const [editProcessing, setEditProcessing] = useState(false);
+    const [purokOptions, setPurokOptions] = useState([]);
 
     const handleLocationSelect = (location) => {
         setSelectedLocation(location);
@@ -37,12 +38,29 @@ export default function TruckRoutes({ auth, mapboxKey }) {
         }, 0);
     };
 
-    const handleEditSite = (siteData) => {
+    const handleEditSite = async (siteData) => {
         setEditingSite(siteData);
         setEditFormData({
-            site_name: siteData.site_name || '',
+            purok_id: siteData.purok_id || '',
             status: siteData.status || 'active'
         });
+        
+        // Fetch puroks for this barangay
+        if (siteData.purok?.baranggay_id) {
+            try {
+                const response = await fetch(`/barangay/${siteData.purok.baranggay_id}/puroks`);
+                const data = await response.json();
+                if (data.success) {
+                    setPurokOptions(data.data.map(purok => ({
+                        value: purok.id,
+                        label: purok.purok_name
+                    })));
+                }
+            } catch (error) {
+                console.error('Error fetching puroks:', error);
+            }
+        }
+        
         setShowEditModal(true);
     };
 
@@ -101,11 +119,11 @@ export default function TruckRoutes({ auth, mapboxKey }) {
 
     const editSiteFields = [
         {
-            name: 'site_name',
-            label: 'Site Name',
-            type: 'text',
+            name: 'purok_id',
+            label: 'Purok',
+            type: 'select',
             required: true,
-            placeholder: 'Enter site name'
+            options: purokOptions
         },
         {
             name: 'status',

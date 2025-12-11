@@ -84,10 +84,67 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
         link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css';
         link.rel = 'stylesheet';
         document.head.appendChild(link);
+        
+        // Add custom styles for popup
+        const style = document.createElement('style');
+        style.textContent = `
+            .mapboxgl-popup {
+                max-width: 95vw !important;
+                z-index: 9999 !important;
+            }
+            .mapboxgl-popup-content {
+                padding: 0 !important;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+                border-radius: 8px !important;
+                min-width: 280px !important;
+            }
+            .mapboxgl-popup-close-button {
+                width: 32px !important;
+                height: 32px !important;
+                font-size: 24px !important;
+                line-height: 32px !important;
+                padding: 0 !important;
+                color: #6b7280 !important;
+                background: white !important;
+                border-radius: 50% !important;
+                right: 8px !important;
+                top: 8px !important;
+                transition: all 0.2s !important;
+                z-index: 10000 !important;
+            }
+            .mapboxgl-popup-close-button:hover {
+                background: #f3f4f6 !important;
+                color: #1f2937 !important;
+            }
+            .mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+            .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+            .mapboxgl-popup-anchor-left .mapboxgl-popup-tip,
+            .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+                border-color: white !important;
+            }
+            @media (max-width: 640px) {
+                .mapboxgl-popup-content {
+                    min-width: 260px !important;
+                    max-width: calc(100vw - 40px) !important;
+                }
+                .site-popup-container > div {
+                    width: 100% !important;
+                }
+            }
+            @media (max-width: 400px) {
+                .mapboxgl-popup-content {
+                    min-width: 240px !important;
+                    max-width: calc(100vw - 30px) !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
         setCssLoaded(true);
 
         return () => {
             document.head.removeChild(link);
+            document.head.removeChild(style);
         };
     }, []);
 
@@ -262,26 +319,29 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
 
     const createActionButtonsPopup = (siteData) => {
         const popupElement = document.createElement('div');
-        popupElement.className = 'p-3 min-w-[200px]';
+        popupElement.className = 'site-popup-container';
         
         popupElement.innerHTML = `
-            <div class="text-center mb-3">
-                <h3 class="font-bold text-lg text-gray-900">${siteData.site_name}</h3>
-                <p class="text-sm text-gray-600">${siteData.purok?.baranggay?.baranggay_name || 'N/A'} - ${siteData.purok?.purok_name || 'N/A'}</p>
-            </div>
-            <div class="flex gap-2 justify-center">
-                <button id="edit-site-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                    Edit
-                </button>
-                <button id="delete-site-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                    Delete
-                </button>
+            <div class="bg-white rounded-lg overflow-hidden w-full">
+                <div class="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200">
+                    <p class="text-xs sm:text-sm text-gray-700 font-medium">${siteData.purok?.baranggay?.baranggay_name || 'N/A'} • ${siteData.purok?.purok_name || 'N/A'}</p>
+                </div>
+                <div class="px-4 sm:px-5 py-3 sm:py-4">
+                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                        <button id="edit-site-btn" class="w-full flex-1 bg-white border border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-700 hover:text-blue-700 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Edit
+                        </button>
+                        <button id="delete-site-btn" class="w-full flex-1 bg-white border border-gray-300 hover:border-red-500 hover:bg-red-50 text-gray-700 hover:text-red-700 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -292,6 +352,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
             if (editBtn) {
                 editBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
                     if (onEditSite) onEditSite(siteData);
                 });
             }
@@ -299,6 +360,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
             if (deleteBtn) {
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
                     if (onDeleteSite) onDeleteSite(siteData);
                 });
             }
@@ -313,14 +375,16 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
 
         const markerElement = document.createElement('div');
         markerElement.className = 'custom-image-marker';
+        markerElement.style.cursor = 'pointer';
         markerElement.innerHTML = `
-            <div class="relative">
+            <div class="relative" style="pointer-events: none;">
                 <div class="w-10 h-10 rounded-full border-10 flex items-center justify-center overflow-hidden" 
-                     style="border-color: ${borderColor}; background-color: ${borderColor}20;">
+                     style="border-color: ${borderColor}; background-color: ${borderColor}20; pointer-events: none;">
                     <img src="${can}" 
                          alt="${siteData.site_name}" 
                          class="w-8 h-8 object-cover rounded-full"
-                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold\\' style=\\'background-color: ${borderColor}\\'>${siteData.site_name?.charAt(0) || 'S'}</div>'">
+                         style="pointer-events: none;"
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold\\' style=\\'background-color: ${borderColor}; pointer-events: none;\\'>${siteData.site_name?.charAt(0) || 'S'}</div>'">
                 </div>
             </div>
         `;
@@ -357,26 +421,30 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
             element: markerElement,
             draggable: false
         })
-        .setLngLat(coordinates)
-        .addTo(map.current);
+        .setLngLat(coordinates);
     
-        if (type === 'site' && title) {
+        if (type === 'site' && siteData) {
             const popup = new mapboxgl.Popup({ 
                 offset: 25,
-                closeOnClick: false,
                 closeButton: true,
-                className: 'site-popup'
-            }).setDOMContent(createActionButtonsPopup(siteData));
-            
-            marker.setPopup(popup);
-            
-            // Add click event to marker element to toggle popup
-            markerElement.style.cursor = 'pointer';
-            markerElement.addEventListener('click', (e) => {
-                e.stopPropagation();
-                marker.togglePopup();
+                maxWidth: '350px',
+                closeOnClick: true
             });
+            
+            markerElement.onclick = function(e) {
+                e.stopPropagation();
+                
+                // Close all other popups
+                document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
+                
+                const popupContent = createActionButtonsPopup(siteData);
+                popup.setDOMContent(popupContent)
+                     .setLngLat(coordinates)
+                     .addTo(map.current);
+            };
         }
+        
+        marker.addTo(map.current);
     
         if (type === 'manual') {
             markerRef.current = marker;
