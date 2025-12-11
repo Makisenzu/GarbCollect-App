@@ -3,7 +3,6 @@ import { Head, usePage } from '@inertiajs/react';
 
 export default function DriverHome() {
     const { schedules } = usePage.props;
-    console.log(schedules);
 
     return (
         <AuthenticatedLayout

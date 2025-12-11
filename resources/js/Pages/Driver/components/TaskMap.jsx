@@ -70,7 +70,7 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
       getCurrentLocation();
     },
     fitMapToRoute: () => {
-      console.log('Fit map to route function called');
+
     },
     startRealtimeLocationTracking: () => {
       startRealtimeLocationTracking();
@@ -112,7 +112,6 @@ const TaskMap = forwardRef(({ mapboxKey, scheduleId, onTaskComplete, onTaskCance
 
   useEffect(() => {
     if (autoGetLocation && !currentLocation && !loading && mapInitialized) {
-      console.log('Auto-getting location on component mount');
       getCurrentLocation();
     }
   }, [autoGetLocation, currentLocation, loading, mapInitialized]);

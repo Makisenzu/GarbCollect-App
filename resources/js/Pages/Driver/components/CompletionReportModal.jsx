@@ -154,7 +154,6 @@ export default function CompletionReportModal({
       });
 
       if (response.data.success) {
-        console.log('Completion report submitted successfully');
         
         if (onSubmitSuccess) {
           onSubmitSuccess();

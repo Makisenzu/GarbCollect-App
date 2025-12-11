@@ -221,7 +221,6 @@ const PublicSchedule = () => {
 
   const transformScheduleData = () => {
     if (!schedules.length) {
-      console.log('No schedules available for transformation');
       return [];
     }
     
@@ -289,7 +288,6 @@ const PublicSchedule = () => {
   // UPDATED: Get month schedules (show all schedules in the month)
   const getMonthSchedule = () => {
     if (!selectedBarangay) {
-      console.log('No barangay selected');
       return [];
     }
     
@@ -311,7 +309,6 @@ const PublicSchedule = () => {
         };
       });
 
-    console.log('Month schedules:', currentMonthSchedules.length);
     return currentMonthSchedules;
   };
 

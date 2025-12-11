@@ -165,8 +165,7 @@ const DriverReportForm = ({ scheduleId, token }) => {
                         schedule_id: scheduleId,
                         token: token
                     }).catch(() => {
-                        // Silently ignore token invalidation errors
-                        console.log('Token invalidation skipped (non-critical)');
+
                     });
                 } catch {
                     // Double catch for safety

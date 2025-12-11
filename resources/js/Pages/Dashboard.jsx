@@ -49,7 +49,6 @@ export default function Dashboard() {
     };
 
     const handleTaskComplete = (taskData) => {
-        console.log('Task completed with data:', taskData);
         
         setActiveTask(null);
         setIsTaskActive(false);

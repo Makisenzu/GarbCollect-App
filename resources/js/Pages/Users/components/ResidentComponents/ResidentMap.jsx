@@ -148,14 +148,12 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   // Online/Offline detection
   useEffect(() => {
     const handleOnline = () => {
-      console.log('✅ Internet connection restored');
       setIsOnline(true);
       setOfflineMode(false);
       setConnectionStatus('online');
     };
 
     const handleOffline = () => {
-      console.log('⚠️ Internet connection lost - switching to offline mode');
       setIsOnline(false);
       setOfflineMode(true);
       setConnectionStatus('offline');
@@ -180,10 +178,8 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   useEffect(() => {
     const checkContainer = () => {
       if (mapContainer.current) {
-        console.log('Map container is ready in DOM');
         setContainerReady(true);
       } else {
-        console.log('Waiting for map container...');
         setTimeout(checkContainer, 100);
       }
     };
@@ -195,7 +191,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     const checkCSSLoaded = () => {
       const mapboxCSS = document.querySelector('link[href*="mapbox-gl.css"]');
       if (mapboxCSS && mapboxCSS.sheet) {
-        console.log('Mapbox CSS already loaded');
         setCssLoaded(true);
         return true;
       }
@@ -215,7 +210,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     
     const onLoad = () => {
       clearTimeout(loadTimeout);
-      console.log('Mapbox CSS loaded successfully');
       setCssLoaded(true);
     };
     
@@ -319,7 +313,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
 
   const calculateDriverToSiteRoute = async (driverCoords, targetSite) => {
     if (!mapboxKey || !driverCoords || !targetSite) {
-      console.log('Missing data for driver route calculation');
       return null;
     }
 
@@ -328,7 +321,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         `${driverCoords[0]},${driverCoords[1]};` +
         `${parseFloat(targetSite.longitude).toFixed(6)},${parseFloat(targetSite.latitude).toFixed(6)}`;
 
-      console.log('Calculating driver route to site:', coordinatesString);
 
       const response = await fetch(
         `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesString}?` +
@@ -352,7 +344,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
           const durationMinutes = Math.round(route.duration / 60);
           const distanceKm = (route.distance / 1000).toFixed(1);
           
-          console.log(`Driver route calculated: ${durationMinutes}min, ${distanceKm}km`);
 
           return {
             coordinates: route.geometry.coordinates,
@@ -379,7 +370,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     );
     
     if (unfinishedSites.length === 0) {
-      console.log('⚠️ All sites finished - showing original planned route');
       // All sites finished - show original planned route from station
       if (station) {
         await calculateStationBasedRoute(sites, station, silent);
@@ -420,7 +410,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       // LOGIC 1 & 2: If driver location exists and has unfinished sites
       // Draw route from DRIVER LOCATION to remaining sites
       if (includeDriverRoute && driverLocation && optimizedSites.length > 0) {
-        console.log('📍 Drawing route from driver location through remaining sites');
         
         const allCoordinates = [
           `${driverLocation[0].toFixed(6)},${driverLocation[1].toFixed(6)}`, // Start from driver
@@ -458,7 +447,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
                 totalStops: optimizedSites.length
               });
               
-              console.log(`✅ Dynamic route: Driver → ${optimizedSites.length} remaining sites (${durationMinutes}min)`);
               
               if (map.current && mapInitialized) {
                 addRouteLayer();
@@ -566,7 +554,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
           isRealTime: false
         });
         
-        console.log(`📋 Original planned route: Station → ${sites.length} sites (${durationMinutes}min)`);
         
         if (map.current && mapInitialized) {
           addRouteLayer();
@@ -604,7 +591,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
 
     lastDriverLocationRef.current = driverLocation;
 
-    console.log('Updating complete sequential route from driver location through all sites');
     
     try {
       // Calculate complete sequential route from driver through ALL sites
@@ -644,8 +630,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
             totalStops: optimizedSiteOrder.length,
             lastUpdated: new Date().toLocaleTimeString()
           }));
-          
-          console.log(`Sequential route updated: Driver through ${optimizedSiteOrder.length} sites (${distanceKm}km, ${durationMinutes}min)`);
+
           
           if (map.current && mapInitialized) {
             addRouteLayer();
@@ -668,7 +653,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       }
     }, 2000);
 
-    console.log('Started real-time route updates');
   };
 
   const stopRealTimeRouteUpdates = () => {
@@ -676,7 +660,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       clearInterval(routeUpdateIntervalRef.current);
       routeUpdateIntervalRef.current = null;
     }
-    console.log('Stopped real-time route updates');
+
   };
 
   const toggleRealTimeRouting = () => {
@@ -981,7 +965,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         return;
       }
 
-      console.log('Starting map initialization...');
       showLoadingSpinner('Initializing map...');
 
       try {
@@ -1021,7 +1004,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         map.current = new mapboxgl.Map(mapConfig);
 
         const handleMapLoad = () => {
-          console.log('Map loaded successfully!');
           setMapInitialized(true);
           setMapError(null);
           
@@ -1108,7 +1090,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     return () => {
       stopRealTimeRouteUpdates();
       if (map.current) {
-        console.log('Cleaning up map');
         map.current.remove();
         map.current = null;
         setMapInitialized(false);
@@ -1124,11 +1105,9 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       );
       
       if (unfinishedSites.length === 0) {
-        console.log('⚠️ All sites finished - skipping route calculation');
         return;
       }
-      
-      console.log('All data available, calculating optimal route...');
+
       calculateOptimalRoute(siteLocations, stationLocation, realTimeRouteEnabled, true);
     }
   }, [siteLocations, stationLocation, mapboxKey, mapInitialized]);
@@ -1151,8 +1130,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
 
   useEffect(() => {
     if (mapInitialized && siteLocations.length > 0) {
-      console.log('🔄 Force updating site markers due to state change');
-      console.log('📊 Sites to render:', siteLocations.map(s => ({ id: s.id, name: s.site_name, status: s.status })));
+
       updateSiteMarkers(siteLocations);
     }
   }, [mapInitialized, siteLocations, isMobile, realTimeRouteEnabled, nearestSite]);
@@ -1161,7 +1139,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   useEffect(() => {
     if (!currentSchedule?.id) return;
 
-    console.log('⏰ Starting polling for site updates every 5 seconds');
     
     const pollingSiteUpdates = setInterval(async () => {
       try {
@@ -1177,7 +1154,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
           });
           
           if (hasChanges) {
-            console.log('🔄 POLLING: Site status changed, updating silently');
             setSiteLocations(freshSites);
             
             // Only recalculate route if there are unfinished sites
@@ -1203,14 +1179,12 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     }, 5000); // Poll every 5 seconds
 
     return () => {
-      console.log('⏰ Stopping site polling');
       clearInterval(pollingSiteUpdates);
     };
   }, [currentSchedule?.id, siteLocations]);
 
   useEffect(() => {
     if (mapInitialized && driverLocation) {
-      console.log('Force updating driver marker');
       updateDriverMarker(driverLocation, {});
     }
   }, [mapInitialized, driverLocation, isMobile]);
@@ -1220,7 +1194,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   
     const initializeRealtime = async () => {
       try {
-        console.log('Initializing Reverb connection for real-time location updates...');
         
         initEcho();
         const echo = getEcho();
@@ -1231,29 +1204,18 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   
         echo.channel(`driver-locations.${barangayId}`)
           .listen('DriverLocationUpdated', (e) => {
-            console.log('Real-time driver location update received:', e);
             setConnectionStatus('connected');
             updateDriverLocation(e);
           });
   
         echo.channel(`schedule-updates.${barangayId}`)
           .listen('ScheduleStatusUpdated', (e) => {
-            console.log('Schedule update received:', e);
             updateScheduleData(e.schedule);
           });
 
         // Listen for site completion events
         echo.channel(`site-completion.${barangayId}`)
           .listen('SiteCompletionUpdated', (e) => {
-            console.log('🎯 REALTIME: Site completion event received:', {
-              barangay_id: barangayId,
-              event_data: e,
-              site_id: e.site_id || e.siteId,
-              status: e.status,
-              site_name: e.site_name || e.siteName,
-              completed_sites: e.completed_sites,
-              total_sites: e.total_sites
-            });
             handleSiteCompletion(e);
             
             // Refresh site data from server to ensure consistency
@@ -1308,7 +1270,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   const refreshSitesFromServer = async (silent = true) => {
     try {
       if (!silent) {
-        console.log('🔄 Refreshing sites from server...');
       }
       
       if (!currentSchedule || !currentSchedule.id) {
@@ -1322,11 +1283,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         const sites = sitesResponse.data.data;
         
         if (!silent) {
-          console.log('✅ Sites refreshed from server:', sites.map(s => ({
-            id: s.id,
-            name: s.site_name,
-            status: s.status
-          })));
+
         }
         
         setSiteLocations(sites);
@@ -1355,7 +1312,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   // Test function - expose to window for debugging
   useEffect(() => {
     window.testSiteCompletion = (siteId) => {
-      console.log('🧪 TEST: Manually triggering site completion for site ID:', siteId);
+
       handleSiteCompletion({
         site_id: siteId,
         status: 'finished',
@@ -1365,7 +1322,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     };
     
     window.refreshResidentMap = () => {
-      console.log('🧪 TEST: Manually refreshing resident map');
       refreshSitesFromServer();
     };
   }, [siteLocations, currentSchedule]);
@@ -1391,7 +1347,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
             const station = findStation(sites);
             if (station) {
               setStationLocation(station);
-              console.log('Station found:', station.site_name);
             }
           }
         }
@@ -1422,8 +1377,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     }
     
     const newLocation = [parseFloat(locationData.longitude), parseFloat(locationData.latitude)];
-    
-    console.log('Updating driver location on map:', newLocation);
+
     
     setDriverLocation(newLocation);
     
@@ -1447,26 +1401,12 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   };
 
   const handleSiteCompletion = (completionData) => {
-    console.log('🎯 PROCESSING site completion:', {
-      received_data: completionData,
-      site_id_variants: {
-        site_id: completionData.site_id,
-        siteId: completionData.siteId
-      },
-      current_sites_count: siteLocations.length
-    });
     
     // Update site locations to mark as completed - this will trigger the useEffect
     setSiteLocations(prevSites => {
-      console.log('📋 Current sites before update:', prevSites.map(s => ({
-        id: s.id,
-        name: s.site_name,
-        status: s.status
-      })));
       
       const updatedSites = prevSites.map(site => {
         if (site.id === completionData.site_id || site.id === completionData.siteId) {
-          console.log(`✅ MARKING site ${site.site_name} (ID: ${site.id}) as FINISHED`);
           return {
             ...site,
             status: 'finished',
@@ -1477,11 +1417,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         return site;
       });
       
-      console.log('📋 Sites after update:', updatedSites.map(s => ({
-        id: s.id,
-        name: s.site_name,
-        status: s.status
-      })));
       
       return updatedSites;
     });
@@ -1605,10 +1540,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         const purokName = site.purok_name || site.site_name || 'Site';
         const isTargetSite = realTimeRouteEnabled && nearestSite && nearestSite.id === site.id && !isCompleted;
         
-        // Debug logging for completion status
-        if (isCompleted) {
-          console.log(`✓ Rendering completed site: ${site.site_name} (ID: ${site.id})`);
-        }
         
         const getMarkerColor = () => {
           if (isStation) return '#DC2626';
@@ -1722,7 +1653,6 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   };
 
   const refreshIcons = () => {
-    console.log('Manually refreshing icons');
     if (siteLocations.length > 0) {
       updateSiteMarkers(siteLocations);
     }

@@ -214,7 +214,6 @@ const useBarangayMap = (mapboxToken) => {
             rawData: route
           });
           
-          console.log(`Route calculated: ${durationMinutes}min, ${distanceKm}km, ${route.geometry.coordinates.length} points`);
         } else {
           throw new Error('Invalid route geometry received');
         }
@@ -542,7 +541,6 @@ const useBarangayMap = (mapboxToken) => {
         }
       });
       
-      console.log('Route layers cleared successfully');
     } catch (error) {
       console.error('Error clearing route layers:', error);
     }
@@ -636,7 +634,7 @@ const useBarangayMap = (mapboxToken) => {
       return;
     }
 
-    console.log('Fetching sites for barangay:', barangayId);
+   
     
     clearMarkers();
     clearRouteFromMap();
@@ -653,7 +651,6 @@ const useBarangayMap = (mapboxToken) => {
       const response = await axios.get(`/barangay/getSites/${barangayId}`);
       if (response.data.success) {
         const sites = response.data.data || [];
-        console.log('Received sites:', sites.length);
         
         const station = sites.find(site => site.type === 'station');
         if (station) {
@@ -681,7 +678,6 @@ const useBarangayMap = (mapboxToken) => {
 
   useEffect(() => {
     if (map.current && map.current.isStyleLoaded() && routeCoordinates.length > 0) {
-      console.log('Adding route layer with', routeCoordinates.length, 'coordinates');
       addRouteLayer();
     }
   }, [routeCoordinates, mapLoaded]);
@@ -719,7 +715,6 @@ const useBarangayMap = (mapboxToken) => {
       map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
 
       map.current.on('load', () => {
-        console.log('Map loaded successfully');
         setMapLoaded(true);
         setLoading(false);
       });
@@ -749,8 +744,6 @@ const useBarangayMap = (mapboxToken) => {
     const selectedValue = selectedOption?.value || '';
     const selectedBarangayName = selectedOption?.label || 'None';
     
-    console.log('Selected Barangay ID:', selectedValue);
-    console.log('Selected Barangay Name:', selectedBarangayName);
     
     setSelectedBarangay(selectedValue);
     

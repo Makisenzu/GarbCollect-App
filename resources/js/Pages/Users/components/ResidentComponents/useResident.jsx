@@ -36,21 +36,18 @@ export const useResidentMap = ({ mapboxKey, barangayId }) => {
     // Listen for driver location updates
     window.Echo.channel(`driver-locations.${barangayId}`)
       .listen('DriverLocationUpdated', (e) => {
-        console.log('Driver location update received:', e);
         updateDriverLocation(e);
       });
 
     // Listen for schedule status updates
     window.Echo.channel(`schedule-updates.${barangayId}`)
       .listen('ScheduleStatusUpdated', (e) => {
-        console.log('Schedule update received:', e);
         updateScheduleStatus(e);
       });
 
     // Listen for site completion updates
     window.Echo.channel(`site-completion.${barangayId}`)
       .listen('SiteCompletionUpdated', (e) => {
-        console.log('Site completion update received:', e);
         handleSiteCompletion(e);
       });
 
@@ -125,7 +122,6 @@ export const useResidentMap = ({ mapboxKey, barangayId }) => {
   };
 
   const handleSiteCompletion = (data) => {
-    console.log('Handling site completion:', data);
     
     // Update site locations state with completion status
     setSiteLocations(prevSites => {
@@ -255,7 +251,6 @@ export const useResidentMap = ({ mapboxKey, barangayId }) => {
 
       map.current.on('load', () => {
         setMapInitialized(true);
-        console.log('Resident map loaded');
       });
 
       map.current.on('error', (e) => {

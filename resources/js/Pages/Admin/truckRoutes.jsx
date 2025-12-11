@@ -86,7 +86,6 @@ export default function TruckRoutes({ auth, mapboxKey }) {
                     setRefreshTrigger(prev => prev + 1);
                 },
                 onError: (errors) => {
-                    console.log('Update errors:', errors);
                     showAlert('error', 'Failed to update site');
                 },
                 onFinish: () => {

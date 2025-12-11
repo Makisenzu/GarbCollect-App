@@ -166,7 +166,6 @@ export const useReview = (initialReviews = []) => {
         rate: parseInt(newReview.rate)
       };
 
-      console.log('Submitting review:', reviewData);
 
       const response = await fetch('/reviews', {
         method: 'POST',

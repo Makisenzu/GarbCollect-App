@@ -48,8 +48,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     onTaskCancel,
     calculateDistance: routeCalculations.calculateDistance,
     showCompletionNotification: (siteName) => {
-      // Show enhanced completion notification
-      console.log(`✅ Site completed: ${siteName}`);
       
       // Play success sound
       try {
@@ -262,18 +260,13 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
         });
     
         if (response.data.success) {
-          console.log('Location successfully sent to backend');
           
           // Check if any sites were auto-completed by the backend
           if (response.data.sites_completed && response.data.sites_completed.length > 0) {
-            console.log('🎯 Backend auto-completed sites:', response.data.sites_completed);
             
             // Update local state for each completed site
             response.data.sites_completed.forEach(completedSite => {
-              console.log(`✅ Site auto-completed: ${completedSite.site_name} (${completedSite.distance}km)`);
-              
-              // The broadcast event will handle updating the UI
-              // But we can also update local state immediately for faster feedback
+
               siteManagement.setCompletedSites(prev => {
                 const newSet = new Set(prev);
                 newSet.add(completedSite.site_id);
@@ -313,7 +306,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     const handleOnline = () => {
       setIsOnline(true);
       mapboxSetup.setOfflineMode(false);
-      console.log('Connection restored');
     };
 
     const handleOffline = () => {
@@ -321,7 +313,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
       mapboxSetup.setOfflineMode(true);
       // Clear any map errors when going offline
       mapboxSetup.setMapError(null);
-      console.log('Connection lost - switching to offline mode');
     };
 
     window.addEventListener('online', handleOnline);
@@ -377,7 +368,6 @@ export const useTaskMap = ({ mapboxKey, scheduleId, onTaskComplete, onTaskCancel
     if (locationTracking.currentLocation && 
         siteManagement.siteLocations.length > 0 && 
         mapboxSetup.mapInitialized) {
-      console.log('All data available, calculating sequential route through all sites');
       
       // Calculate ONE route through ALL sites in sequence
       const calculateSequentialRoute = async () => {

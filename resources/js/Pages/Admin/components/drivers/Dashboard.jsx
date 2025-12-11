@@ -64,14 +64,12 @@ const Dashboard = () => {
       data: formData,
       preserveScroll: true,
       onSuccess: (page) => {
-        console.log('Success response:', page);
         showAlert('success', 'Added Successfully')
         setShowAddDriverModal(false);
         reset();
         router.reload();
       },
       onError: (errors) => {
-        console.log('Errors:', errors);
       }
     });
   };

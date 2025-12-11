@@ -259,12 +259,10 @@ export function WelcomeHero({ schedules, todaysCollections, inProgress, complete
         setIsGenerating(true);
         
         try {
-            console.log('Generating report with config:', reportConfig);
             
             const response = await axios.post('/admin/generate-report', reportConfig);
             
             if (response.data.success) {
-                console.log('Report data received:', response.data);
                 
                 if (!response.data.data || response.data.data.length === 0) {
                     alert('No data found for the selected criteria. Please try different filters.');

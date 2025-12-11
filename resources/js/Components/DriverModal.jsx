@@ -12,8 +12,7 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
   // Debug: Log schedules to check barangay data
   useEffect(() => {
     if (show && schedules) {
-      console.log('Schedules data:', schedules);
-      console.log('First schedule barangay:', schedules[0]?.barangay);
+
     }
   }, [show, schedules]);
   
@@ -287,7 +286,6 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
           router.reload();
         },
         onError: (errors) => {
-          console.log('Edit errors:', errors);
           showAlert('error', 'Failed to update schedule');
         },
         onFinish: () => {
@@ -323,7 +321,6 @@ const DriverModal = ({ driver, schedules, show, onClose, isLoadingSchedules = fa
           router.reload();
         },
         onError: (errors) => {
-          console.log('Driver edit errors:', errors);
           showAlert('error', 'Failed to update driver');
         },
         onFinish: () => {

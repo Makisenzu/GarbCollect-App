@@ -127,7 +127,7 @@ export default function Map({ mapboxKey, onLocationSelect, refreshTrigger, onEdi
         map.current.on('click', async (e) => {
             const { lng, lat } = e.lngLat;
 
-            console.log(lng, lat);
+            // console.log(lng, lat);
             
             if (markerRef.current) {
                 markerRef.current.remove();

@@ -150,8 +150,6 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
         const defaultCenter = centerFocus || [125.94849837776422, 8.483022468128098];
         const defaultZoom = centerFocus ? zoomLevel : 10.5;
 
-        console.log('Initializing map with center:', defaultCenter, 'zoom:', defaultZoom, 'barangay:', barangayName);
-
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
             style: 'mapbox://styles/makisenpai/cm9mo7odu006c01qsc3931nj7',
@@ -161,7 +159,6 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
         });
 
         map.current.on('load', () => {
-            console.log('Map loaded, adding polygon layer for:', barangayName);
             const filteredData = getFilteredPolygonData();
             addPolygonLayer(filteredData);
         });
@@ -177,7 +174,6 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
     useEffect(() => {
         if (!map.current || !map.current.isStyleLoaded()) return;
 
-        console.log('Barangay changed to:', barangayName);
         const filteredData = getFilteredPolygonData();
         updatePolygonLayer(filteredData);
 
@@ -186,7 +182,6 @@ export default function BarangayMap({ mapBoxKey, centerFocus, barangayName, zoom
     useEffect(() => {
         if (!map.current || !centerFocus) return;
 
-        console.log('Zooming to center:', centerFocus, 'Barangay:', barangayName, 'Zoom level:', zoomLevel);
 
         map.current.flyTo({
             center: centerFocus,
