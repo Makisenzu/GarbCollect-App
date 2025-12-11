@@ -104,6 +104,14 @@ export default function Header({ header, children }) {
                                             <MdOutlineReviews className="mr-2" size={16} />
                                             Reviews
                                         </Dropdown.Link>
+                                        <Dropdown.Link 
+                                            className="flex items-center hover:text-yellow-600 prevent-drag"
+                                            href={route('loginPage')}
+                                            onDragStart={preventDrag}
+                                        >
+                                            <MdAdminPanelSettings className="mr-2" size={16} />
+                                            Employee Login
+                                        </Dropdown.Link>
                                     </Dropdown.Content>
                                 </Dropdown>
                             </div>

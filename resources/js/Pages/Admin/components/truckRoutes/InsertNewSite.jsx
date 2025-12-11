@@ -137,7 +137,15 @@ export default function InsertNewSite({ onSiteAdded, selectedLocation, trucks = 
         })
         .catch(error => {
             console.error('Submission error:', error.response);
-            alert(`Error: ${error.response?.data?.message || 'Failed to save site'}`);
+            const errorMessage = error.response?.data?.message || 'Failed to save site';
+            
+            Swal.fire({
+                title: "Error!",
+                text: errorMessage,
+                icon: "error",
+                draggable: true,
+                confirmButtonText: 'OK'
+            });
         });
     };
 

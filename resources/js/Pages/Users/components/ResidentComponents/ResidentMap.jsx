@@ -379,7 +379,11 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     );
     
     if (unfinishedSites.length === 0) {
-      console.log('⚠️ All sites finished - no route to calculate');
+      console.log('⚠️ All sites finished - showing original planned route');
+      // All sites finished - show original planned route from station
+      if (station) {
+        await calculateStationBasedRoute(sites, station, silent);
+      }
       return;
     }
 
@@ -392,34 +396,34 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
     try {
       const validSites = sites.filter(site => 
         site.latitude && site.longitude && 
-        !isNaN(parseFloat(site.latitude)) && !isNaN(parseFloat(site.longitude))
+        !isNaN(parseFloat(site.latitude)) && !isNaN(parseFloat(site.longitude)) &&
+        site.type !== 'station' && 
+        site.status !== 'finished' && site.status !== 'completed'
       );
 
       if (validSites.length < 1) {
-        console.warn('No valid sites with coordinates found');
+        console.warn('No valid unfinished sites with coordinates found');
         setRouteError('No valid sites with coordinates found');
         return;
       }
 
-      // Filter out finished/completed sites from route calculation
-      const unfinishedSites = validSites.filter(site => 
-        site.type === 'station' || 
-        (site.status !== 'finished' && site.status !== 'completed')
-      );
-
+      // Optimize site order from station
       const optimizedSites = station 
-        ? optimizeSiteOrderFromStation(station, unfinishedSites.filter(site => site.type !== 'station'))
-        : unfinishedSites.filter(site => site.type !== 'station');
+        ? optimizeSiteOrderFromStation(station, validSites)
+        : validSites;
 
       setOptimizedSiteOrder(optimizedSites);
       if (optimizedSites.length > 0) {
         setNearestSite(optimizedSites[0]);
       }
 
+      // LOGIC 1 & 2: If driver location exists and has unfinished sites
+      // Draw route from DRIVER LOCATION to remaining sites
       if (includeDriverRoute && driverLocation && optimizedSites.length > 0) {
-        // Calculate complete sequential route from driver through ALL sites
+        console.log('📍 Drawing route from driver location through remaining sites');
+        
         const allCoordinates = [
-          `${driverLocation[0].toFixed(6)},${driverLocation[1].toFixed(6)}`,
+          `${driverLocation[0].toFixed(6)},${driverLocation[1].toFixed(6)}`, // Start from driver
           ...optimizedSites.map(site => 
             `${parseFloat(site.longitude).toFixed(6)},${parseFloat(site.latitude).toFixed(6)}`
           )
@@ -454,7 +458,7 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
                 totalStops: optimizedSites.length
               });
               
-              console.log(`Complete sequential route calculated from driver through ${optimizedSites.length} sites`);
+              console.log(`✅ Dynamic route: Driver → ${optimizedSites.length} remaining sites (${durationMinutes}min)`);
               
               if (map.current && mapInitialized) {
                 addRouteLayer();
@@ -463,80 +467,24 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
             }
           }
         } catch (error) {
-          console.error('Error calculating driver sequential route:', error);
+          console.error('Error calculating driver route:', error);
           // Fall through to station-based route
         }
       }
+
+      // LOGIC 3: Fallback - use station-based route (original planned route)
+      await calculateStationBasedRoute(optimizedSites, station, silent);
       
-      let coordinates = [];
-      
-      if (station) {
-        coordinates = [
-          `${parseFloat(station.longitude).toFixed(6)},${parseFloat(station.latitude).toFixed(6)}`,
-          ...optimizedSites.map(site => 
-            `${parseFloat(site.longitude).toFixed(6)},${parseFloat(site.latitude).toFixed(6)}`
-          )
-        ];
-      } else {
-        coordinates = optimizedSites.map(site => 
-          `${parseFloat(site.longitude).toFixed(6)},${parseFloat(site.latitude).toFixed(6)}`
-        );
-      }
-
-      const isMultiWaypoint = coordinates.length > 2;
-      
-      const response = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates.join(';')}?` +
-        `access_token=${mapboxKey}` +
-        `&geometries=geojson` +
-        `&overview=full` +
-        `&steps=true` +
-        `&alternatives=false` +
-        `&continue_straight=false` +
-        (isMultiWaypoint ? `&roundabout_exits=true` : '')
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.routes && data.routes.length > 0) {
-        const route = data.routes[0];
-        
-        if (route.geometry && route.geometry.coordinates) {
-          const durationMinutes = Math.round(route.duration / 60);
-          const distanceKm = (route.distance / 1000).toFixed(1);
-          
-          setRouteCoordinates(route.geometry.coordinates);
-          setRouteInfo({
-            duration: durationMinutes,
-            formattedDuration: formatDuration(durationMinutes),
-            distance: distanceKm,
-            rawData: route,
-            totalStops: optimizedSites.length,
-            isRealTime: false
-          });
-          
-          console.log(`Station route calculated: ${durationMinutes}min, ${distanceKm}km`);
-          
-          if (map.current && mapInitialized) {
-            addRouteLayer();
-          }
-        } else {
-          throw new Error('Invalid route geometry received');
-        }
-      } else {
-        throw new Error(data.message || 'No routes found');
-      }
     } catch (error) {
       console.error('Error calculating route:', error);
       setRouteError(`Route calculation failed: ${error.message}`);
       
+      // Fallback: straight lines between sites
       const validSites = sites.filter(site => 
         site.latitude && site.longitude && 
-        !isNaN(parseFloat(site.latitude)) && !isNaN(parseFloat(site.longitude))
+        !isNaN(parseFloat(site.latitude)) && !isNaN(parseFloat(site.longitude)) &&
+        site.type !== 'station' &&
+        site.status !== 'finished' && site.status !== 'completed'
       );
       
       if (validSites.length > 0) {
@@ -562,6 +510,70 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         setRouteLoading(false);
         hideLoadingSpinner();
       }
+    }
+  };
+
+  // Helper function for station-based route (LOGIC 3: Original planned route)
+  const calculateStationBasedRoute = async (sites, station, silent = false) => {
+    if (!mapboxKey || sites.length < 1) return;
+
+    try {
+      const coordinates = [];
+      
+      if (station && station.longitude && station.latitude) {
+        coordinates.push(`${parseFloat(station.longitude).toFixed(6)},${parseFloat(station.latitude).toFixed(6)}`);
+      }
+      
+      sites.forEach(site => {
+        if (site.type !== 'station') {
+          coordinates.push(`${parseFloat(site.longitude).toFixed(6)},${parseFloat(site.latitude).toFixed(6)}`);
+        }
+      });
+
+      if (coordinates.length < 2) {
+        console.warn('Not enough coordinates for station route');
+        return;
+      }
+
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates.join(';')}?` +
+        `access_token=${mapboxKey}` +
+        `&geometries=geojson` +
+        `&overview=full` +
+        `&steps=true` +
+        `&alternatives=false` +
+        `&continue_straight=false` +
+        (coordinates.length > 2 ? `&roundabout_exits=true` : '')
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const durationMinutes = Math.round(route.duration / 60);
+        const distanceKm = (route.distance / 1000).toFixed(1);
+        
+        setRouteCoordinates(route.geometry.coordinates);
+        setRouteInfo({
+          duration: durationMinutes,
+          formattedDuration: formatDuration(durationMinutes),
+          distance: distanceKm,
+          totalStops: sites.filter(s => s.type !== 'station').length,
+          isRealTime: false
+        });
+        
+        console.log(`📋 Original planned route: Station → ${sites.length} sites (${durationMinutes}min)`);
+        
+        if (map.current && mapInitialized) {
+          addRouteLayer();
+        }
+      }
+    } catch (error) {
+      console.error('Error calculating station route:', error);
     }
   };
 
@@ -1577,6 +1589,11 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       if (!site.longitude || !site.latitude) {
         return null;
     }
+
+      // Skip rendering station markers in resident view
+      if (site.type === 'station') {
+        return null;
+      }
 
       try {
         const markerElement = document.createElement('div');

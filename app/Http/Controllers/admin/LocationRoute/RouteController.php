@@ -81,6 +81,17 @@ class RouteController extends Controller
             'additional_notes' => ['nullable', 'string','max:255']
         ]);
 
+        if ($validatedData['type'] === 'station') {
+            $existingStation = Site::where('type', 'station')->first();
+            if ($existingStation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A station already exists. Only one station is allowed for all barangays.',
+                    'existing_station' => $existingStation
+                ], 422);
+            }
+        }
+
         try {
             $siteData = Site::create($validatedData);
 

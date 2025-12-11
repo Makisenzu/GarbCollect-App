@@ -71,12 +71,22 @@ class EmployeeController extends Controller
 
 public function getActiveSites($barangayId)
 {
-    $sites = Site::whereHas('purok.baranggay', function($query) use ($barangayId) {
+    $barangaySites = Site::whereHas('purok.baranggay', function($query) use ($barangayId) {
         $query->where('id', $barangayId);
     })
     ->where('status', 'active')
     ->with(['purok.baranggay'])
     ->get();
+
+    $station = Site::where('type', 'station')
+        ->where('status', 'active')
+        ->with(['purok.baranggay'])
+        ->first();
+
+    $sites = $barangaySites;
+    if ($station && !$sites->contains('id', $station->id)) {
+        $sites = $sites->push($station);
+    }
 
     return response()->json([
         'success' => true,

@@ -375,7 +375,10 @@ public function getScheduleSites($scheduleId){
         $collectionQueue = $schedule->collections->keyBy('site_id');
 
         $sites = $schedule->barangay->puroks->flatMap(function($purok) use ($collectionQueue) {
-            return $purok->sites->map(function($site) use ($collectionQueue) {
+            return $purok->sites->filter(function($site) {
+                // Exclude stations from collection queue
+                return $site->type !== 'station';
+            })->map(function($site) use ($collectionQueue) {
                 $queueEntry = $collectionQueue->get($site->id);
                 
                 return [

@@ -344,6 +344,7 @@ export const useSiteManagement = ({
                   }
                 }
                 
+                // Only include regular sites (exclude station) in siteLocations for collection queue
                 setSiteLocations(regularSites);
               }
             } catch (progressError) {
@@ -369,6 +370,7 @@ export const useSiteManagement = ({
                 }
               }
               
+              // Only include regular sites (exclude station) in siteLocations for collection queue
               setSiteLocations(regularSites);
             }
           }
