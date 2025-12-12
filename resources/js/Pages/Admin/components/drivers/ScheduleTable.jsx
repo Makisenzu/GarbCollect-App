@@ -7,7 +7,7 @@ const ReportModal = ({ show, onClose, schedule }) => {
 
   const hasReports = schedule?.reports && schedule.reports.length > 0;
   
-  // Get all pictures from all reports (each report can have multiple pictures)
+
   const allPictures = hasReports 
     ? schedule.reports
         .filter(r => r.report_picture)
