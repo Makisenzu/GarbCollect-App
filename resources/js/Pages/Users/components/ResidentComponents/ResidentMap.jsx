@@ -953,7 +953,24 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
   };
 
   const findStation = (sites) => {
-    return sites.find(site => site.type === 'station') || null;
+    // Since stations are no longer included in the sites array,
+    // we need to fetch the global station separately
+    return null; // Will be loaded separately
+  };
+
+  const loadGlobalStation = async () => {
+    try {
+      // Fetch the global station (there's only one for all barangays)
+      const response = await axios.get('/api/station');
+      if (response.data.success && response.data.data) {
+        const station = response.data.data;
+        setStationLocation(station);
+        return station;
+      }
+    } catch (error) {
+      console.warn('Could not load station:', error);
+    }
+    return null;
   };
 
   useEffect(() => {
@@ -1130,10 +1147,10 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
 
   useEffect(() => {
     if (mapInitialized && siteLocations.length > 0) {
-
+      console.log('📍 Updating site markers with', siteLocations.length, 'sites and station:', !!stationLocation);
       updateSiteMarkers(siteLocations);
     }
-  }, [mapInitialized, siteLocations, isMobile, realTimeRouteEnabled, nearestSite]);
+  }, [mapInitialized, siteLocations, stationLocation, isMobile, realTimeRouteEnabled, nearestSite]);
 
   // POLLING: Refresh sites from server every 5 seconds to ensure we catch updates
   useEffect(() => {
@@ -1338,15 +1355,20 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
         setCurrentSchedule(schedule);
         
         if (schedule.id) {
-          const sitesResponse = await axios.get(`/schedule/${schedule.id}/sites`);
+          // Load sites and station in parallel
+          const [sitesResponse, station] = await Promise.all([
+            axios.get(`/schedule/${schedule.id}/sites`),
+            loadGlobalStation()
+          ]);
           
           if (sitesResponse.data.success) {
             const sites = sitesResponse.data.data;
+            console.log('📍 Loaded sites:', sites.length);
             setSiteLocations(sites);
             
-            const station = findStation(sites);
+            // Station is loaded separately now
             if (station) {
-              setStationLocation(station);
+              console.log('🏢 Station loaded:', station);
             }
           }
         }
@@ -1520,15 +1542,21 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       }
     });
     
-    const newMarkers = sites.map((site, index) => {
+    // Include station if available
+    const allSites = [...sites];
+    if (stationLocation && stationLocation.latitude && stationLocation.longitude) {
+      allSites.push({
+        ...stationLocation,
+        type: 'station',
+        site_name: stationLocation.site_name || 'Collection Station',
+        status: 'active'
+      });
+    }
+    
+    const newMarkers = allSites.map((site, index) => {
       if (!site.longitude || !site.latitude) {
         return null;
     }
-
-      // Skip rendering station markers in resident view
-      if (site.type === 'station') {
-        return null;
-      }
 
       try {
         const markerElement = document.createElement('div');

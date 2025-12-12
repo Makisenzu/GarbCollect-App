@@ -159,6 +159,33 @@ class UserController extends Controller
         }
     }
 
+    public function getStation() {
+        try {
+            $station = Site::where('type', 'station')
+                ->where('status', 'active')
+                ->first();
+
+            if (!$station) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No active station found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Station fetched successfully',
+                'data' => $station
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get station',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getCategory() {
         try {
             $categories = Category::all();
