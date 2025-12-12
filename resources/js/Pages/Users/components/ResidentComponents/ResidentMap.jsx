@@ -1542,16 +1542,8 @@ const ResidentMap = ({ mapboxKey, barangayId, scheduleId, isFullscreen = false }
       }
     });
     
-    // Include station if available
+    // Don't include station in resident map - only show collection sites
     const allSites = [...sites];
-    if (stationLocation && stationLocation.latitude && stationLocation.longitude) {
-      allSites.push({
-        ...stationLocation,
-        type: 'station',
-        site_name: stationLocation.site_name || 'Collection Station',
-        status: 'active'
-      });
-    }
     
     const newMarkers = allSites.map((site, index) => {
       if (!site.longitude || !site.latitude) {
