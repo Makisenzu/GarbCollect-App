@@ -29,8 +29,10 @@ const PublicSchedule = () => {
   const [selectedBarangay, setSelectedBarangay] = useState(null);
   const [barangayOptions, setBarangayOptions] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [todaySchedules, setTodaySchedules] = useState([]);
   const [loadingBarangays, setLoadingBarangays] = useState(true);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [loadingTodaySchedules, setLoadingTodaySchedules] = useState(true);
   const [currentDate] = useState(new Date());
   const [viewMonth, setViewMonth] = useState(currentDate.getMonth());
   const [viewYear, setViewYear] = useState(currentDate.getFullYear());
@@ -62,6 +64,26 @@ const PublicSchedule = () => {
     };
 
     fetchBarangays();
+  }, []);
+
+  useEffect(() => {
+    const fetchTodaySchedules = async () => {
+      try {
+        setLoadingTodaySchedules(true);
+        const response = await axios.get('/getBarangay/schedule/today/all');
+        
+        if (response.data.success) {
+          setTodaySchedules(response.data.schedules || []);
+        }
+      } catch (error) {
+        console.error('Error fetching today\'s schedules:', error);
+        setTodaySchedules([]);
+      } finally {
+        setLoadingTodaySchedules(false);
+      }
+    };
+
+    fetchTodaySchedules();
   }, []);
 
   useEffect(() => {
@@ -146,10 +168,18 @@ const PublicSchedule = () => {
 
   const handleTrackSchedule = (schedule) => {
     setSelectedSchedule(schedule);
-    setShowResidentMap(true);
-    setIsFullscreenMap(true); // Enable fullscreen mode
     
-    // Prevent body scroll when fullscreen map is open
+    // If barangay isn't already selected and we have barangay info from schedule
+    if (!selectedBarangay && schedule.barangay_id) {
+      const barangayOption = barangayOptions.find(opt => opt.value === schedule.barangay_id);
+      if (barangayOption) {
+        setSelectedBarangay(barangayOption);
+      }
+    }
+    
+    setShowResidentMap(true);
+    setIsFullscreenMap(true);
+    
     document.body.style.overflow = 'hidden';
   };
 
@@ -238,6 +268,34 @@ const PublicSchedule = () => {
         timeRemaining,
         collection_date: schedule.collection_date,
         collection_time: schedule.collection_time,
+        barangay_name: schedule.barangay?.baranggay_name || 'Unknown',
+        barangay_id: schedule.barangay_id,
+        originalData: schedule
+      };
+    });
+  };
+
+  const transformTodayScheduleData = () => {
+    if (!todaySchedules.length) {
+      return [];
+    }
+    
+    return todaySchedules.map(schedule => {
+      const status = getScheduleStatus(schedule);
+      const formattedDate = formatScheduleDate(schedule.collection_date);
+      const formattedTime = formatTime(schedule.collection_time);
+      const timeRemaining = getTimeRemaining(schedule);
+
+      return {
+        id: schedule.id,
+        formattedDate,
+        time: formattedTime,
+        status,
+        timeRemaining,
+        collection_date: schedule.collection_date,
+        collection_time: schedule.collection_time,
+        barangay_name: schedule.barangay?.baranggay_name || 'Unknown',
+        barangay_id: schedule.barangay_id,
         originalData: schedule
       };
     });
@@ -263,7 +321,12 @@ const PublicSchedule = () => {
 
   // UPDATED: Filter today's schedule to only show active/ongoing
   const getTodaySchedule = () => {
-    if (!selectedBarangay) return [];
+    if (!selectedBarangay) {
+      // Show all today's schedules if no barangay is selected
+      return transformTodayScheduleData().filter(s => 
+        isActiveOrOngoingSchedule(s.originalData)
+      );
+    }
     const today = new Date().toDateString();
     return transformScheduleData().filter(s => 
       new Date(s.collection_date).toDateString() === today && 
@@ -446,118 +509,128 @@ const PublicSchedule = () => {
           </div>
         </div>
 
-        {selectedBarangay && (
-          <div className="max-w-6xl mx-auto">
-            {loadingSchedules && (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading active schedules for {selectedBarangay.label}...</p>
+        {/* Main Content Area */}
+        <div className="max-w-6xl mx-auto">
+          {/* TABS SECTION */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-white rounded-xl shadow-md p-1">
+              <button
+                onClick={() => setActiveTab("today")}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                  activeTab === "today"
+                    ? "bg-green-500 text-white shadow-lg"
+                    : "text-gray-700 hover:text-green-600"
+                }`}
+              >
+                Today
+              </button>
+              {selectedBarangay && (
+                <>
+                  <button
+                    onClick={() => setActiveTab("week")}
+                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                      activeTab === "week"
+                        ? "bg-green-500 text-white shadow-lg"
+                        : "text-gray-700 hover:text-green-600"
+                    }`}
+                  >
+                    Week
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("month")}
+                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                      activeTab === "month"
+                        ? "bg-green-500 text-white shadow-lg"
+                        : "text-gray-700 hover:text-green-600"
+                    }`}
+                  >
+                    Month
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* TODAY TAB - ALWAYS VISIBLE */}
+          {activeTab === "today" && (
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {selectedBarangay ? `Today's Active Collections - ${selectedBarangay.label}` : "Today's Active Collections - All Barangays"}
+                </h2>
+                <p className="text-gray-600">{currentDate.toLocaleDateString('en-US', { 
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                })}</p>
               </div>
-            )}
-
-            {!loadingSchedules && (
-              <>
-                {/* Active Schedule Banner - Only show if there are active schedules */}
-                {/* {!showResidentMap && getTodayActiveSchedules().length > 0 && (
-                  <div className="mb-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl p-6 text-white text-center shadow-lg">
-                    <div className="flex items-center justify-center gap-3 mb-3">
-                      <MapPin className="h-8 w-8 animate-pulse" />
-                      <h3 className="text-xl font-bold">Live Tracking Available!</h3>
-                    </div>
-                    <p className="mb-4 opacity-90">
-                      There are active collections happening right now in {selectedBarangay.label}
-                    </p>
-                    <button
-                      onClick={() => handleTrackSchedule(getTodayActiveSchedules()[0])}
-                      className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
-                    >
-                      <MapPin className="h-5 w-5" />
-                      View Live Map
-                    </button>
+              <div className="p-6">
+                {loadingTodaySchedules || (selectedBarangay && loadingSchedules) ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading today's schedules...</p>
                   </div>
-                )} */}
-
-                {/* TABS - ALWAYS VISIBLE REGARDLESS OF SCHEDULES */}
-                <div className="flex justify-center mb-8">
-                  <div className="bg-white rounded-xl shadow-md p-1">
-                    {["today", "week", "month"].map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                          activeTab === tab
-                            ? "bg-green-500 text-white shadow-lg"
-                            : "text-gray-700 hover:text-green-600"
-                        }`}
-                      >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {activeTab === "today" && (
-                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                    <div className="p-6 border-b border-gray-100">
-                      <h2 className="text-2xl font-bold text-gray-800">Today's Active Collections</h2>
-                      <p className="text-gray-600">{currentDate.toLocaleDateString('en-US', { 
-                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-                      })}</p>
-                    </div>
-                    <div className="p-6">
-                      {getTodaySchedule().length > 0 ? (
-                        <>
-                          <div className="space-y-4">
-                            {getPaginatedData(getTodaySchedule()).map((schedule, index) => (
-                              <div key={index} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <h3 className="text-lg font-semibold text-gray-800">{schedule.formattedDate}</h3>
-                                    <p className="text-gray-600 flex items-center gap-2 mt-1">
-                                      <Clock className="h-4 w-4" />
-                                      Start - {schedule.time}
-                                    </p>
-                                    <span className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${getStatusStyles(schedule.status)}`}>
-                                      {schedule.status === 'in_progress' ? 'In Progress' : 'Active'}
-                                    </span>
-                                  </div>
-                                  <div className="text-right">
-                                    <button 
-                                      onClick={() => handleTrackSchedule(schedule)}
-                                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
-                                    >
-                                      <MapPin className="h-4 w-4" />
-                                      Track Live
-                                    </button>
-                                  </div>
-                                </div>
+                ) : getTodaySchedule().length > 0 ? (
+                  <>
+                    <div className="space-y-4">
+                      {getPaginatedData(getTodaySchedule()).map((schedule, index) => (
+                        <div key={index} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="text-lg font-semibold text-gray-800">{schedule.formattedDate}</h3>
+                                {!selectedBarangay && (
+                                  <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-medium">
+                                    {schedule.barangay_name}
+                                  </span>
+                                )}
                               </div>
-                            ))}
+                              <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                <Clock className="h-4 w-4" />
+                                Start - {schedule.time}
+                              </p>
+                              <span className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${getStatusStyles(schedule.status)}`}>
+                                {schedule.status === 'in_progress' ? 'In Progress' : 'Active'}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <button 
+                                onClick={() => handleTrackSchedule(schedule)}
+                                className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
+                              >
+                                <MapPin className="h-4 w-4" />
+                                Track Live
+                              </button>
+                            </div>
                           </div>
-                          <ClientPagination
-                            currentPage={currentPage}
-                            totalPages={getTotalPages(getTodaySchedule())}
-                            onPageChange={setCurrentPage}
-                          />
-                        </>
-                      ) : (
-                        <div className="text-center py-12">
-                          <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                          <p className="text-xl font-semibold text-gray-600">No active collections for today</p>
-                          <p className="text-gray-500 mt-2">Check back later for updates</p>
                         </div>
-                      )}
+                      ))}
                     </div>
+                    <ClientPagination
+                      currentPage={currentPage}
+                      totalPages={getTotalPages(getTodaySchedule())}
+                      onPageChange={setCurrentPage}
+                    />
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-xl font-semibold text-gray-600">No active collections for today</p>
+                    <p className="text-gray-500 mt-2">
+                      {!selectedBarangay ? "There are no scheduled collections for today across all barangays" : "Check back later for updates"}
+                    </p>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
 
-                {activeTab === "week" && (
-                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                    <div className="p-6 border-b border-gray-100">
-                      <h2 className="text-2xl font-bold text-gray-800">This Week's Collections - {selectedBarangay.label}</h2>
-                      <p className="text-gray-600">Schedules for the next 7 days</p>
-                    </div>
-                    <div className="p-6">
+          {/* WEEK TAB - ONLY WHEN BARANGAY SELECTED */}
+          {selectedBarangay && activeTab === "week" && !loadingSchedules && (
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="text-2xl font-bold text-gray-800">This Week's Collections - {selectedBarangay.label}</h2>
+                <p className="text-gray-600">Schedules for the next 7 days</p>
+              </div>
+              <div className="p-6">
                       {getWeekSchedule().length > 0 ? (
                         <>
                           <div className="space-y-4">
@@ -614,7 +687,7 @@ const PublicSchedule = () => {
                   </div>
                 )}
 
-                {activeTab === "month" && (
+                {selectedBarangay && activeTab === "month" && !loadingSchedules && (
                   <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                     <div className="p-6 border-b border-gray-100">
                       <div className="flex items-center justify-between">
@@ -696,35 +769,35 @@ const PublicSchedule = () => {
                   </div>
                 )}
 
-                {/* Resident Map Section */}
-                {showResidentMap && selectedSchedule && (
-                  <div 
-                    id="resident-map-section" 
-                    className={`${
-                      isFullscreenMap 
-                        ? 'fixed inset-0 z-[9999] bg-white' 
-                        : 'mt-12'
-                    }`}
-                  >
-                    {isFullscreenMap ? (
-                      // Fullscreen Mode
-                      <div className="w-full h-full flex flex-col">
-                        {/* Fullscreen Header with Back Button */}
-                        <div className="bg-black px-4 py-3 sm:px-6 sm:py-4 shadow-md">
-                          <div className="flex items-center justify-between">
-                            <button
-                              onClick={handleCloseMap}
-                              className="flex items-center gap-2 text-white hover:bg-white/20 px-3 py-2 rounded-lg transition-colors"
-                            >
-                              <ChevronLeft className="h-5 w-5" />
-                              <span className="font-semibold">Back</span>
-                            </button>
-                            <div className="flex-1 text-center px-4">
-                              <h2 className="text-lg sm:text-xl font-bold text-white truncate">
-                                {selectedBarangay.label}
-                              </h2>
-                              <p className="text-xs sm:text-sm text-white/90 hidden sm:block">
-                                {selectedSchedule.formattedDate} at {selectedSchedule.collection_time}
+          {/* Resident Map Section */}
+          {showResidentMap && selectedSchedule && selectedSchedule.barangay_id && (
+            <div 
+              id="resident-map-section" 
+              className={`${
+                isFullscreenMap 
+                  ? 'fixed inset-0 z-[9999] bg-white' 
+                  : 'mt-12'
+              }`}
+            >
+              {isFullscreenMap ? (
+                // Fullscreen Mode
+                <div className="w-full h-full flex flex-col">
+                  {/* Fullscreen Header with Back Button */}
+                  <div className="bg-black px-4 py-3 sm:px-6 sm:py-4 shadow-md">
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={handleCloseMap}
+                        className="flex items-center gap-2 text-white hover:bg-white/20 px-3 py-2 rounded-lg transition-colors"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                        <span className="font-semibold">Back</span>
+                      </button>
+                      <div className="flex-1 text-center px-4">
+                        <h2 className="text-lg sm:text-xl font-bold text-white truncate">
+                          {selectedSchedule.barangay_name}
+                        </h2>
+                        <p className="text-xs sm:text-sm text-white/90 hidden sm:block">
+                          {selectedSchedule.formattedDate} at {selectedSchedule.time}
                               </p>
                             </div>
                             <div className="w-20"></div> {/* Spacer for centering */}
@@ -735,7 +808,7 @@ const PublicSchedule = () => {
                         <div className="flex-1 relative overflow-hidden">
                           <ResidentMap 
                             mapboxKey={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-                            barangayId={selectedBarangay.value}
+                            barangayId={selectedSchedule.barangay_id}
                             scheduleId={selectedSchedule.id}
                             isFullscreen={true}
                           />
@@ -749,7 +822,7 @@ const PublicSchedule = () => {
                             <div>
                               <h2 className="text-2xl font-bold text-gray-800">Live Collection Map</h2>
                               <p className="text-gray-600">
-                                Real-time tracking for {selectedBarangay.label} - {selectedSchedule.formattedDate}
+                                Real-time tracking for {selectedSchedule.barangay_name} - {selectedSchedule.formattedDate}
                               </p>
                             </div>
                             <button
@@ -763,7 +836,7 @@ const PublicSchedule = () => {
                         <div className="p-6">
                           <ResidentMap 
                             mapboxKey={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-                            barangayId={selectedBarangay.value}
+                            barangayId={selectedSchedule.barangay_id}
                             scheduleId={selectedSchedule.id}
                             isFullscreen={false}
                           />
@@ -772,20 +845,7 @@ const PublicSchedule = () => {
                     )}
                   </div>
                 )}
-              </>
-            )}
-          </div>
-        )}
-
-        {!selectedBarangay && (
-          <div className="max-w-2xl mx-auto text-center py-16">
-            <div className="bg-gradient-to-br from-green-100 to-blue-100 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6">
-              <Truck className="h-12 w-12 text-green-600" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Ready to Track Collections?</h3>
-            <p className="text-gray-600 mb-8">Select your barangay to view ongoing collection schedules</p>
-          </div>
-        )}
+        </div>
       </main>
     </div>
   );

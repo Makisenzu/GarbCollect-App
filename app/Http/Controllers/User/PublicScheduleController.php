@@ -46,6 +46,30 @@ class PublicScheduleController extends Controller
         }
     }
 
+    public function getTodaySchedules() {
+        try {
+            $today = now()->toDateString();
+            
+            $todaySchedules = Schedule::with('barangay')
+                ->whereDate('collection_date', $today)
+                ->where('status', '!=', 'failed')
+                ->orderBy('collection_time', 'asc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Today\'s schedules retrieved successfully',
+                'schedules' => $todaySchedules
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get today\'s schedules',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
     /**
      * Show the form for creating a new resource.
      */
