@@ -127,6 +127,7 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
     };
 
     const handleFinishTask = async (schedule) => {
+        if (!canStartSchedule(schedule)) return;
         setReportScheduleId(schedule.id);
         setShowReportModal(true);
     };
@@ -252,10 +253,15 @@ export default function Schedule({ drivers, barangays, schedules, onStartTask, m
                         </button>
                         
                         {/* DONE button for today's schedules */}
-                        {isToday && (schedule.status === 'active' || schedule.status === 'progress' || schedule.status === 'in_progress') && (
+                        {isToday && (schedule.status === 'active' || schedule.status === 'pending' || schedule.status === 'progress' || schedule.status === 'in_progress') && (
                             <button 
-                                onClick={() => handleFinishTask(schedule)}
-                                className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg text-sm font-medium hover:from-emerald-700 hover:to-emerald-800 shadow-sm hover:shadow-md transition-all duration-200"
+                                onClick={() => canStart && handleFinishTask(schedule)}
+                                disabled={!canStart}
+                                className={`flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                    canStart
+                                        ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 shadow-sm hover:shadow-md'
+                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 pointer-events-none'
+                                }`}
                             >
                                 <CheckCircle className="w-4 h-4" />
                                 <span className="hidden sm:inline">DONE</span>
