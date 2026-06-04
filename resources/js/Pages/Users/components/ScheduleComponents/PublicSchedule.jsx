@@ -160,12 +160,6 @@ const PublicSchedule = () => {
     return "upcoming";
   };
 
-  // NEW: Filter to only show active and ongoing schedules
-  const isActiveOrOngoingSchedule = (schedule) => {
-    const status = getScheduleStatus(schedule);
-    return status === 'active' || status === 'in_progress';
-  };
-
   const handleTrackSchedule = (schedule) => {
     setSelectedSchedule(schedule);
     
@@ -189,13 +183,6 @@ const PublicSchedule = () => {
     
     // Re-enable body scroll
     document.body.style.overflow = 'auto';
-  };
-
-  // UPDATED: Get today's active schedules only
-  const getTodayActiveSchedules = () => {
-    return getTodaySchedule().filter(schedule => 
-      isActiveOrOngoingSchedule(schedule.originalData)
-    );
   };
 
   const formatScheduleDate = (collectionDate) => {
@@ -319,19 +306,15 @@ const PublicSchedule = () => {
 
   const getTotalPages = (data) => Math.ceil(data.length / itemsPerPage);
 
-  // UPDATED: Filter today's schedule to only show active/ongoing
+  // Show all upcoming schedules (except cancelled/terminal statuses filtered by backend)
   const getTodaySchedule = () => {
     if (!selectedBarangay) {
-      // Show all today's schedules if no barangay is selected
-      return transformTodayScheduleData().filter(s => 
-        isActiveOrOngoingSchedule(s.originalData)
-      );
+      // Show all upcoming schedules across barangays
+      return transformTodayScheduleData();
     }
-    const today = new Date().toDateString();
-    return transformScheduleData().filter(s => 
-      new Date(s.collection_date).toDateString() === today && 
-      isActiveOrOngoingSchedule(s.originalData)
-    );
+
+    // Show all upcoming schedules for selected barangay
+    return transformScheduleData();
   };
 
   // UPDATED: Get week schedules (show all future schedules, not just active)
@@ -556,7 +539,7 @@ const PublicSchedule = () => {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-6 border-b border-gray-100">
                 <h2 className="text-2xl font-bold text-gray-800">
-                  {selectedBarangay ? `Today's Active Collections - ${selectedBarangay.label}` : "Today's Active Collections - All Barangays"}
+                  {selectedBarangay ? `Upcoming Collections - ${selectedBarangay.label}` : 'Upcoming Collections - All Barangays'}
                 </h2>
                 <p className="text-gray-600">{currentDate.toLocaleDateString('en-US', { 
                   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
@@ -588,17 +571,27 @@ const PublicSchedule = () => {
                                 Start - {schedule.time}
                               </p>
                               <span className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${getStatusStyles(schedule.status)}`}>
-                                {schedule.status === 'in_progress' ? 'In Progress' : 'Active'}
+                                {schedule.status === 'in_progress' ? 'In Progress' : 
+                                 schedule.status === 'active' ? 'Active' :
+                                 schedule.status === 'upcoming' ? 'Upcoming' :
+                                 schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                               </span>
                             </div>
                             <div className="text-right">
-                              <button 
-                                onClick={() => handleTrackSchedule(schedule)}
-                                className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
-                              >
-                                <MapPin className="h-4 w-4" />
-                                Track Live
-                              </button>
+                              {(schedule.status === 'active' || schedule.status === 'in_progress') ? (
+                                <button 
+                                  onClick={() => handleTrackSchedule(schedule)}
+                                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
+                                >
+                                  <MapPin className="h-4 w-4" />
+                                  Track Live
+                                </button>
+                              ) : (
+                                <div className="text-gray-500 text-sm">
+                                  {schedule.timeRemaining.days > 0 && `${schedule.timeRemaining.days}d `}
+                                  {schedule.timeRemaining.hours}h {schedule.timeRemaining.minutes}m
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -613,9 +606,9 @@ const PublicSchedule = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-xl font-semibold text-gray-600">No active collections for today</p>
+                    <p className="text-xl font-semibold text-gray-600">No upcoming collections found</p>
                     <p className="text-gray-500 mt-2">
-                      {!selectedBarangay ? "There are no scheduled collections for today across all barangays" : "Check back later for updates"}
+                      {!selectedBarangay ? 'There are no upcoming schedules across all barangays' : 'No upcoming schedules for this barangay'}
                     </p>
                   </div>
                 )}

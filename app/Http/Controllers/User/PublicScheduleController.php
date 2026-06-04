@@ -24,11 +24,14 @@ class PublicScheduleController extends Controller
 
     public function displaySchedule($id) {
         try {
+            $excludedStatuses = ['cancelled', 'canceled', 'failed', 'completed', 'done', 'reported'];
+
             $barangaySchedule = Schedule::with('barangay')
             ->where('barangay_id', $id)
-            ->where('status', '!=', 'failed')
-            ->orderBy('collection_date', 'desc')
-            ->orderBy('collection_time', 'desc')
+            ->whereRaw('TIMESTAMP(collection_date, collection_time) >= ?', [now()])
+            ->whereNotIn('status', $excludedStatuses)
+            ->orderBy('collection_date', 'asc')
+            ->orderBy('collection_time', 'asc')
             ->get();
 
 
@@ -48,17 +51,18 @@ class PublicScheduleController extends Controller
 
     public function getTodaySchedules() {
         try {
-            $today = now()->toDateString();
+            $excludedStatuses = ['cancelled', 'canceled', 'failed', 'completed', 'done', 'reported'];
             
             $todaySchedules = Schedule::with('barangay')
-                ->whereDate('collection_date', $today)
-                ->where('status', '!=', 'failed')
+                ->whereRaw('TIMESTAMP(collection_date, collection_time) >= ?', [now()])
+                ->whereNotIn('status', $excludedStatuses)
+                ->orderBy('collection_date', 'asc')
                 ->orderBy('collection_time', 'asc')
                 ->get();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Today\'s schedules retrieved successfully',
+                'message' => 'Upcoming schedules retrieved successfully',
                 'schedules' => $todaySchedules
             ]);
         } catch (Exception $e) {
