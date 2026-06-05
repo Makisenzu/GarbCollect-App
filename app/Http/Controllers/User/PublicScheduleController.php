@@ -25,10 +25,11 @@ class PublicScheduleController extends Controller
     public function displaySchedule($id) {
         try {
             $excludedStatuses = ['cancelled', 'canceled', 'failed', 'completed', 'done', 'reported'];
+            $today = now()->toDateString();
 
             $barangaySchedule = Schedule::with('barangay')
             ->where('barangay_id', $id)
-            ->whereRaw('TIMESTAMP(collection_date, collection_time) >= ?', [now()])
+            ->whereDate('collection_date', '>=', $today)
             ->whereNotIn('status', $excludedStatuses)
             ->orderBy('collection_date', 'asc')
             ->orderBy('collection_time', 'asc')
@@ -52,9 +53,10 @@ class PublicScheduleController extends Controller
     public function getTodaySchedules() {
         try {
             $excludedStatuses = ['cancelled', 'canceled', 'failed', 'completed', 'done', 'reported'];
+            $today = now()->toDateString();
             
             $todaySchedules = Schedule::with('barangay')
-                ->whereRaw('TIMESTAMP(collection_date, collection_time) >= ?', [now()])
+                ->whereDate('collection_date', '>=', $today)
                 ->whereNotIn('status', $excludedStatuses)
                 ->orderBy('collection_date', 'asc')
                 ->orderBy('collection_time', 'asc')

@@ -306,26 +306,55 @@ const PublicSchedule = () => {
 
   const getTotalPages = (data) => Math.ceil(data.length / itemsPerPage);
 
-  // Show all upcoming schedules (except cancelled/terminal statuses filtered by backend)
-  const getTodaySchedule = () => {
-    if (!selectedBarangay) {
-      // Show all upcoming schedules across barangays
-      return transformTodayScheduleData();
-    }
+  const isCancelledStatus = (status) => {
+    const normalizedStatus = (status || '').toLowerCase();
+    return ['cancelled', 'canceled'].includes(normalizedStatus);
+  };
 
-    // Show all upcoming schedules for selected barangay
-    return transformScheduleData();
+  const getVisibleSourceSchedules = () => {
+    const sourceSchedules = todaySchedules.length > 0 ? todaySchedules : schedules;
+
+    return sourceSchedules.filter(schedule => {
+      const matchesBarangay = !selectedBarangay || schedule.barangay_id == selectedBarangay.value;
+      return matchesBarangay && !isCancelledStatus(schedule.status);
+    });
+  };
+
+  const mapVisibleSchedule = (schedule) => {
+    const status = getScheduleStatus(schedule);
+
+    return {
+      id: schedule.id,
+      formattedDate: formatScheduleDate(schedule.collection_date),
+      time: formatTime(schedule.collection_time),
+      status,
+      timeRemaining: getTimeRemaining(schedule),
+      collection_date: schedule.collection_date,
+      collection_time: schedule.collection_time,
+      barangay_name: schedule.barangay?.baranggay_name || 'Unknown',
+      barangay_id: schedule.barangay_id,
+      originalData: schedule
+    };
+  };
+
+  const getTodaySchedule = () => {
+    return getVisibleSourceSchedules()
+      .filter(schedule => {
+        const scheduleDate = new Date(schedule.collection_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return scheduleDate >= today;
+      })
+      .map(mapVisibleSchedule);
   };
 
   // UPDATED: Get week schedules (show all future schedules, not just active)
   const getWeekSchedule = () => {
-    if (!selectedBarangay) return [];
-    
     const now = new Date();
     const oneWeekFromNow = new Date();
     oneWeekFromNow.setDate(now.getDate() + 7);
     
-    return transformScheduleData().filter(schedule => {
+    return getVisibleSourceSchedules().map(mapVisibleSchedule).filter(schedule => {
       const scheduleDate = new Date(schedule.collection_date);
       return scheduleDate >= now && scheduleDate <= oneWeekFromNow;
     });
@@ -333,13 +362,8 @@ const PublicSchedule = () => {
 
   // UPDATED: Get month schedules (show all schedules in the month)
   const getMonthSchedule = () => {
-    if (!selectedBarangay) {
-      return [];
-    }
-    
-    const transformedData = transformScheduleData();
-    
-    const currentMonthSchedules = transformedData
+    const currentMonthSchedules = getVisibleSourceSchedules()
+      .map(mapVisibleSchedule)
       .filter(schedule => {
         const scheduleDate = new Date(schedule.collection_date);
         const isInCurrentMonth = scheduleDate.getMonth() === viewMonth && scheduleDate.getFullYear() === viewYear;
@@ -507,30 +531,26 @@ const PublicSchedule = () => {
               >
                 Today
               </button>
-              {selectedBarangay && (
-                <>
-                  <button
-                    onClick={() => setActiveTab("week")}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                      activeTab === "week"
-                        ? "bg-green-500 text-white shadow-lg"
-                        : "text-gray-700 hover:text-green-600"
-                    }`}
-                  >
-                    Week
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("month")}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                      activeTab === "month"
-                        ? "bg-green-500 text-white shadow-lg"
-                        : "text-gray-700 hover:text-green-600"
-                    }`}
-                  >
-                    Month
-                  </button>
-                </>
-              )}
+              <button
+                onClick={() => setActiveTab("week")}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                  activeTab === "week"
+                    ? "bg-green-500 text-white shadow-lg"
+                    : "text-gray-700 hover:text-green-600"
+                }`}
+              >
+                Week
+              </button>
+              <button
+                onClick={() => setActiveTab("month")}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                  activeTab === "month"
+                    ? "bg-green-500 text-white shadow-lg"
+                    : "text-gray-700 hover:text-green-600"
+                }`}
+              >
+                Month
+              </button>
             </div>
           </div>
 
@@ -546,7 +566,7 @@ const PublicSchedule = () => {
                 })}</p>
               </div>
               <div className="p-6">
-                {loadingTodaySchedules || (selectedBarangay && loadingSchedules) ? (
+                {loadingTodaySchedules || loadingSchedules ? (
                   <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
                     <p className="mt-4 text-gray-600">Loading today's schedules...</p>
@@ -616,11 +636,13 @@ const PublicSchedule = () => {
             </div>
           )}
 
-          {/* WEEK TAB - ONLY WHEN BARANGAY SELECTED */}
-          {selectedBarangay && activeTab === "week" && !loadingSchedules && (
+          {/* WEEK TAB */}
+          {activeTab === "week" && !loadingSchedules && (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-6 border-b border-gray-100">
-                <h2 className="text-2xl font-bold text-gray-800">This Week's Collections - {selectedBarangay.label}</h2>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  This Week's Collections - {selectedBarangay ? selectedBarangay.label : 'All Barangays'}
+                </h2>
                 <p className="text-gray-600">Schedules for the next 7 days</p>
               </div>
               <div className="p-6">
@@ -632,6 +654,11 @@ const PublicSchedule = () => {
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <h3 className="text-lg font-semibold text-gray-800">{schedule.formattedDate}</h3>
+                                    {!selectedBarangay && (
+                                      <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-medium inline-flex mt-2">
+                                        {schedule.barangay_name}
+                                      </span>
+                                    )}
                                     <p className="text-gray-600 flex items-center gap-2 mt-1">
                                       <Clock className="h-4 w-4" />
                                       Start - {schedule.time}
@@ -680,12 +707,14 @@ const PublicSchedule = () => {
                   </div>
                 )}
 
-                {selectedBarangay && activeTab === "month" && !loadingSchedules && (
+                {activeTab === "month" && !loadingSchedules && (
                   <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                     <div className="p-6 border-b border-gray-100">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h2 className="text-2xl font-bold text-gray-800">Monthly Schedule - {selectedBarangay.label}</h2>
+                                <h2 className="text-2xl font-bold text-gray-800">
+                                  Monthly Schedule - {selectedBarangay ? selectedBarangay.label : 'All Barangays'}
+                                </h2>
                           <p className="text-gray-600">{monthNames[viewMonth]} {viewYear}</p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -719,6 +748,11 @@ const PublicSchedule = () => {
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <h3 className="text-lg font-semibold text-gray-800">{schedule.formattedDate}</h3>
+                                    {!selectedBarangay && (
+                                      <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-medium inline-flex mt-2">
+                                        {schedule.barangay_name}
+                                      </span>
+                                    )}
                                     <p className="text-gray-600 flex items-center gap-2 mt-1">
                                       <Clock className="h-4 w-4" />
                                       Start - {schedule.time}
